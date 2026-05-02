@@ -9,12 +9,15 @@ import {
   DEFAULT_LANDING_CONFIG,
   type LandingConfig,
   type ViewportConfig,
+  type FeedPost,
+  type DashboardConfig,
 } from "@/lib/landing-config";
 
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "footfans2026";
 const SESSION_KEY = "ff_admin_authed";
 
 type Viewport = "desktop" | "mobile";
+type Area = "external" | "internal";
 
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
@@ -23,6 +26,7 @@ export default function AdminPage() {
 
   const [config, setConfig] = useState<LandingConfig>(DEFAULT_LANDING_CONFIG);
   const [viewport, setViewport] = useState<Viewport>("desktop");
+  const [area, setArea] = useState<Area>("external");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
@@ -160,6 +164,78 @@ export default function AdminPage() {
     }));
   }
 
+  // ========== HELPERS DASHBOARD ==========
+  function updateDashField<K extends keyof DashboardConfig>(key: K, value: DashboardConfig[K]) {
+    setConfig((c) => ({ ...c, dashboard: { ...c.dashboard, [key]: value } }));
+  }
+
+  function copyLogoFromLanding() {
+    if (!confirm("Copiar logo, tagline e textos da landing pro dashboard?")) return;
+    setConfig((c) => ({
+      ...c,
+      dashboard: {
+        ...c.dashboard,
+        logo_mode: c.logo_mode === "image" ? "image" : "text",
+        logo_primary: c.logo_primary,
+        logo_secondary: c.logo_secondary,
+        logo_image_url: c.logo_image_url,
+      },
+    }));
+  }
+
+  function updateFeedPost<K extends keyof FeedPost>(idx: number, key: K, value: FeedPost[K]) {
+    setConfig((c) => ({
+      ...c,
+      dashboard: {
+        ...c.dashboard,
+        feed_posts: c.dashboard.feed_posts.map((p, i) =>
+          i === idx ? { ...p, [key]: value } : p
+        ),
+      },
+    }));
+  }
+
+  function addFeedPost() {
+    const newPost: FeedPost = {
+      id: `post-${Date.now()}`,
+      seller_name: "novo_user",
+      seller_avatar_url: "",
+      buyer_name: "Sheik Novo Comprador",
+      buyer_emirate: "Dubai · UAE",
+      buyer_flag: "🇦🇪",
+      amount_brl: 250.00,
+      bids_count: 10,
+      rarity: "common",
+      time_ago: "agora",
+      image_url: "",
+    };
+    setConfig((c) => ({
+      ...c,
+      dashboard: { ...c.dashboard, feed_posts: [...c.dashboard.feed_posts, newPost] },
+    }));
+  }
+
+  function removeFeedPost(idx: number) {
+    if (!confirm("Remover esse post do feed?")) return;
+    setConfig((c) => ({
+      ...c,
+      dashboard: {
+        ...c.dashboard,
+        feed_posts: c.dashboard.feed_posts.filter((_, i) => i !== idx),
+      },
+    }));
+  }
+
+  function moveFeedPost(idx: number, direction: -1 | 1) {
+    setConfig((c) => {
+      const posts = [...c.dashboard.feed_posts];
+      const newIdx = idx + direction;
+      if (newIdx < 0 || newIdx >= posts.length) return c;
+      [posts[idx], posts[newIdx]] = [posts[newIdx], posts[idx]];
+      return { ...c, dashboard: { ...c.dashboard, feed_posts: posts } };
+    });
+  }
+
   // ========== TELA DE LOGIN ==========
   if (!authed) {
     return (
@@ -199,9 +275,7 @@ export default function AdminPage() {
   }
 
   const v = config[viewport];
-
-  return (
-    <div className="min-h-screen bg-gray-50">
+  const dash = config.dashboard;
       {/* Header */}
       <header className="sticky top-0 z-30 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
         <div>
@@ -234,6 +308,46 @@ export default function AdminPage() {
       <div className="grid lg:grid-cols-2 gap-0 lg:h-[calc(100vh-73px)]">
         {/* === FORMULÁRIO === */}
         <div className="overflow-y-auto p-6 lg:border-r border-gray-200">
+
+          {/* === TABS EXTERNO / INTERNO === */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-1.5 mb-4 sticky top-0 z-20 shadow-sm">
+            <div className="grid grid-cols-2 gap-1">
+              <button
+                onClick={() => setArea("external")}
+                className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition ${
+                  area === "external"
+                    ? "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow"
+                    : "text-gray-500 hover:text-gray-900"
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                </svg>
+                <span>Externo (Landing)</span>
+              </button>
+              <button
+                onClick={() => setArea("internal")}
+                className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition ${
+                  area === "internal"
+                    ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow"
+                    : "text-gray-500 hover:text-gray-900"
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <span>Interno (Dashboard)</span>
+              </button>
+            </div>
+            <p className="text-[10px] text-gray-500 text-center mt-1.5 leading-tight">
+              {area === "external"
+                ? "Página inicial e fluxo de cadastro (visível antes do login)"
+                : "Dashboard, feed e leilão (visível só após login)"}
+            </p>
+          </div>
+
+          {area === "external" && (
+            <>
 
           {/* === TOGGLE DESKTOP / MOBILE === */}
           <div className="bg-gray-900 text-white rounded-2xl p-2 mb-6 sticky top-0 z-10 shadow-lg">
@@ -655,6 +769,250 @@ export default function AdminPage() {
             ))}
           </Section>
 
+            </>
+          )}
+
+          {/* ========================================== */}
+          {/* ========== ÁREA INTERNA (DASHBOARD) ====== */}
+          {/* ========================================== */}
+          {area === "internal" && (
+            <>
+
+          <p className="text-[11px] text-gray-500 mb-6 text-center bg-blue-50 rounded-lg py-2 px-3 border border-blue-100">
+            ℹ Editando o <strong>dashboard</strong> — o que a usuária vê após fazer login (feed, leilão, perfil, etc).
+          </p>
+
+          {/* === LOGO DO DASHBOARD === */}
+          <Section title="Logo do Dashboard" icon="✨">
+            <button
+              type="button"
+              onClick={copyLogoFromLanding}
+              className="w-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-semibold py-2 rounded-lg transition mb-2"
+            >
+              ↓ Copiar logo da landing externa
+            </button>
+
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-gray-500 font-semibold mb-2">Tipo de logo</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => updateDashField("logo_mode", "text")}
+                  className={`py-2.5 rounded-lg text-sm font-semibold transition border ${
+                    dash.logo_mode === "text" ? "bg-gray-900 text-white border-gray-900"
+                      : "bg-white text-gray-700 border-gray-200 hover:border-gray-400"
+                  }`}>Aa Texto</button>
+                <button type="button" onClick={() => updateDashField("logo_mode", "image")}
+                  className={`py-2.5 rounded-lg text-sm font-semibold transition border ${
+                    dash.logo_mode === "image" ? "bg-gray-900 text-white border-gray-900"
+                      : "bg-white text-gray-700 border-gray-200 hover:border-gray-400"
+                  }`}>🖼 Imagem</button>
+              </div>
+            </div>
+
+            {dash.logo_mode === "text" ? (
+              <>
+                <Field label="Texto principal">
+                  <input type="text" value={dash.logo_primary}
+                    onChange={(e) => updateDashField("logo_primary", e.target.value)} className="input" />
+                </Field>
+                <Field label="Texto secundário">
+                  <input type="text" value={dash.logo_secondary}
+                    onChange={(e) => updateDashField("logo_secondary", e.target.value)} className="input" />
+                </Field>
+              </>
+            ) : (
+              <ImageUploadField
+                label="Imagem da logo (dashboard)"
+                hint="PNG/SVG transparente recomendado"
+                folder="logo"
+                value={dash.logo_image_url}
+                onChange={(url) => updateDashField("logo_image_url", url)}
+                previewBg="#f9fafb"
+                previewMaxHeight={80}
+              />
+            )}
+
+            <Field label={`Tamanho da logo: ${dash.logo_size}%`}>
+              <input type="range" min="40" max="200" value={dash.logo_size}
+                onChange={(e) => updateDashField("logo_size", parseInt(e.target.value))}
+                className="w-full accent-gray-900" />
+            </Field>
+          </Section>
+
+          {/* === CORES DO DASHBOARD === */}
+          <Section title="Cores do Dashboard" icon="🎨">
+            <div className="grid grid-cols-2 gap-3">
+              <ColorField label="Primária" value={dash.color_primary} onChange={(val) => updateDashField("color_primary", val)} />
+              <ColorField label="Acento" value={dash.color_accent} onChange={(val) => updateDashField("color_accent", val)} />
+              <ColorField label="Fundo geral" value={dash.color_bg} onChange={(val) => updateDashField("color_bg", val)} />
+              <ColorField label="Fundo dos cards" value={dash.color_card_bg} onChange={(val) => updateDashField("color_card_bg", val)} />
+            </div>
+          </Section>
+
+          {/* === TEXTOS DA UI === */}
+          <Section title="Textos da interface" icon="🔤">
+            <p className="text-[11px] text-gray-500 mb-2">Labels que aparecem na sidebar, bottom-tab e cards do dashboard.</p>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Aba 1 (Feed)">
+                <input type="text" value={dash.label_feed}
+                  onChange={(e) => updateDashField("label_feed", e.target.value)} className="input" />
+              </Field>
+              <Field label="Aba 2 (Leilão)">
+                <input type="text" value={dash.label_auction}
+                  onChange={(e) => updateDashField("label_auction", e.target.value)} className="input" />
+              </Field>
+              <Field label="Aba 3 (Carteira)">
+                <input type="text" value={dash.label_wallet}
+                  onChange={(e) => updateDashField("label_wallet", e.target.value)} className="input" />
+              </Field>
+              <Field label="Aba 4 (Perfil)">
+                <input type="text" value={dash.label_profile}
+                  onChange={(e) => updateDashField("label_profile", e.target.value)} className="input" />
+              </Field>
+            </div>
+
+            <div className="border-t border-gray-200 my-2"></div>
+
+            <Field label="Card 'Compradores online'">
+              <input type="text" value={dash.label_buyers_online}
+                onChange={(e) => updateDashField("label_buyers_online", e.target.value)} className="input" />
+            </Field>
+            <Field label="Card 'Top creators'">
+              <input type="text" value={dash.label_top_creators}
+                onChange={(e) => updateDashField("label_top_creators", e.target.value)} className="input" />
+            </Field>
+            <Field label="Card 'Leilão ativo'">
+              <input type="text" value={dash.label_active_auction}
+                onChange={(e) => updateDashField("label_active_auction", e.target.value)} className="input" />
+            </Field>
+            <Field label="Card 'Fechados'">
+              <input type="text" value={dash.label_closed_auctions}
+                onChange={(e) => updateDashField("label_closed_auctions", e.target.value)} className="input" />
+            </Field>
+          </Section>
+
+          {/* === FEED POSTS === */}
+          <Section title={`Posts do feed (${dash.feed_posts.length})`} icon="📸">
+            <p className="text-[11px] text-gray-500 mb-2">
+              Vendas fictícias que aparecem no feed do dashboard. Adicione, remova e reordene livremente.
+            </p>
+
+            {dash.feed_posts.map((post, idx) => (
+              <div key={post.id} className="bg-white border border-gray-200 rounded-xl p-3 mb-2">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Post {idx + 1}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => moveFeedPost(idx, -1)}
+                      disabled={idx === 0}
+                      className="text-xs text-gray-500 hover:text-gray-900 disabled:opacity-30 px-1.5 py-0.5"
+                      title="Mover pra cima"
+                    >↑</button>
+                    <button
+                      onClick={() => moveFeedPost(idx, 1)}
+                      disabled={idx === dash.feed_posts.length - 1}
+                      className="text-xs text-gray-500 hover:text-gray-900 disabled:opacity-30 px-1.5 py-0.5"
+                      title="Mover pra baixo"
+                    >↓</button>
+                    <button
+                      onClick={() => removeFeedPost(idx)}
+                      className="text-xs text-red-600 hover:text-red-800 transition ml-1"
+                    >Remover</button>
+                  </div>
+                </div>
+
+                {/* Imagem do post */}
+                <ImageUploadField
+                  label="Foto do post (vendido)"
+                  hint="A foto fica borrada/escondida no feed (ela já foi 'vendida')"
+                  folder="background"
+                  value={post.image_url}
+                  onChange={(url) => updateFeedPost(idx, "image_url", url)}
+                  previewBg="#1f2937"
+                  previewMaxHeight={120}
+                />
+
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <Field label="@ vendedora">
+                    <input type="text" value={post.seller_name}
+                      onChange={(e) => updateFeedPost(idx, "seller_name", e.target.value)}
+                      className="input" placeholder="username" />
+                  </Field>
+                  <Field label="Avatar (URL opcional)">
+                    <input type="text" value={post.seller_avatar_url}
+                      onChange={(e) => updateFeedPost(idx, "seller_avatar_url", e.target.value)}
+                      className="input" placeholder="vazio = avatar gerado" />
+                  </Field>
+                </div>
+
+                <Field label="Nome do comprador (sheik)">
+                  <input type="text" value={post.buyer_name}
+                    onChange={(e) => updateFeedPost(idx, "buyer_name", e.target.value)}
+                    className="input" />
+                </Field>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Field label="Cidade · País">
+                    <input type="text" value={post.buyer_emirate}
+                      onChange={(e) => updateFeedPost(idx, "buyer_emirate", e.target.value)}
+                      className="input" placeholder="Dubai · UAE" />
+                  </Field>
+                  <Field label="Bandeira (emoji)">
+                    <input type="text" value={post.buyer_flag}
+                      onChange={(e) => updateFeedPost(idx, "buyer_flag", e.target.value)}
+                      className="input" placeholder="🇦🇪" />
+                  </Field>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Field label="Valor (R$)">
+                    <input type="number" step="0.01" value={post.amount_brl}
+                      onChange={(e) => updateFeedPost(idx, "amount_brl", parseFloat(e.target.value) || 0)}
+                      className="input" />
+                  </Field>
+                  <Field label="Quantidade de lances">
+                    <input type="number" value={post.bids_count}
+                      onChange={(e) => updateFeedPost(idx, "bids_count", parseInt(e.target.value) || 0)}
+                      className="input" />
+                  </Field>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Field label="Tempo (texto livre)">
+                    <input type="text" value={post.time_ago}
+                      onChange={(e) => updateFeedPost(idx, "time_ago", e.target.value)}
+                      className="input" placeholder="há 5min" />
+                  </Field>
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-gray-500 font-semibold mb-1">Raridade</label>
+                    <select
+                      value={post.rarity}
+                      onChange={(e) => updateFeedPost(idx, "rarity", e.target.value as any)}
+                      className="input"
+                    >
+                      <option value="common">Comum</option>
+                      <option value="rare">Raro</option>
+                      <option value="epic">Épico</option>
+                      <option value="legendary">Lendário</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            <button
+              onClick={addFeedPost}
+              className="w-full border-2 border-dashed border-gray-300 hover:border-gray-500 text-gray-500 hover:text-gray-900 py-3 rounded-xl text-sm font-semibold transition"
+            >
+              + Adicionar post no feed
+            </button>
+          </Section>
+
+            </>
+          )}
+
           <div className="h-12"></div>
         </div>
 
@@ -662,10 +1020,16 @@ export default function AdminPage() {
         <div className="bg-gray-100 overflow-y-auto p-6 hidden lg:block">
           <div className="sticky top-0 bg-gray-100 pb-3 mb-3 z-10 flex items-center justify-between">
             <p className="text-xs uppercase tracking-wider text-gray-500 font-semibold">
-              Pré-visualização: {viewport === "desktop" ? "💻 Desktop" : "📱 Mobile"}
+              {area === "external"
+                ? `Pré-visualização: ${viewport === "desktop" ? "💻 Desktop" : "📱 Mobile"}`
+                : "Pré-visualização: Dashboard"}
             </p>
           </div>
-          <Preview config={config} viewport={viewport} />
+          {area === "external" ? (
+            <Preview config={config} viewport={viewport} />
+          ) : (
+            <DashboardPreview config={config} />
+          )}
         </div>
       </div>
 
@@ -1125,6 +1489,136 @@ function Preview({ config, viewport }: { config: LandingConfig; viewport: Viewpo
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function DashboardPreview({ config }: { config: LandingConfig }) {
+  const dash = config.dashboard;
+  const RARITY_COLORS: Record<string, string> = {
+    common: "#6b7280",
+    rare: "#3b82f6",
+    epic: "#a855f7",
+    legendary: "#f59e0b",
+  };
+  const RARITY_LABEL: Record<string, string> = {
+    common: "Comum",
+    rare: "Raro",
+    epic: "Épico",
+    legendary: "Lendário",
+  };
+
+  return (
+    <div className="rounded-2xl overflow-hidden shadow-xl border border-gray-200" style={{ background: dash.color_bg }}>
+      {/* Topbar */}
+      <div className="px-4 py-3 flex items-center justify-between border-b border-gray-200" style={{ background: dash.color_card_bg }}>
+        <div className="flex items-baseline gap-1.5">
+          {dash.logo_image_url ? (
+            <img src={dash.logo_image_url} alt="logo" style={{ height: dash.logo_size * 0.28, objectFit: "contain" }} />
+          ) : (
+            <>
+              <span className="font-serif text-lg tracking-[0.15em]" style={{ color: dash.color_primary }}>{dash.logo_primary}</span>
+              <span className="font-serif text-[10px] tracking-[0.4em] text-gray-500">{dash.logo_secondary}</span>
+            </>
+          )}
+        </div>
+        <div className="flex items-center gap-2 bg-gray-100 rounded-full pl-2 pr-3 py-1.5">
+          <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ background: dash.color_primary }}>R</div>
+          <span className="text-xs font-semibold text-gray-900">R$ 0</span>
+        </div>
+      </div>
+
+      {/* Card buyers online */}
+      <div className="p-3">
+        <div className="rounded-xl p-3 mb-3 flex items-center gap-2" style={{ background: "#ecfdf5", border: "1px solid #a7f3d0" }}>
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+          <span className="text-xs uppercase tracking-wider text-emerald-700 font-semibold">{dash.label_buyers_online}</span>
+          <span className="ml-auto text-xs font-bold text-emerald-900">12.847</span>
+        </div>
+
+        {/* Top creators */}
+        <div className="rounded-xl p-3 mb-3" style={{ background: dash.color_card_bg, border: "1px solid #e5e7eb" }}>
+          <h3 className="text-sm font-bold text-gray-900 mb-2">{dash.label_top_creators}</h3>
+          <div className="flex gap-2 overflow-hidden">
+            {dash.feed_posts.slice(0, 4).map((p, i) => (
+              <div key={p.id} className="flex-1 min-w-0">
+                <div className="w-full aspect-square rounded-lg bg-gray-200 mb-1 flex items-center justify-center text-[10px] text-gray-500 font-semibold">
+                  #{i + 1}
+                </div>
+                <div className="text-[10px] text-gray-700 truncate">@{p.seller_name}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Feed posts (3 primeiros) */}
+        {dash.feed_posts.slice(0, 3).map((post) => (
+          <div key={post.id} className="rounded-xl mb-3 overflow-hidden" style={{ background: dash.color_card_bg, border: "1px solid #e5e7eb" }}>
+            <div className="p-3 flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-gray-300 flex items-center justify-center text-[11px] font-bold text-white" style={{ background: dash.color_primary }}>
+                {post.seller_name[0]?.toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-semibold text-gray-900 truncate">@{post.seller_name}</div>
+                <div className="text-[10px] text-gray-500">{post.time_ago}</div>
+              </div>
+              <span className="text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full text-white" style={{ background: RARITY_COLORS[post.rarity] }}>
+                {RARITY_LABEL[post.rarity]}
+              </span>
+            </div>
+            <div className="aspect-square bg-gray-200 relative">
+              {post.image_url ? (
+                <img src={post.image_url} alt="" className="w-full h-full object-cover blur-md grayscale" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300"></div>
+              )}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="bg-white/90 rounded-full px-3 py-1 text-[10px] font-bold text-gray-900">
+                  🔒 Vendido
+                </div>
+              </div>
+            </div>
+            <div className="p-3">
+              <div className="flex items-center gap-1 mb-1">
+                <span className="text-base">{post.buyer_flag}</span>
+                <span className="text-xs font-semibold text-gray-900 truncate">{post.buyer_name}</span>
+              </div>
+              <div className="text-[10px] text-gray-500 mb-2">{post.buyer_emirate}</div>
+              <div className="flex items-end justify-between">
+                <div>
+                  <div className="text-[9px] uppercase tracking-wider text-gray-500">Vendido por</div>
+                  <div className="font-serif text-lg text-gray-900 tabular-nums">
+                    R$ {post.amount_brl.toFixed(2).replace(".", ",")}
+                  </div>
+                </div>
+                <div className="text-[10px] text-gray-500">{post.bids_count} lances</div>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {dash.feed_posts.length > 3 && (
+          <p className="text-[10px] text-gray-500 text-center mt-2">
+            … e mais {dash.feed_posts.length - 3} {dash.feed_posts.length - 3 === 1 ? "post" : "posts"}
+          </p>
+        )}
+      </div>
+
+      {/* Bottom tab */}
+      <div className="border-t border-gray-200 grid grid-cols-4" style={{ background: dash.color_card_bg }}>
+        {[
+          { l: dash.label_feed, active: true },
+          { l: dash.label_auction },
+          { l: dash.label_wallet },
+          { l: dash.label_profile },
+        ].map((t, i) => (
+          <div key={i} className="text-center py-3">
+            <div className={`text-[10px] font-semibold ${t.active ? "" : "text-gray-400"}`} style={t.active ? { color: dash.color_primary } : undefined}>
+              {t.l}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -57,6 +57,15 @@ async function getInitialConfig(): Promise<LandingConfig> {
       merged.questions = DEFAULT_LANDING_CONFIG.questions;
     }
 
+    if (!raw?.dashboard || typeof raw.dashboard !== "object") {
+      merged.dashboard = DEFAULT_LANDING_CONFIG.dashboard;
+    } else {
+      merged.dashboard = { ...DEFAULT_LANDING_CONFIG.dashboard, ...raw.dashboard };
+      if (!Array.isArray(merged.dashboard.feed_posts) || merged.dashboard.feed_posts.length === 0) {
+        merged.dashboard.feed_posts = DEFAULT_LANDING_CONFIG.dashboard.feed_posts;
+      }
+    }
+
     return merged as LandingConfig;
   } catch {
     return DEFAULT_LANDING_CONFIG;

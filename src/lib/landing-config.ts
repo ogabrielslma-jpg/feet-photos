@@ -29,6 +29,52 @@ export type Question = {
   options: QuestionOption[];
 };
 
+// Post fictício do feed do dashboard
+export type FeedPost = {
+  id: string;
+  seller_name: string;
+  seller_avatar_url: string;  // pode ser vazio (gera fallback)
+  buyer_name: string;          // ex: "Sheik Khalid bin Faisal"
+  buyer_emirate: string;       // ex: "Dubai · UAE"
+  buyer_flag: string;          // emoji 🇦🇪
+  amount_brl: number;          // valor da venda
+  bids_count: number;          // quantidade de lances
+  rarity: "common" | "rare" | "epic" | "legendary";
+  time_ago: string;            // "há 12min" ou "agora"
+  image_url: string;           // foto borrada/escondida
+};
+
+// Config do dashboard (tudo que o usuário logado vê)
+export type DashboardConfig = {
+  // Logo (pode ser igual ou diferente da landing)
+  logo_mode: "text" | "image" | "same_as_landing";
+  logo_primary: string;
+  logo_secondary: string;
+  logo_image_url: string;
+  logo_size: number; // 40-200
+
+  // Cores
+  color_primary: string;
+  color_accent: string;
+  color_bg: string;        // fundo geral (default: #f9fafb)
+  color_card_bg: string;   // fundo dos cards (default: #ffffff)
+
+  // Textos da UI (sidebar/bottom-tab/labels)
+  label_feed: string;
+  label_auction: string;
+  label_wallet: string;
+  label_profile: string;
+  label_my_auction: string;       // "Meu Leilão"
+  label_active_auction: string;   // "Leilão ativo"
+  label_closed_auctions: string;  // "Fechados"
+  label_buyers_online: string;    // "Compradores online"
+  label_top_creators: string;     // "Top creators"
+  label_recent_sales: string;     // "Vendas recentes"
+
+  // Posts do feed (gerenciado manualmente no admin)
+  feed_posts: FeedPost[];
+};
+
 // Config completa
 export type LandingConfig = {
   // Logo
@@ -76,6 +122,9 @@ export type LandingConfig = {
   mobile: ViewportConfig;
 
   faqs: { q: string; a: string }[];
+
+  // Config do dashboard (pós-login)
+  dashboard: DashboardConfig;
 };
 
 const DEFAULT_VIEWPORT: ViewportConfig = {
@@ -86,6 +135,113 @@ const DEFAULT_VIEWPORT: ViewportConfig = {
   background_size: 100,
   background_overlay_opacity: 40,
   background_fit: "cover",
+};
+
+const DEFAULT_FEED_POSTS: FeedPost[] = [
+  {
+    id: "post-1",
+    seller_name: "isabella_22",
+    seller_avatar_url: "",
+    buyer_name: "Sheik Khalid bin Faisal",
+    buyer_emirate: "Dubai · UAE",
+    buyer_flag: "🇦🇪",
+    amount_brl: 287.50,
+    bids_count: 14,
+    rarity: "rare",
+    time_ago: "há 3min",
+    image_url: "",
+  },
+  {
+    id: "post-2",
+    seller_name: "mariana.s",
+    seller_avatar_url: "",
+    buyer_name: "Sheik Mohammed Al Saud",
+    buyer_emirate: "Riyadh · KSA",
+    buyer_flag: "🇸🇦",
+    amount_brl: 342.00,
+    bids_count: 11,
+    rarity: "epic",
+    time_ago: "há 8min",
+    image_url: "",
+  },
+  {
+    id: "post-3",
+    seller_name: "carolina_lf",
+    seller_avatar_url: "",
+    buyer_name: "Sheik Ahmed bin Hamad",
+    buyer_emirate: "Doha · QAT",
+    buyer_flag: "🇶🇦",
+    amount_brl: 219.90,
+    bids_count: 9,
+    rarity: "common",
+    time_ago: "há 12min",
+    image_url: "",
+  },
+  {
+    id: "post-4",
+    seller_name: "julia.melo",
+    seller_avatar_url: "",
+    buyer_name: "Sheik Tariq Al Maktoum",
+    buyer_emirate: "Abu Dhabi · UAE",
+    buyer_flag: "🇦🇪",
+    amount_brl: 399.70,
+    bids_count: 17,
+    rarity: "legendary",
+    time_ago: "há 19min",
+    image_url: "",
+  },
+  {
+    id: "post-5",
+    seller_name: "beatriz_a",
+    seller_avatar_url: "",
+    buyer_name: "Sheik Hamdan bin Rashid",
+    buyer_emirate: "Kuwait City · KWT",
+    buyer_flag: "🇰🇼",
+    amount_brl: 256.40,
+    bids_count: 12,
+    rarity: "rare",
+    time_ago: "há 27min",
+    image_url: "",
+  },
+  {
+    id: "post-6",
+    seller_name: "rafaela.t",
+    seller_avatar_url: "",
+    buyer_name: "Sheik Saif bin Zayed",
+    buyer_emirate: "Manama · BHR",
+    buyer_flag: "🇧🇭",
+    amount_brl: 312.10,
+    bids_count: 13,
+    rarity: "epic",
+    time_ago: "há 34min",
+    image_url: "",
+  },
+];
+
+const DEFAULT_DASHBOARD_CONFIG: DashboardConfig = {
+  logo_mode: "same_as_landing",
+  logo_primary: "FOOT",
+  logo_secondary: "FANS",
+  logo_image_url: "",
+  logo_size: 100,
+
+  color_primary: "#22c55e",
+  color_accent: "#a3e635",
+  color_bg: "#f9fafb",
+  color_card_bg: "#ffffff",
+
+  label_feed: "Feed",
+  label_auction: "Meu Leilão",
+  label_wallet: "Carteira",
+  label_profile: "Perfil",
+  label_my_auction: "Meu Leilão",
+  label_active_auction: "Leilão ativo",
+  label_closed_auctions: "Fechados",
+  label_buyers_online: "Compradores online",
+  label_top_creators: "Top creators",
+  label_recent_sales: "Vendas recentes",
+
+  feed_posts: DEFAULT_FEED_POSTS,
 };
 
 export const DEFAULT_LANDING_CONFIG: LandingConfig = {
@@ -187,6 +343,8 @@ export const DEFAULT_LANDING_CONFIG: LandingConfig = {
     { q: "Como eu vou receber o pagamento?", a: "Dentro da plataforma você cadastra uma conta bancária e uma chave pix. Os pagamentos caem na conta dentro de 15 minutos após a venda." },
     { q: "Regras da plataforma. Leia com atenção!", a: "Os compradores querem exclusividade. Você vai receber uma vez por uma foto vendida." },
   ],
+
+  dashboard: DEFAULT_DASHBOARD_CONFIG,
 };
 
 // Migra config antiga (sem desktop/mobile) pra nova estrutura
@@ -224,6 +382,18 @@ function migrateConfig(raw: any): LandingConfig {
   // Se questions não existir, usa as default
   if (!Array.isArray(raw?.questions) || raw.questions.length === 0) {
     merged.questions = DEFAULT_LANDING_CONFIG.questions;
+  }
+
+  // Se dashboard não existir, usa default
+  if (!raw?.dashboard || typeof raw.dashboard !== "object") {
+    merged.dashboard = DEFAULT_DASHBOARD_CONFIG;
+  } else {
+    // Merge: preserva o que já tem mas garante todos os campos
+    merged.dashboard = { ...DEFAULT_DASHBOARD_CONFIG, ...raw.dashboard };
+    // Se feed_posts não existir, usa default
+    if (!Array.isArray(merged.dashboard.feed_posts) || merged.dashboard.feed_posts.length === 0) {
+      merged.dashboard.feed_posts = DEFAULT_FEED_POSTS;
+    }
   }
 
   return merged as LandingConfig;
