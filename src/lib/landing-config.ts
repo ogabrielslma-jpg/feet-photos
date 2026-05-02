@@ -14,6 +14,21 @@ export type ViewportConfig = {
   background_fit: "cover" | "contain" | "auto";
 };
 
+// Opção de uma pergunta
+export type QuestionOption = {
+  emoji: string;     // emoji (ou string vazia)
+  text: string;      // texto da opção
+  color: string;     // cor de destaque (ex: "#22c55e")
+};
+
+// Pergunta customizável
+export type Question = {
+  id: string;          // identificador interno (q1, q2…)
+  title: string;       // pergunta principal
+  subtitle: string;    // subtítulo/explicação
+  options: QuestionOption[];
+};
+
 // Config completa
 export type LandingConfig = {
   // Logo
@@ -24,8 +39,18 @@ export type LandingConfig = {
 
   // Textos
   tagline: string;
-  headline: string;
+  headline: string;       // texto plano (fallback)
+  headline_html: string;  // HTML rich (com bold/italic/underline/highlight)
+  headline_size: number;       // 12-72 (px)
+  headline_weight: number;     // 300-900
+  headline_align: "left" | "center" | "right";
+
   cta_text: string;
+  cta_size: number;        // 12-32
+  cta_weight: number;      // 300-900
+
+  // Perguntas (5 padrão, mas customizáveis)
+  questions: Question[];
 
   // Banner topo (livre)
   banner_enabled: boolean;
@@ -71,7 +96,72 @@ export const DEFAULT_LANDING_CONFIG: LandingConfig = {
 
   tagline: "Discreto · Anônimo · Lucrativo",
   headline: "Mais de 43.730 compradores ativos aguardando sua foto agora",
+  headline_html: "Mais de <strong>43.730 compradores ativos</strong> aguardando sua foto agora",
+  headline_size: 16,
+  headline_weight: 300,
+  headline_align: "center",
+
   cta_text: "Enviar aos compradores",
+  cta_size: 14,
+  cta_weight: 700,
+
+  questions: [
+    {
+      id: "q1",
+      title: "Você tem alguma tatuagem nos pés?",
+      subtitle: "Compradores valorizam exclusividade visual.",
+      options: [
+        { emoji: "❌", text: "Não tenho", color: "#22c55e" },
+        { emoji: "✨", text: "Tenho uma pequena", color: "#3b82f6" },
+        { emoji: "🎨", text: "Tenho várias", color: "#a855f7" },
+        { emoji: "🤫", text: "Tenho, mas escondidas", color: "#f59e0b" },
+      ],
+    },
+    {
+      id: "q2",
+      title: "Costuma pintar as unhas dos pés?",
+      subtitle: "Cores chamativas aumentam o lance médio.",
+      options: [
+        { emoji: "❌", text: "Nunca", color: "#22c55e" },
+        { emoji: "💅", text: "Às vezes", color: "#3b82f6" },
+        { emoji: "🌹", text: "Sempre", color: "#a855f7" },
+        { emoji: "💎", text: "Faço pedicure profissional", color: "#f59e0b" },
+      ],
+    },
+    {
+      id: "q3",
+      title: "Qual o formato dos seus dedos?",
+      subtitle: "Cada formato tem demanda em diferentes regiões.",
+      options: [
+        { emoji: "🔻", text: "Egípcio (decrescente)", color: "#22c55e" },
+        { emoji: "🏛", text: "Grego (segundo dedo maior)", color: "#3b82f6" },
+        { emoji: "📏", text: "Romano (3 primeiros iguais)", color: "#a855f7" },
+        { emoji: "🤷", text: "Não sei", color: "#6b7280" },
+      ],
+    },
+    {
+      id: "q4",
+      title: "Qual o tamanho do seu pé?",
+      subtitle: "Tamanhos pequenos são mais valorizados em Dubai.",
+      options: [
+        { emoji: "🌸", text: "33-35", color: "#22c55e" },
+        { emoji: "🌷", text: "36-37", color: "#3b82f6" },
+        { emoji: "🌻", text: "38-39", color: "#a855f7" },
+        { emoji: "🌹", text: "40+", color: "#f59e0b" },
+      ],
+    },
+    {
+      id: "q5",
+      title: "Cuidados com os pés?",
+      subtitle: "Quanto mais cuidados, maior a raridade.",
+      options: [
+        { emoji: "🚿", text: "Nenhum especial", color: "#22c55e" },
+        { emoji: "💧", text: "Hidratação semanal", color: "#3b82f6" },
+        { emoji: "💅", text: "Pedicure mensal", color: "#a855f7" },
+        { emoji: "✨", text: "Spa, esfoliação, hidratação diária", color: "#f59e0b" },
+      ],
+    },
+  ],
 
   banner_enabled: false,
   banner_mode: "text",
@@ -125,6 +215,16 @@ function migrateConfig(raw: any): LandingConfig {
     merged.banner_enabled = !!raw.banner_top_enabled;
     merged.banner_mode = "text";
     merged.banner_text = raw.banner_top_text;
+  }
+
+  // Se headline_html não existir, usa headline plano
+  if (!raw?.headline_html && raw?.headline) {
+    merged.headline_html = raw.headline;
+  }
+
+  // Se questions não existir, usa as default
+  if (!Array.isArray(raw?.questions) || raw.questions.length === 0) {
+    merged.questions = DEFAULT_LANDING_CONFIG.questions;
   }
 
   return merged as LandingConfig;
@@ -181,4 +281,17 @@ export async function uploadLandingAsset(file: File, folder: "logo" | "banner" |
   } catch (err: any) {
     return { ok: false, error: err.message || "Erro no upload" };
   }
+}
+
+// Sanitiza HTML pra renderizar com dangerouslySetInnerHTML
+// Aceita apenas tags inline seguras: strong, em, u, mark, span (com style background/color), s, br
+export function sanitizeRichHtml(html: string): string {
+  if (!html) return "";
+  // Remove scripts, iframes, eventos onXxx
+  let safe = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "");
+  safe = safe.replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, "");
+  safe = safe.replace(/\son\w+="[^"]*"/gi, "");
+  safe = safe.replace(/\son\w+='[^']*'/gi, "");
+  safe = safe.replace(/javascript:/gi, "");
+  return safe;
 }

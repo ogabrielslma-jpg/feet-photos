@@ -49,6 +49,14 @@ async function getInitialConfig(): Promise<LandingConfig> {
       merged.banner_text = raw.banner_top_text;
     }
 
+    if (!raw?.headline_html && raw?.headline) {
+      merged.headline_html = raw.headline;
+    }
+
+    if (!Array.isArray(raw?.questions) || raw.questions.length === 0) {
+      merged.questions = DEFAULT_LANDING_CONFIG.questions;
+    }
+
     return merged as LandingConfig;
   } catch {
     return DEFAULT_LANDING_CONFIG;

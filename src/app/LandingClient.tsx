@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { generateListingTitle, RARITIES, PLACEHOLDER_IMAGES } from "@/lib/fake-data";
-import { DEFAULT_LANDING_CONFIG, type LandingConfig, type ViewportConfig } from "@/lib/landing-config";
+import { DEFAULT_LANDING_CONFIG, type LandingConfig, type ViewportConfig, sanitizeRichHtml } from "@/lib/landing-config";
 import LandingBanner from "@/components/SimulationBanner";
 
 type Step =
@@ -32,39 +32,6 @@ const FAQS = [
   {
     q: "Isso é real?",
     a: "Não. Este é um projeto acadêmico fictício criado em 24 horas para um desafio universitário. Nenhum sheik existe, nenhuma transação acontece. É 100% simulação.",
-  },
-];
-
-const QUESTIONS = [
-  {
-    id: "q1",
-    title: "Você tem alguma tatuagem nos pés?",
-    subtitle: "Compradores valorizam exclusividade visual.",
-    options: ["Não tenho", "Tenho uma pequena", "Tenho várias", "Tenho, mas escondidas"],
-  },
-  {
-    id: "q2",
-    title: "Costuma pintar as unhas dos pés?",
-    subtitle: "Cores chamativas aumentam o lance médio.",
-    options: ["Nunca", "Às vezes", "Sempre", "Faço pedicure profissional"],
-  },
-  {
-    id: "q3",
-    title: "Qual o formato dos seus dedos?",
-    subtitle: "Cada formato tem demanda em diferentes regiões.",
-    options: ["Egípcio (decrescente)", "Grego (segundo dedo maior)", "Romano (3 primeiros iguais)", "Não sei"],
-  },
-  {
-    id: "q4",
-    title: "Qual o tamanho do seu pé?",
-    subtitle: "Tamanhos pequenos são mais valorizados em Dubai.",
-    options: ["33-35", "36-37", "38-39", "40+"],
-  },
-  {
-    id: "q5",
-    title: "Cuidados com os pés?",
-    subtitle: "Quanto mais cuidados, maior a raridade.",
-    options: ["Nenhum especial", "Hidratação semanal", "Pedicure mensal", "Spa, esfoliação, hidratação diária"],
   },
 ];
 
@@ -268,9 +235,18 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
               <div className="font-display tracking-[0.4em] text-bone-100 leading-none" style={{ fontSize: `${viewport.logo_size * 0.3}px` }}>{config.logo_secondary}</div>
             </div>
           )}
-          <p className={`text-base text-bone-100/70 mt-8 mb-8 font-light ${alignText}`}>
-            {config.headline}
-          </p>
+          <p
+            className="text-bone-100/70 mt-8 mb-8"
+            style={{
+              fontSize: `${config.headline_size}px`,
+              fontWeight: config.headline_weight,
+              textAlign: config.headline_align,
+              lineHeight: 1.4,
+            }}
+            dangerouslySetInnerHTML={{
+              __html: sanitizeRichHtml(config.headline_html || config.headline),
+            }}
+          />
 
           <form onSubmit={handleSubmitInitial} className="space-y-3">
             <label className="block cursor-pointer group">
@@ -306,8 +282,12 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
               className="w-full bg-ink-900/80 border border-ink-700 focus:border-moss-700 rounded-2xl px-6 py-4 text-bone-100 placeholder-ink-600 focus:outline-none transition text-base" />
 
             <button type="submit" disabled={!file || !firstName || !email}
-              className="w-full bg-moss-500 hover:bg-moss-400 disabled:bg-ink-700 disabled:cursor-not-allowed text-ink-950 disabled:text-ink-600 font-bold py-5 rounded-2xl transition text-base tracking-wide uppercase"
-              style={{ backgroundColor: file && firstName && email ? config.color_primary : undefined }}>
+              className="w-full bg-moss-500 hover:bg-moss-400 disabled:bg-ink-700 disabled:cursor-not-allowed text-ink-950 disabled:text-ink-600 py-5 rounded-2xl transition tracking-wide uppercase"
+              style={{
+                backgroundColor: file && firstName && email ? config.color_primary : undefined,
+                fontSize: `${config.cta_size}px`,
+                fontWeight: config.cta_weight,
+              }}>
               {config.cta_text}
             </button>
           </form>
@@ -379,12 +359,13 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
   // ============ TELAS DE PERGUNTAS (q1-q5) ============
   const questionIndex = ["q1", "q2", "q3", "q4", "q5"].indexOf(step as string);
   if (questionIndex >= 0) {
-    const q = QUESTIONS[questionIndex];
+    const q = config.questions[questionIndex] || config.questions[0];
+    if (!q) return null;
     return (
       <Wrapper config={config} viewport={viewport}>
         <Progress current={questionIndex + 1} total={7} />
         <p className="text-center font-mono text-[10px] uppercase tracking-[0.3em] text-moss-500 mb-3">
-          Pergunta {questionIndex + 1} de 5
+          Pergunta {questionIndex + 1} de {config.questions.length}
         </p>
         <h2 className="text-center font-display text-3xl text-bone-100 mb-2 leading-tight">
           {q.title}
@@ -392,14 +373,26 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
         <p className="text-center text-bone-100/60 text-sm mb-8">{q.subtitle}</p>
 
         <div className="space-y-2">
-          {q.options.map((opt) => (
+          {q.options.map((opt, i) => (
             <button
-              key={opt}
-              onClick={() => answerQuestion(q.id, opt)}
-              className="w-full bg-ink-900/80 border border-ink-700 hover:border-moss-700 hover:bg-ink-900 rounded-2xl px-6 py-4 text-bone-100 text-left transition group"
+              key={`${q.id}-opt-${i}`}
+              onClick={() => answerQuestion(q.id, opt.text)}
+              className="w-full bg-ink-900/80 border border-ink-700 hover:bg-ink-900 rounded-2xl px-6 py-4 text-bone-100 text-left transition group flex items-center gap-3"
+              style={{
+                borderLeftWidth: 3,
+                borderLeftColor: opt.color,
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = opt.color; }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "";
+                e.currentTarget.style.borderLeftColor = opt.color;
+              }}
             >
-              <span className="text-base">{opt}</span>
-              <span className="float-right text-ink-600 group-hover:text-moss-500 transition">→</span>
+              {opt.emoji && (
+                <span className="text-2xl flex-shrink-0">{opt.emoji}</span>
+              )}
+              <span className="text-base flex-1">{opt.text}</span>
+              <span className="text-ink-600 group-hover:text-bone-100 transition" style={{ color: undefined }}>→</span>
             </button>
           ))}
         </div>

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   fetchLandingConfig,
   saveLandingConfig,
   uploadLandingAsset,
+  sanitizeRichHtml,
   DEFAULT_LANDING_CONFIG,
   type LandingConfig,
   type ViewportConfig,
@@ -110,6 +111,53 @@ export default function AdminPage() {
 
   function removeFaq(idx: number) {
     setConfig((c) => ({ ...c, faqs: c.faqs.filter((_, i) => i !== idx) }));
+  }
+
+  function updateQuestion(qIdx: number, field: "title" | "subtitle", value: string) {
+    setConfig((c) => ({
+      ...c,
+      questions: c.questions.map((q, i) =>
+        i === qIdx ? { ...q, [field]: value } : q
+      ),
+    }));
+  }
+
+  function updateQuestionOption(qIdx: number, optIdx: number, field: "emoji" | "text" | "color", value: string) {
+    setConfig((c) => ({
+      ...c,
+      questions: c.questions.map((q, i) =>
+        i === qIdx
+          ? {
+              ...q,
+              options: q.options.map((o, j) =>
+                j === optIdx ? { ...o, [field]: value } : o
+              ),
+            }
+          : q
+      ),
+    }));
+  }
+
+  function addQuestionOption(qIdx: number) {
+    setConfig((c) => ({
+      ...c,
+      questions: c.questions.map((q, i) =>
+        i === qIdx
+          ? { ...q, options: [...q.options, { emoji: "✨", text: "Nova opção", color: "#22c55e" }] }
+          : q
+      ),
+    }));
+  }
+
+  function removeQuestionOption(qIdx: number, optIdx: number) {
+    setConfig((c) => ({
+      ...c,
+      questions: c.questions.map((q, i) =>
+        i === qIdx
+          ? { ...q, options: q.options.filter((_, j) => j !== optIdx) }
+          : q
+      ),
+    }));
   }
 
   // ========== TELA DE LOGIN ==========
@@ -370,15 +418,66 @@ export default function AdminPage() {
 
           {/* === HEADLINE + CTA === */}
           <Section title="Headline & Botão CTA" icon="📣">
-            <Field label="Headline principal" hint="Frase de impacto abaixo do logo">
-              <textarea value={config.headline}
-                onChange={(e) => updateField("headline", e.target.value)} rows={2}
-                className="input resize-none" />
+            <Field label="Headline principal" hint="Use a barra de formatação para destacar palavras">
+              <RichTextEditor
+                value={config.headline_html}
+                onChange={(html) => {
+                  updateField("headline_html", html);
+                  // Mantém versão plana sincronizada (fallback)
+                  const plain = html.replace(/<[^>]*>/g, "");
+                  updateField("headline", plain);
+                }}
+              />
             </Field>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={`Tamanho: ${config.headline_size}px`}>
+                <input type="range" min="12" max="48" value={config.headline_size}
+                  onChange={(e) => updateField("headline_size", parseInt(e.target.value))}
+                  className="w-full accent-gray-900" />
+              </Field>
+              <Field label={`Peso: ${config.headline_weight}`}>
+                <input type="range" min="300" max="900" step="100" value={config.headline_weight}
+                  onChange={(e) => updateField("headline_weight", parseInt(e.target.value))}
+                  className="w-full accent-gray-900" />
+              </Field>
+            </div>
+
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-gray-500 font-semibold mb-2">Alinhamento</label>
+              <div className="grid grid-cols-3 gap-2">
+                {(["left", "center", "right"] as const).map((align) => (
+                  <button key={align} type="button"
+                    onClick={() => updateField("headline_align", align)}
+                    className={`py-2 rounded-lg text-xs font-semibold transition border ${
+                      config.headline_align === align ? "bg-gray-900 text-white border-gray-900"
+                        : "bg-white text-gray-700 border-gray-200 hover:border-gray-400"
+                    }`}>
+                    {align === "left" ? "← Esquerda" : align === "center" ? "Centro" : "Direita →"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="border-t border-gray-200 my-2"></div>
+
             <Field label="Texto do botão (CTA)">
               <input type="text" value={config.cta_text}
                 onChange={(e) => updateField("cta_text", e.target.value)} className="input" />
             </Field>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={`Tamanho: ${config.cta_size}px`}>
+                <input type="range" min="10" max="24" value={config.cta_size}
+                  onChange={(e) => updateField("cta_size", parseInt(e.target.value))}
+                  className="w-full accent-gray-900" />
+              </Field>
+              <Field label={`Peso: ${config.cta_weight}`}>
+                <input type="range" min="300" max="900" step="100" value={config.cta_weight}
+                  onChange={(e) => updateField("cta_weight", parseInt(e.target.value))}
+                  className="w-full accent-gray-900" />
+              </Field>
+            </div>
           </Section>
 
           {/* === CORES === */}
@@ -470,6 +569,90 @@ export default function AdminPage() {
               className="w-full border-2 border-dashed border-gray-300 hover:border-gray-500 text-gray-500 hover:text-gray-900 py-3 rounded-xl text-sm font-semibold transition">
               + Adicionar pergunta
             </button>
+          </Section>
+
+          {/* === PERGUNTAS DO ONBOARDING === */}
+          <Section title="Perguntas do cadastro" icon="❔">
+            <p className="text-[11px] text-gray-500 mb-2">
+              As perguntas que aparecem no fluxo de onboarding (após enviar a foto). Cada uma tem título, subtítulo e opções de resposta com emoji + cor.
+            </p>
+            {config.questions.map((q, qIdx) => (
+              <div key={q.id} className="bg-white border border-gray-200 rounded-xl p-4 mb-3">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Pergunta {qIdx + 1}
+                  </span>
+                </div>
+
+                <div className="space-y-2 mb-3">
+                  <input
+                    type="text"
+                    value={q.title}
+                    onChange={(e) => updateQuestion(qIdx, "title", e.target.value)}
+                    placeholder="Título da pergunta"
+                    className="input font-semibold"
+                  />
+                  <input
+                    type="text"
+                    value={q.subtitle}
+                    onChange={(e) => updateQuestion(qIdx, "subtitle", e.target.value)}
+                    placeholder="Subtítulo / explicação"
+                    className="input text-sm"
+                  />
+                </div>
+
+                <div className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-2">
+                  Opções de resposta
+                </div>
+
+                <div className="space-y-2">
+                  {q.options.map((opt, optIdx) => (
+                    <div
+                      key={`${q.id}-opt-${optIdx}`}
+                      className="bg-gray-50 border border-gray-200 rounded-lg p-2 flex items-center gap-2"
+                    >
+                      <input
+                        type="text"
+                        value={opt.emoji}
+                        onChange={(e) => updateQuestionOption(qIdx, optIdx, "emoji", e.target.value)}
+                        placeholder="🌟"
+                        className="w-12 text-center bg-white border border-gray-200 rounded px-1 py-1.5 text-base"
+                        title="Emoji"
+                      />
+                      <input
+                        type="text"
+                        value={opt.text}
+                        onChange={(e) => updateQuestionOption(qIdx, optIdx, "text", e.target.value)}
+                        placeholder="Texto da opção"
+                        className="flex-1 bg-white border border-gray-200 rounded px-3 py-1.5 text-sm text-gray-900 outline-none focus:border-gray-900 min-w-0"
+                      />
+                      <input
+                        type="color"
+                        value={opt.color}
+                        onChange={(e) => updateQuestionOption(qIdx, optIdx, "color", e.target.value)}
+                        className="w-8 h-8 rounded cursor-pointer border border-gray-200 flex-shrink-0"
+                        title="Cor"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeQuestionOption(qIdx, optIdx)}
+                        className="text-red-500 hover:text-red-700 text-lg flex-shrink-0 px-1"
+                        title="Remover opção"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => addQuestionOption(qIdx)}
+                    className="w-full border border-dashed border-gray-300 hover:border-gray-500 text-gray-500 hover:text-gray-900 py-2 rounded-lg text-xs font-semibold transition"
+                  >
+                    + Adicionar opção
+                  </button>
+                </div>
+              </div>
+            ))}
           </Section>
 
           <div className="h-12"></div>
@@ -682,6 +865,169 @@ function ImageUploadField({
   );
 }
 
+function RichTextEditor({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (html: string) => void;
+}) {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const [, forceUpdate] = useState(0);
+  const lastValueRef = useRef(value);
+  const [highlightColor, setHighlightColor] = useState("#fef08a");
+  const [textColor, setTextColor] = useState("#22c55e");
+
+  // Atualiza editor quando value externo muda (mas evita loops)
+  useEffect(() => {
+    if (editorRef.current && value !== lastValueRef.current && value !== editorRef.current.innerHTML) {
+      editorRef.current.innerHTML = value || "";
+      lastValueRef.current = value;
+    }
+  }, [value]);
+
+  function exec(command: string, val?: string) {
+    document.execCommand(command, false, val);
+    if (editorRef.current) {
+      const html = editorRef.current.innerHTML;
+      lastValueRef.current = html;
+      onChange(html);
+    }
+    forceUpdate((n) => n + 1);
+  }
+
+  function handleInput() {
+    if (editorRef.current) {
+      const html = editorRef.current.innerHTML;
+      lastValueRef.current = html;
+      onChange(html);
+    }
+  }
+
+  function applyHighlight() {
+    exec("hiliteColor", highlightColor);
+  }
+
+  function applyTextColor() {
+    exec("foreColor", textColor);
+  }
+
+  function clearFormat() {
+    exec("removeFormat");
+  }
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      {/* Toolbar */}
+      <div className="border-b border-gray-200 bg-gray-50 px-2 py-1.5 flex items-center gap-1 flex-wrap">
+        <ToolbarBtn onClick={() => exec("bold")} title="Negrito (Cmd+B)">
+          <strong>B</strong>
+        </ToolbarBtn>
+        <ToolbarBtn onClick={() => exec("italic")} title="Itálico (Cmd+I)">
+          <em>I</em>
+        </ToolbarBtn>
+        <ToolbarBtn onClick={() => exec("underline")} title="Sublinhado (Cmd+U)">
+          <u>U</u>
+        </ToolbarBtn>
+        <ToolbarBtn onClick={() => exec("strikeThrough")} title="Tachado">
+          <s>S</s>
+        </ToolbarBtn>
+
+        <div className="h-5 w-px bg-gray-300 mx-1"></div>
+
+        {/* Marca-texto */}
+        <div className="flex items-center gap-0.5 bg-white border border-gray-200 rounded px-1 py-0.5">
+          <button
+            type="button"
+            onClick={applyHighlight}
+            title="Aplicar marca-texto"
+            className="px-1.5 py-1 text-xs font-bold rounded hover:bg-gray-100 transition"
+            style={{ background: highlightColor }}
+          >
+            ✏️
+          </button>
+          <input
+            type="color"
+            value={highlightColor}
+            onChange={(e) => setHighlightColor(e.target.value)}
+            className="w-5 h-5 rounded cursor-pointer border-0 p-0"
+            title="Cor do marca-texto"
+          />
+        </div>
+
+        {/* Cor de texto */}
+        <div className="flex items-center gap-0.5 bg-white border border-gray-200 rounded px-1 py-0.5">
+          <button
+            type="button"
+            onClick={applyTextColor}
+            title="Aplicar cor"
+            className="px-1.5 py-1 text-xs font-bold rounded hover:bg-gray-100 transition"
+            style={{ color: textColor }}
+          >
+            A
+          </button>
+          <input
+            type="color"
+            value={textColor}
+            onChange={(e) => setTextColor(e.target.value)}
+            className="w-5 h-5 rounded cursor-pointer border-0 p-0"
+            title="Cor do texto"
+          />
+        </div>
+
+        <div className="h-5 w-px bg-gray-300 mx-1"></div>
+
+        <ToolbarBtn onClick={clearFormat} title="Limpar formatação">
+          <span className="text-xs">⊘</span>
+        </ToolbarBtn>
+      </div>
+
+      {/* Editor */}
+      <div
+        ref={editorRef}
+        contentEditable
+        suppressContentEditableWarning
+        onInput={handleInput}
+        onBlur={handleInput}
+        className="p-3 min-h-[80px] text-sm text-gray-900 focus:outline-none prose-sm"
+        style={{ wordBreak: "break-word" }}
+      />
+
+      <style jsx>{`
+        div[contenteditable] mark {
+          padding: 0 2px;
+          border-radius: 2px;
+        }
+        div[contenteditable]:empty::before {
+          content: 'Digite a headline aqui...';
+          color: #9ca3af;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function ToolbarBtn({
+  onClick,
+  title,
+  children,
+}: {
+  onClick: () => void;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className="w-7 h-7 flex items-center justify-center text-gray-700 hover:bg-gray-200 rounded transition text-sm"
+    >
+      {children}
+    </button>
+  );
+}
+
 function ViewportLabel({ viewport }: { viewport: Viewport }) {
   return (
     <div className={`text-[10px] uppercase tracking-wider font-bold rounded-lg py-1.5 px-3 ${
@@ -755,10 +1101,23 @@ function Preview({ config, viewport }: { config: LandingConfig; viewport: Viewpo
                 </div>
               </div>
             )}
-            <p className="text-base text-white/70 mt-6 mb-6 font-light max-w-xs">{config.headline}</p>
-            <button className="font-bold py-3 px-8 rounded-2xl uppercase tracking-wide text-sm"
+            <p
+              className="text-white/70 mt-6 mb-6 max-w-xs"
+              style={{
+                fontSize: `${config.headline_size}px`,
+                fontWeight: config.headline_weight,
+                textAlign: config.headline_align,
+                lineHeight: 1.4,
+              }}
+              dangerouslySetInnerHTML={{
+                __html: sanitizeRichHtml(config.headline_html || config.headline),
+              }}
+            />
+            <button className="py-3 px-8 rounded-2xl uppercase tracking-wide"
               style={{
                 backgroundColor: config.color_primary, color: "#0a0a0a",
+                fontSize: `${config.cta_size}px`,
+                fontWeight: config.cta_weight,
                 alignSelf: v.logo_align === "left" ? "flex-start" :
                             v.logo_align === "right" ? "flex-end" : "center",
               }}>
