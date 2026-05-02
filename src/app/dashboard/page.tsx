@@ -1146,7 +1146,7 @@ export default function DashboardPage() {
           )}
 
           <p className="text-center text-[10px] text-gray-400 mt-auto">
-            © 2026 — Projeto acadêmico
+            © 2026 — Foot Fans
           </p>
         </aside>
       </div>

@@ -186,7 +186,6 @@ export const DEFAULT_LANDING_CONFIG: LandingConfig = {
     { q: "Como funciona?", a: "Você envia a foto do seu pé no formulário acima e recebe propostas de compra de algum dos nossos 43.730 usuários compradores." },
     { q: "Como eu vou receber o pagamento?", a: "Dentro da plataforma você cadastra uma conta bancária e uma chave pix. Os pagamentos caem na conta dentro de 15 minutos após a venda." },
     { q: "Regras da plataforma. Leia com atenção!", a: "Os compradores querem exclusividade. Você vai receber uma vez por uma foto vendida." },
-    { q: "Isso é real?", a: "Não. Este é um projeto acadêmico fictício. Nenhum sheik existe, nenhuma transação acontece. É 100% simulação." },
   ],
 };
 

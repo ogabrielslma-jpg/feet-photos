@@ -29,10 +29,6 @@ const FAQS = [
     q: "Regras da plataforma. Leia com atenção!",
     a: "Os compradores querem exclusividade, ou seja, você vai receber uma vez por uma foto vendida. Para fazer mais de uma venda, é necessário enviar outra foto do seu pé!",
   },
-  {
-    q: "Isso é real?",
-    a: "Não. Este é um projeto acadêmico fictício criado em 24 horas para um desafio universitário. Nenhum sheik existe, nenhuma transação acontece. É 100% simulação.",
-  },
 ];
 
 export default function Home({ initialConfig }: { initialConfig: LandingConfig }) {
@@ -325,7 +321,7 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
             <div className="text-center mt-20">
               <div className="font-display text-3xl tracking-[0.15em] text-moss-500 leading-none mb-1" style={{ color: config.color_primary }}>{config.logo_primary}</div>
               <div className="font-display text-base tracking-[0.4em] text-bone-100/60 leading-none">{config.logo_secondary}</div>
-              <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-ink-600 mt-6">© 2026 — Projeto acadêmico fictício</p>
+              <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-ink-600 mt-6">© 2026 — Foot Fans</p>
             </div>
           </div>
         </section>
