@@ -429,7 +429,7 @@ export default function AdminPage() {
                   <Field label="Texto do banner" hint="Ex: 'Projeto acadêmico de [Universidade] - 2026'">
                     <input type="text" value={config.banner_text}
                       onChange={(e) => updateField("banner_text", e.target.value)}
-                      className="input" />
+                      className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" />
                   </Field>
                 ) : (
                   <ImageUploadField
@@ -453,7 +453,7 @@ export default function AdminPage() {
                 <Field label="Link ao clicar (opcional)" hint="Deixe vazio se não for clicável">
                   <input type="url" value={config.banner_link_url}
                     onChange={(e) => updateField("banner_link_url", e.target.value)}
-                    placeholder="https://..." className="input" />
+                    placeholder="https://..." className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" />
                 </Field>
               </>
             )}
@@ -481,11 +481,11 @@ export default function AdminPage() {
               <>
                 <Field label="Texto principal">
                   <input type="text" value={config.logo_primary}
-                    onChange={(e) => updateField("logo_primary", e.target.value)} className="input" />
+                    onChange={(e) => updateField("logo_primary", e.target.value)} className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" />
                 </Field>
                 <Field label="Texto secundário">
                   <input type="text" value={config.logo_secondary}
-                    onChange={(e) => updateField("logo_secondary", e.target.value)} className="input" />
+                    onChange={(e) => updateField("logo_secondary", e.target.value)} className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" />
                 </Field>
               </>
             ) : (
@@ -526,7 +526,7 @@ export default function AdminPage() {
 
             <Field label="Tagline (acima do logo)" hint="Ex: Discreto · Anônimo · Lucrativo">
               <input type="text" value={config.tagline}
-                onChange={(e) => updateField("tagline", e.target.value)} className="input" />
+                onChange={(e) => updateField("tagline", e.target.value)} className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" />
             </Field>
           </Section>
 
@@ -577,7 +577,7 @@ export default function AdminPage() {
 
             <Field label="Texto do botão (CTA)">
               <input type="text" value={config.cta_text}
-                onChange={(e) => updateField("cta_text", e.target.value)} className="input" />
+                onChange={(e) => updateField("cta_text", e.target.value)} className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" />
             </Field>
 
             <div className="grid grid-cols-2 gap-3">
@@ -674,9 +674,9 @@ export default function AdminPage() {
                   <button onClick={() => removeFaq(i)} className="text-xs text-red-600 hover:text-red-800 transition">Remover</button>
                 </div>
                 <input type="text" value={faq.q} onChange={(e) => updateFaq(i, "q", e.target.value)}
-                  placeholder="Pergunta" className="input mb-2" />
+                  placeholder="Pergunta" className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors mb-2" />
                 <textarea value={faq.a} onChange={(e) => updateFaq(i, "a", e.target.value)} rows={3}
-                  placeholder="Resposta" className="input resize-none" />
+                  placeholder="Resposta" className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors resize-none" />
               </div>
             ))}
             <button onClick={addFaq}
@@ -704,14 +704,14 @@ export default function AdminPage() {
                     value={q.title}
                     onChange={(e) => updateQuestion(qIdx, "title", e.target.value)}
                     placeholder="Título da pergunta"
-                    className="input font-semibold"
+                    className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors font-semibold"
                   />
                   <input
                     type="text"
                     value={q.subtitle}
                     onChange={(e) => updateQuestion(qIdx, "subtitle", e.target.value)}
                     placeholder="Subtítulo / explicação"
-                    className="input text-sm"
+                    className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors text-sm"
                   />
                 </div>
 
@@ -812,11 +812,11 @@ export default function AdminPage() {
               <>
                 <Field label="Texto principal">
                   <input type="text" value={dash.logo_primary}
-                    onChange={(e) => updateDashField("logo_primary", e.target.value)} className="input" />
+                    onChange={(e) => updateDashField("logo_primary", e.target.value)} className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" />
                 </Field>
                 <Field label="Texto secundário">
                   <input type="text" value={dash.logo_secondary}
-                    onChange={(e) => updateDashField("logo_secondary", e.target.value)} className="input" />
+                    onChange={(e) => updateDashField("logo_secondary", e.target.value)} className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" />
                 </Field>
               </>
             ) : (
@@ -855,19 +855,19 @@ export default function AdminPage() {
             <div className="grid grid-cols-2 gap-2">
               <Field label="Aba 1 (Feed)">
                 <input type="text" value={dash.label_feed}
-                  onChange={(e) => updateDashField("label_feed", e.target.value)} className="input" />
+                  onChange={(e) => updateDashField("label_feed", e.target.value)} className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" />
               </Field>
               <Field label="Aba 2 (Leilão)">
                 <input type="text" value={dash.label_auction}
-                  onChange={(e) => updateDashField("label_auction", e.target.value)} className="input" />
+                  onChange={(e) => updateDashField("label_auction", e.target.value)} className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" />
               </Field>
               <Field label="Aba 3 (Carteira)">
                 <input type="text" value={dash.label_wallet}
-                  onChange={(e) => updateDashField("label_wallet", e.target.value)} className="input" />
+                  onChange={(e) => updateDashField("label_wallet", e.target.value)} className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" />
               </Field>
               <Field label="Aba 4 (Perfil)">
                 <input type="text" value={dash.label_profile}
-                  onChange={(e) => updateDashField("label_profile", e.target.value)} className="input" />
+                  onChange={(e) => updateDashField("label_profile", e.target.value)} className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" />
               </Field>
             </div>
 
@@ -875,19 +875,19 @@ export default function AdminPage() {
 
             <Field label="Card 'Compradores online'">
               <input type="text" value={dash.label_buyers_online}
-                onChange={(e) => updateDashField("label_buyers_online", e.target.value)} className="input" />
+                onChange={(e) => updateDashField("label_buyers_online", e.target.value)} className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" />
             </Field>
             <Field label="Card 'Top creators'">
               <input type="text" value={dash.label_top_creators}
-                onChange={(e) => updateDashField("label_top_creators", e.target.value)} className="input" />
+                onChange={(e) => updateDashField("label_top_creators", e.target.value)} className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" />
             </Field>
             <Field label="Card 'Leilão ativo'">
               <input type="text" value={dash.label_active_auction}
-                onChange={(e) => updateDashField("label_active_auction", e.target.value)} className="input" />
+                onChange={(e) => updateDashField("label_active_auction", e.target.value)} className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" />
             </Field>
             <Field label="Card 'Fechados'">
               <input type="text" value={dash.label_closed_auctions}
-                onChange={(e) => updateDashField("label_closed_auctions", e.target.value)} className="input" />
+                onChange={(e) => updateDashField("label_closed_auctions", e.target.value)} className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" />
             </Field>
           </Section>
 
@@ -938,31 +938,31 @@ export default function AdminPage() {
                   <Field label="@ vendedora">
                     <input type="text" value={post.seller_name}
                       onChange={(e) => updateFeedPost(idx, "seller_name", e.target.value)}
-                      className="input" placeholder="username" />
+                      className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" placeholder="username" />
                   </Field>
                   <Field label="Avatar (URL opcional)">
                     <input type="text" value={post.seller_avatar_url}
                       onChange={(e) => updateFeedPost(idx, "seller_avatar_url", e.target.value)}
-                      className="input" placeholder="vazio = avatar gerado" />
+                      className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" placeholder="vazio = avatar gerado" />
                   </Field>
                 </div>
 
                 <Field label="Nome do comprador (sheik)">
                   <input type="text" value={post.buyer_name}
                     onChange={(e) => updateFeedPost(idx, "buyer_name", e.target.value)}
-                    className="input" />
+                    className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" />
                 </Field>
 
                 <div className="grid grid-cols-2 gap-2">
                   <Field label="Cidade · País">
                     <input type="text" value={post.buyer_emirate}
                       onChange={(e) => updateFeedPost(idx, "buyer_emirate", e.target.value)}
-                      className="input" placeholder="Dubai · UAE" />
+                      className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" placeholder="Dubai · UAE" />
                   </Field>
                   <Field label="Bandeira (emoji)">
                     <input type="text" value={post.buyer_flag}
                       onChange={(e) => updateFeedPost(idx, "buyer_flag", e.target.value)}
-                      className="input" placeholder="🇦🇪" />
+                      className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" placeholder="🇦🇪" />
                   </Field>
                 </div>
 
@@ -970,12 +970,12 @@ export default function AdminPage() {
                   <Field label="Valor (R$)">
                     <input type="number" step="0.01" value={post.amount_brl}
                       onChange={(e) => updateFeedPost(idx, "amount_brl", parseFloat(e.target.value) || 0)}
-                      className="input" />
+                      className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" />
                   </Field>
                   <Field label="Quantidade de lances">
                     <input type="number" value={post.bids_count}
                       onChange={(e) => updateFeedPost(idx, "bids_count", parseInt(e.target.value) || 0)}
-                      className="input" />
+                      className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" />
                   </Field>
                 </div>
 
@@ -983,14 +983,14 @@ export default function AdminPage() {
                   <Field label="Tempo (texto livre)">
                     <input type="text" value={post.time_ago}
                       onChange={(e) => updateFeedPost(idx, "time_ago", e.target.value)}
-                      className="input" placeholder="há 5min" />
+                      className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors" placeholder="há 5min" />
                   </Field>
                   <div>
                     <label className="block text-xs uppercase tracking-wider text-gray-500 font-semibold mb-1">Raridade</label>
                     <select
                       value={post.rarity}
                       onChange={(e) => updateFeedPost(idx, "rarity", e.target.value as any)}
-                      className="input"
+                      className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors"
                     >
                       <option value="common">Comum</option>
                       <option value="rare">Raro</option>
@@ -1032,23 +1032,6 @@ export default function AdminPage() {
           )}
         </div>
       </div>
-
-      <style jsx>{`
-        .input {
-          width: 100%;
-          background: white;
-          border: 1px solid #e5e7eb;
-          border-radius: 0.5rem;
-          padding: 0.625rem 0.875rem;
-          font-size: 0.875rem;
-          color: #111827;
-          outline: none;
-          transition: border-color 0.15s;
-        }
-        .input:focus {
-          border-color: #111827;
-        }
-      `}</style>
     </div>
   );
 }
@@ -1353,20 +1336,20 @@ function RichTextEditor({
         suppressContentEditableWarning
         onInput={handleInput}
         onBlur={handleInput}
-        className="p-3 min-h-[80px] text-sm text-gray-900 focus:outline-none prose-sm"
+        className="rte-editor p-3 min-h-[80px] text-sm text-gray-900 focus:outline-none prose-sm"
         style={{ wordBreak: "break-word" }}
       />
 
-      <style jsx>{`
-        div[contenteditable] mark {
+      <style dangerouslySetInnerHTML={{ __html: `
+        .rte-editor[contenteditable] mark {
           padding: 0 2px;
           border-radius: 2px;
         }
-        div[contenteditable]:empty::before {
+        .rte-editor[contenteditable]:empty::before {
           content: 'Digite a headline aqui...';
           color: #9ca3af;
         }
-      `}</style>
+      ` }} />
     </div>
   );
 }
