@@ -297,7 +297,8 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
   // ============ TIMER COUNTDOWN ============
   useEffect(() => {
-    if (!activeListing || auctionEnded) return;
+    if (!stateLoaded) return; // espera load completar
+    if (!activeListing || auctionEnded || hasSold) return;
     if (timeLeft <= 0) {
       setAuctionEnded(true);
       setShowFinalModal(true);
@@ -305,7 +306,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     }
     const t = setTimeout(() => setTimeLeft((s) => s - 1), 1000);
     return () => clearTimeout(t);
-  }, [activeListing, timeLeft, auctionEnded]);
+  }, [stateLoaded, activeListing, timeLeft, auctionEnded, hasSold]);
 
   // ============ ONLINE BUYERS DINAMICO ============
   useEffect(() => {
@@ -1261,7 +1262,18 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       {/* === MODAL: ESCOLHER COMPRADOR === */}
       {showFinalModal && (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 my-8 shadow-2xl">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 my-8 shadow-2xl relative">
+            {/* Botão fechar */}
+            <button
+              onClick={() => setShowFinalModal(false)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition"
+              title="Fechar"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
             <div className="text-center mb-6">
               <div className="w-16 h-16 mx-auto mb-4 bg-emerald-500 rounded-full flex items-center justify-center">
                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
@@ -1269,34 +1281,47 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                 </svg>
               </div>
               <h2 className="font-display text-3xl text-gray-900 mb-2">Leilão finalizado!</h2>
-              <p className="text-sm text-gray-600">Escolha um comprador para finalizar a venda.</p>
+              <p className="text-sm text-gray-600">
+                {bidHistory.length > 0
+                  ? "Escolha um comprador para finalizar a venda."
+                  : "Nenhum lance foi recebido nesse leilão."}
+              </p>
               <p className="text-xs text-amber-700 bg-amber-50 mt-3 px-3 py-2 rounded-lg border border-amber-200">
                 ⚠ Você não pode vender a mesma foto novamente.
               </p>
             </div>
-            <div className="space-y-2 max-h-[50vh] overflow-y-auto">
-              {bidHistory.slice(0, 8).map((bid, i) => (
-                <button key={bid.id} onClick={() => selectWinningBid(bid)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition text-left ${
-                    i === 0
-                      ? "border-emerald-300 bg-emerald-50 hover:bg-emerald-100"
-                      : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-                  }`}>
-                  <span className="text-2xl flex-shrink-0">{bid.flag}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm text-gray-900 font-semibold truncate">{bid.bidder_name}</div>
-                    <div className="text-[10px] uppercase tracking-wider text-gray-500">
-                      {bid.emirate} {i === 0 && <span className="text-emerald-600">· Maior</span>}
+            {bidHistory.length > 0 ? (
+              <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+                {bidHistory.slice(0, 8).map((bid, i) => (
+                  <button key={bid.id} onClick={() => selectWinningBid(bid)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition text-left ${
+                      i === 0
+                        ? "border-emerald-300 bg-emerald-50 hover:bg-emerald-100"
+                        : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+                    }`}>
+                    <span className="text-2xl flex-shrink-0">{bid.flag}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm text-gray-900 font-semibold truncate">{bid.bidder_name}</div>
+                      <div className="text-[10px] uppercase tracking-wider text-gray-500">
+                        {bid.emirate} {i === 0 && <span className="text-emerald-600">· Maior</span>}
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="text-base font-bold text-gray-900 tabular-nums">
-                      R$ {fmtBRL(bid.amount_brl)}
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-base font-bold text-gray-900 tabular-nums">
+                        R$ {fmtBRL(bid.amount_brl)}
+                      </div>
                     </div>
-                  </div>
-                </button>
-              ))}
-            </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowFinalModal(false)}
+                className="w-full bg-gray-900 hover:bg-black text-white font-semibold py-3 rounded-xl transition"
+              >
+                Fechar
+              </button>
+            )}
           </div>
         </div>
       )}
