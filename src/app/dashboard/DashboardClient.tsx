@@ -646,7 +646,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
                       {/* Imagem */}
                       <div className="relative aspect-square bg-gray-100">
-                        <img src={sale.image_url} alt="" className="w-full h-full object-cover blur-md grayscale" />
+                        <img src={sale.image_url} alt="" className="w-full h-full object-cover" style={{ filter: `blur(${dash.feed_blur_intensity}px) ${dash.feed_grayscale ? "grayscale(100%)" : ""}` }} />
                         <div className="absolute inset-0 flex items-center justify-center">
                           <div className="bg-white/90 backdrop-blur-sm rounded-2xl px-6 py-4 text-center shadow-xl">
                             <div className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">Vendido por</div>
@@ -855,7 +855,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                               className="bg-white border border-gray-200 rounded-2xl overflow-hidden text-left hover:border-gray-400 transition"
                             >
                               <div className="relative aspect-square bg-gray-100">
-                                <img src={past.image_url} alt="" className="w-full h-full object-cover blur-sm" />
+                                <img src={past.image_url} alt="" className="w-full h-full object-cover" style={{ filter: `blur(${dash.feed_blur_intensity}px) ${dash.feed_grayscale ? "grayscale(100%)" : ""}` }} />
                                 <div className="absolute top-2 left-2 bg-white/95 px-2 py-0.5 text-[8px] font-semibold uppercase tracking-wider rounded-full text-gray-900">
                                   {r.label}
                                 </div>
@@ -1304,7 +1304,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
             </button>
 
             <div className="relative aspect-square bg-gray-100">
-              <img src={openPastAuction.image_url} alt="" className="w-full h-full object-cover blur-sm" />
+              <img src={openPastAuction.image_url} alt="" className="w-full h-full object-cover" style={{ filter: `blur(${dash.feed_blur_intensity}px) ${dash.feed_grayscale ? "grayscale(100%)" : ""}` }} />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
               <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
                 <div className="text-[10px] uppercase tracking-wider text-white/70 mb-1">Arrematado por</div>

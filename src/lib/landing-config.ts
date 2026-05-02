@@ -71,6 +71,10 @@ export type DashboardConfig = {
   label_top_creators: string;     // "Top creators"
   label_recent_sales: string;     // "Vendas recentes"
 
+  // Blur das fotos vendidas
+  feed_blur_intensity: number;  // 0-30 (px do blur)
+  feed_grayscale: boolean;      // se aplica filtro preto e branco
+
   // Posts do feed (gerenciado manualmente no admin)
   feed_posts: FeedPost[];
 };
@@ -240,6 +244,9 @@ const DEFAULT_DASHBOARD_CONFIG: DashboardConfig = {
   label_buyers_online: "Compradores online",
   label_top_creators: "Top creators",
   label_recent_sales: "Vendas recentes",
+
+  feed_blur_intensity: 12,  // px (equivalente a blur-md ~12px)
+  feed_grayscale: false,    // colorido por padrão agora
 
   feed_posts: DEFAULT_FEED_POSTS,
 };

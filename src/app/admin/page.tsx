@@ -900,6 +900,30 @@ export default function AdminPage() {
               Vendas fictícias que aparecem no feed do dashboard. Adicione, remova e reordene livremente.
             </p>
 
+            {/* Controles de blur das fotos vendidas */}
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-3 mb-3">
+              <div className="text-xs font-bold text-purple-900 uppercase tracking-wider mb-2 flex items-center gap-1">
+                🔒 Aparência das fotos vendidas
+              </div>
+
+              <Field label={`Intensidade do blur: ${dash.feed_blur_intensity}px`} hint="0px = nítida · 30px = totalmente borrada">
+                <input type="range" min="0" max="30" value={dash.feed_blur_intensity}
+                  onChange={(e) => updateDashField("feed_blur_intensity", parseInt(e.target.value))}
+                  className="w-full accent-purple-600" />
+              </Field>
+
+              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer mt-2">
+                <input type="checkbox" checked={dash.feed_grayscale}
+                  onChange={(e) => updateDashField("feed_grayscale", e.target.checked)}
+                  className="w-4 h-4 accent-purple-600" />
+                <span>Aplicar filtro preto e branco</span>
+              </label>
+
+              <p className="text-[10px] text-purple-700 mt-2">
+                💡 Mexa nesses sliders e veja o preview à direita atualizar.
+              </p>
+            </div>
+
             {dash.feed_posts.map((post, idx) => (
               <div key={post.id} className="bg-white border border-gray-200 rounded-xl p-3 mb-2">
                 <div className="flex items-center justify-between mb-3">
@@ -1555,7 +1579,7 @@ function DashboardPreview({ config }: { config: LandingConfig }) {
             </div>
             <div className="aspect-square bg-gray-200 relative">
               {post.image_url ? (
-                <img src={post.image_url} alt="" className="w-full h-full object-cover blur-md grayscale" />
+                <img src={post.image_url} alt="" className="w-full h-full object-cover" style={{ filter: `blur(${dash.feed_blur_intensity}px) ${dash.feed_grayscale ? "grayscale(100%)" : ""}` }} />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300"></div>
               )}
