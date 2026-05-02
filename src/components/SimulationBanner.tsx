@@ -1,24 +1,46 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { fetchLandingConfig, DEFAULT_LANDING_CONFIG } from "@/lib/landing-config";
+import type { LandingConfig } from "@/lib/landing-config";
 
-export default function SimulationBanner() {
-  const [text, setText] = useState(DEFAULT_LANDING_CONFIG.banner_top_text);
-  const [enabled, setEnabled] = useState(DEFAULT_LANDING_CONFIG.banner_top_enabled);
+export default function LandingBanner({ config }: { config: LandingConfig }) {
+  if (!config.banner_enabled) return null;
 
-  useEffect(() => {
-    fetchLandingConfig().then((c) => {
-      setText(c.banner_top_text);
-      setEnabled(c.banner_top_enabled);
-    });
-  }, []);
+  const inner =
+    config.banner_mode === "image" && config.banner_image_url ? (
+      <img
+        src={config.banner_image_url}
+        alt="banner"
+        className="max-h-12 w-auto mx-auto object-contain"
+      />
+    ) : (
+      <span className="font-mono text-[10px] tracking-[0.2em] uppercase">
+        {config.banner_text}
+      </span>
+    );
 
-  if (!enabled) return null;
+  const wrapperStyle = {
+    backgroundColor: config.banner_bg_color,
+    color: config.banner_text_color,
+  };
+  const wrapperClasses = "text-center py-2 px-4 sticky top-0 z-50 flex items-center justify-center";
+
+  if (config.banner_link_url) {
+    return (
+      <a
+        href={config.banner_link_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={wrapperClasses + " hover:opacity-90 transition"}
+        style={wrapperStyle}
+      >
+        {inner}
+      </a>
+    );
+  }
 
   return (
-    <div className="bg-amber-400 text-ink-950 text-center py-1.5 px-4 font-mono text-[10px] tracking-[0.2em] uppercase sticky top-0 z-50">
-      {text}
+    <div className={wrapperClasses} style={wrapperStyle}>
+      {inner}
     </div>
   );
 }

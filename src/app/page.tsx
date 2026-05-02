@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { generateListingTitle, RARITIES, PLACEHOLDER_IMAGES } from "@/lib/fake-data";
-import { fetchLandingConfig, DEFAULT_LANDING_CONFIG, type LandingConfig } from "@/lib/landing-config";
+import { fetchLandingConfig, DEFAULT_LANDING_CONFIG, type LandingConfig, type ViewportConfig } from "@/lib/landing-config";
+import LandingBanner from "@/components/SimulationBanner";
 
 type Step =
   | "upload"      // foto + nome + email
@@ -95,6 +96,7 @@ export default function Home() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [activeBuyers, setActiveBuyers] = useState(43730);
   const [config, setConfig] = useState<LandingConfig>(DEFAULT_LANDING_CONFIG);
+  const [isMobile, setIsMobile] = useState(false);
 
   const router = useRouter();
   const supabase = createClient();
@@ -102,6 +104,18 @@ export default function Home() {
   useEffect(() => {
     fetchLandingConfig().then(setConfig);
   }, []);
+
+  useEffect(() => {
+    function check() {
+      setIsMobile(window.innerWidth < 768);
+    }
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // Config visual de acordo com o viewport
+  const viewport: ViewportConfig = isMobile ? config.mobile : config.desktop;
 
   useEffect(() => {
     const i = setInterval(() => {
@@ -227,26 +241,26 @@ export default function Home() {
   // ============ TELA 1: UPLOAD + NOME + EMAIL ============
   if (step === "upload") {
     const alignText =
-      config.logo_align === "left" ? "text-left" :
-      config.logo_align === "right" ? "text-right" :
+      viewport.logo_align === "left" ? "text-left" :
+      viewport.logo_align === "right" ? "text-right" :
       "text-center";
     return (
       <>
-        <Wrapper showLoginLink config={config}>
+        <Wrapper showLoginLink config={config} viewport={viewport} banner={<LandingBanner config={config} />}>
           <p className={`font-mono text-[10px] uppercase tracking-[0.4em] mb-6 ${alignText}`} style={{ color: config.color_primary }}>
             {config.tagline}
           </p>
           {config.logo_mode === "image" && config.logo_image_url ? (
             <div className={`mb-3 flex ${
-              config.logo_align === "left" ? "justify-start" :
-              config.logo_align === "right" ? "justify-end" :
+              viewport.logo_align === "left" ? "justify-start" :
+              viewport.logo_align === "right" ? "justify-end" :
               "justify-center"
             }`}>
               <img
                 src={config.logo_image_url}
                 alt="logo"
                 style={{
-                  height: `${config.logo_size * 0.7}px`,
+                  height: `${viewport.logo_size * 0.7}px`,
                   maxWidth: "100%",
                   objectFit: "contain",
                 }}
@@ -254,8 +268,8 @@ export default function Home() {
             </div>
           ) : (
             <div className={`mb-3 ${alignText}`}>
-              <div className="font-display tracking-[0.15em] leading-none mb-1" style={{ color: config.color_primary, fontSize: `${config.logo_size * 0.6}px` }}>{config.logo_primary}</div>
-              <div className="font-display tracking-[0.4em] text-bone-100 leading-none" style={{ fontSize: `${config.logo_size * 0.3}px` }}>{config.logo_secondary}</div>
+              <div className="font-display tracking-[0.15em] leading-none mb-1" style={{ color: config.color_primary, fontSize: `${viewport.logo_size * 0.6}px` }}>{config.logo_primary}</div>
+              <div className="font-display tracking-[0.4em] text-bone-100 leading-none" style={{ fontSize: `${viewport.logo_size * 0.3}px` }}>{config.logo_secondary}</div>
             </div>
           )}
           <p className={`text-base text-bone-100/70 mt-8 mb-8 font-light ${alignText}`}>
@@ -346,7 +360,7 @@ export default function Home() {
   // ============ TELA 2: SUBMITTED (loading) ============
   if (step === "submitted") {
     return (
-      <Wrapper config={config}>
+      <Wrapper config={config} viewport={viewport}>
         <div className="text-center">
           <div className="w-20 h-20 mx-auto mb-8 relative">
             <div className="absolute inset-0 border-4 border-moss-700/30 rounded-full"></div>
@@ -371,7 +385,7 @@ export default function Home() {
   if (questionIndex >= 0) {
     const q = QUESTIONS[questionIndex];
     return (
-      <Wrapper config={config}>
+      <Wrapper config={config} viewport={viewport}>
         <Progress current={questionIndex + 1} total={7} />
         <p className="text-center font-mono text-[10px] uppercase tracking-[0.3em] text-moss-500 mb-3">
           Pergunta {questionIndex + 1} de 5
@@ -400,7 +414,7 @@ export default function Home() {
   // ============ TELA: BIRTHDATE ============
   if (step === "birthdate") {
     return (
-      <Wrapper config={config}>
+      <Wrapper config={config} viewport={viewport}>
         <Progress current={6} total={7} />
         <p className="text-center font-mono text-[10px] uppercase tracking-[0.3em] text-moss-500 mb-3">
           Quase lá
@@ -441,7 +455,7 @@ export default function Home() {
   // ============ TELA: CREDENTIALS (username + senha) ============
   if (step === "credentials") {
     return (
-      <Wrapper config={config}>
+      <Wrapper config={config} viewport={viewport}>
         <Progress current={7} total={7} />
         <p className="text-center font-mono text-[10px] uppercase tracking-[0.3em] text-moss-500 mb-3">
           Última etapa
@@ -502,7 +516,7 @@ export default function Home() {
   // ============ TELA: DONE (redirecting) ============
   if (step === "done") {
     return (
-      <Wrapper config={config}>
+      <Wrapper config={config} viewport={viewport}>
         <div className="text-center">
           <div className="w-20 h-20 mx-auto mb-8 bg-moss-500 rounded-full flex items-center justify-center">
             <svg className="w-10 h-10 text-ink-950" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
@@ -525,64 +539,79 @@ export default function Home() {
 
 // === Componentes externos (definidos fora pra não recriar a cada render) ===
 
-function Wrapper({ children, showLoginLink = false, config = DEFAULT_LANDING_CONFIG }: { children: React.ReactNode; showLoginLink?: boolean; config?: LandingConfig }) {
+function Wrapper({
+  children,
+  showLoginLink = false,
+  config = DEFAULT_LANDING_CONFIG,
+  viewport = DEFAULT_LANDING_CONFIG.desktop,
+  banner,
+}: {
+  children: React.ReactNode;
+  showLoginLink?: boolean;
+  config?: LandingConfig;
+  viewport?: ViewportConfig;
+  banner?: React.ReactNode;
+}) {
   const hasImage = !!config.background_image_url;
   const gradientBg = `radial-gradient(ellipse at top, ${config.color_bg_from} 0%, ${config.color_bg_via} 60%, ${config.color_bg_to} 100%)`;
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center py-16 px-6 overflow-hidden">
-      <div className="absolute inset-0 z-0">
-        {/* Gradiente base */}
-        <div className="absolute inset-0" style={{ background: gradientBg }} />
+    <>
+      {banner}
+      <section className="relative min-h-screen flex flex-col items-center justify-center py-16 px-6 overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          {/* Gradiente base */}
+          <div className="absolute inset-0" style={{ background: gradientBg }} />
 
-        {/* Imagem de fundo */}
-        {hasImage && (
-          <>
-            <img
-              src={config.background_image_url}
-              alt=""
-              className="absolute inset-0 w-full h-full"
-              style={{
-                objectFit: config.background_fit === "auto" ? "none" : config.background_fit,
-                objectPosition: `${config.background_position_x}% ${config.background_position_y}%`,
-                transform: `scale(${config.background_size / 100})`,
-                transformOrigin: `${config.background_position_x}% ${config.background_position_y}%`,
-              }}
-            />
-            <div
-              className="absolute inset-0 bg-black"
-              style={{ opacity: config.background_overlay_opacity / 100 }}
-            />
-          </>
-        )}
-
-        {/* Glow primary */}
-        <div className="absolute inset-0" style={{
-          background: `radial-gradient(circle at 50% 40%, ${config.color_primary}10 0%, transparent 60%)`,
-        }} />
-      </div>
-
-      <div className="absolute top-8 left-0 right-0 px-6 flex items-center justify-between max-w-md mx-auto z-20">
-        <Link href="/" className="flex items-baseline gap-1.5">
-          {config.logo_mode === "image" && config.logo_image_url ? (
-            <img src={config.logo_image_url} alt="logo" style={{ height: 24, objectFit: "contain" }} />
-          ) : (
+          {/* Imagem de fundo */}
+          {hasImage && (
             <>
-              <span className="font-display text-lg tracking-[0.15em]" style={{ color: config.color_primary }}>{config.logo_primary}</span>
-              <span className="font-display text-xs tracking-[0.4em] text-bone-100">{config.logo_secondary}</span>
+              <img
+                src={config.background_image_url}
+                alt=""
+                className="absolute inset-0 w-full h-full"
+                style={{
+                  objectFit: viewport.background_fit === "auto" ? "none" : viewport.background_fit,
+                  objectPosition: `${viewport.background_position_x}% ${viewport.background_position_y}%`,
+                  transform: `scale(${viewport.background_size / 100})`,
+                  transformOrigin: `${viewport.background_position_x}% ${viewport.background_position_y}%`,
+                }}
+              />
+              <div
+                className="absolute inset-0 bg-black"
+                style={{ opacity: viewport.background_overlay_opacity / 100 }}
+              />
             </>
           )}
-        </Link>
-        {showLoginLink && (
-          <Link href="/login" className="font-mono text-[10px] uppercase tracking-[0.25em] text-bone-100/60 hover:text-bone-100 transition">
-            Entrar
-          </Link>
-        )}
-      </div>
 
-      <div className="relative z-10 w-full max-w-md mx-auto pt-8">
-        {children}
-      </div>
-    </section>
+          {/* Glow primary */}
+          <div className="absolute inset-0" style={{
+            background: `radial-gradient(circle at 50% 40%, ${config.color_primary}10 0%, transparent 60%)`,
+          }} />
+        </div>
+
+        <div className="absolute top-8 left-0 right-0 px-6 flex items-center justify-between max-w-md mx-auto z-20">
+          <Link href="/" className="flex items-baseline gap-1.5">
+            {config.logo_mode === "image" && config.logo_image_url ? (
+              <img src={config.logo_image_url} alt="logo" style={{ height: 24, objectFit: "contain" }} />
+            ) : (
+              <>
+                <span className="font-display text-lg tracking-[0.15em]" style={{ color: config.color_primary }}>{config.logo_primary}</span>
+                <span className="font-display text-xs tracking-[0.4em] text-bone-100">{config.logo_secondary}</span>
+              </>
+            )}
+          </Link>
+          {showLoginLink && (
+            <Link href="/login" className="font-mono text-[10px] uppercase tracking-[0.25em] text-bone-100/60 hover:text-bone-100 transition">
+              Entrar
+            </Link>
+          )}
+        </div>
+
+        <div className="relative z-10 w-full max-w-md mx-auto pt-8">
+          {children}
+        </div>
+      </section>
+    </>
   );
 }
 
