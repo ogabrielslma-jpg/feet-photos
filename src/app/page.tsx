@@ -100,7 +100,7 @@ export default function Home() {
   useEffect(() => {
     const i = setInterval(() => {
       setActiveBuyers((c) => c + Math.floor(Math.random() * 7) - 3);
-    }, 2500);
+    }, 8000);
     return () => clearInterval(i);
   }, []);
 
@@ -242,7 +242,7 @@ export default function Home() {
         </div>
       )}
 
-      <div className="relative z-10 w-full max-w-md mx-auto pt-8 animate-fade-up">
+      <div className="relative z-10 w-full max-w-md mx-auto pt-8">
         {children}
       </div>
     </section>
