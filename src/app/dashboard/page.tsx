@@ -102,6 +102,7 @@ function fmtCurrency(v: number, currency: string): string {
 
 export default function DashboardPage() {
   const [tab, setTab] = useState<Tab>("feed");
+  const [auctionSubTab, setAuctionSubTab] = useState<"active" | "closed">("active");
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
 
@@ -309,7 +310,7 @@ export default function DashboardPage() {
         setNotifications((n) => [notif, ...n].slice(0, 4));
         setTimeout(() => {
           setNotifications((n) => n.filter((x) => x.id !== notif.id));
-        }, 120000);
+        }, 4500);
 
         if (newBid < MAX_BID) {
           scheduleNextBid(newBid);
@@ -456,10 +457,10 @@ export default function DashboardPage() {
       <div className="flex min-h-screen">
         {/* === SIDEBAR ESQUERDA (DESKTOP) === */}
         <aside className="hidden lg:flex flex-col w-64 border-r border-gray-200 bg-white sticky top-0 h-screen p-6">
-          <Link href="/" className="flex items-baseline gap-2 mb-10">
+          <button onClick={() => setTab("feed")} className="flex items-baseline gap-2 mb-10 text-left">
             <span className="font-display text-2xl tracking-[0.15em] text-gray-900">FOOT</span>
             <span className="font-display text-xs tracking-[0.4em] text-gray-500">FANS</span>
-          </Link>
+          </button>
 
           <nav className="flex-1 space-y-1">
             <NavItem active={tab === "feed"} onClick={() => setTab("feed")} icon="home" label="Feed" />
@@ -482,10 +483,10 @@ export default function DashboardPage() {
         <main className="flex-1 max-w-2xl mx-auto pb-24 lg:pb-12">
           {/* TOPBAR MOBILE */}
           <header className="lg:hidden sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-            <Link href="/" className="flex items-baseline gap-1.5">
+            <button onClick={() => setTab("feed")} className="flex items-baseline gap-1.5">
               <span className="font-display text-lg tracking-[0.15em] text-gray-900">FOOT</span>
               <span className="font-display text-[10px] tracking-[0.4em] text-gray-500">FANS</span>
-            </Link>
+            </button>
             <button
               onClick={() => setTab("wallet")}
               className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 transition rounded-full pl-2 pr-3 py-1.5"
@@ -604,10 +605,13 @@ export default function DashboardPage() {
 
               {/* Posts do feed */}
               <div className="space-y-4 lg:space-y-6">
-                {feedSales.map((sale) => {
+                {feedSales.map((sale, i) => {
                   const r = RARITIES.find((x) => x.label.toLowerCase() === sale.rarity) || RARITIES[0];
+                  // Banner aparece após o 1º post (i===0) e depois a cada 4 (i===4, 8, 12...)
+                  const showBannerAfter = i === 0 || (i > 0 && (i + 1) % 4 === 0);
                   return (
-                    <article key={sale.id} className="bg-white border-y lg:border lg:rounded-2xl border-gray-200 overflow-hidden">
+                    <div key={sale.id} className="space-y-4 lg:space-y-6">
+                    <article className="bg-white border-y lg:border lg:rounded-2xl border-gray-200 overflow-hidden">
                       {/* Header */}
                       <div className="px-4 py-3 flex items-center gap-3">
                         <img src={sale.seller_avatar} alt="" className="w-9 h-9 rounded-full object-cover" />
@@ -665,6 +669,8 @@ export default function DashboardPage() {
                         </div>
                       </div>
                     </article>
+                    {showBannerAfter && <AppBanner />}
+                    </div>
                   );
                 })}
               </div>
@@ -674,8 +680,59 @@ export default function DashboardPage() {
           {/* === MEUS LEILÕES === */}
           {tab === "my-auction" && (
             <div className="px-4 lg:px-6 pt-6 space-y-4">
-              {/* LEILÃO ATIVO */}
-              {activeListing && !hasSold && (
+              {/* Sub-tabs: Ativo / Fechados */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  disabled={!activeListing || hasSold}
+                  onClick={() => setAuctionSubTab("active")}
+                  className={`bg-white border rounded-2xl p-4 text-left transition ${
+                    auctionSubTab === "active" && (activeListing && !hasSold)
+                      ? "border-emerald-400 ring-2 ring-emerald-100 shadow-sm"
+                      : "border-gray-200 hover:border-gray-300"
+                  } ${(!activeListing || hasSold) ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Leilão ativo</span>
+                    {activeListing && !hasSold && (
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                      </span>
+                    )}
+                  </div>
+                  <div className="font-display text-2xl text-gray-900 font-light">
+                    {activeListing && !hasSold ? "1" : "0"}
+                  </div>
+                  <p className="text-[10px] text-gray-500 mt-0.5">
+                    {activeListing && !hasSold ? `Encerra em ${timeLeft}s` : "Nenhum agora"}
+                  </p>
+                </button>
+
+                <button
+                  onClick={() => setAuctionSubTab("closed")}
+                  className={`bg-white border rounded-2xl p-4 text-left transition ${
+                    auctionSubTab === "closed"
+                      ? "border-gray-900 ring-2 ring-gray-100 shadow-sm"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Fechados</span>
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <div className="font-display text-2xl text-gray-900 font-light">
+                    {pastAuctions.length}
+                  </div>
+                  <p className="text-[10px] text-gray-500 mt-0.5">
+                    {pastAuctions.length === 0 ? "Nenhum ainda" : `R$ ${fmtBRL(pastAuctions.reduce((sum, p) => sum + p.final_amount_brl, 0))} total`}
+                  </p>
+                </button>
+              </div>
+
+              {/* === LEILÃO ATIVO (sub-tab) === */}
+              {auctionSubTab === "active" && activeListing && !hasSold && (
                 <div className="bg-white border-2 border-emerald-300 rounded-2xl overflow-hidden">
                   {/* Header com timer cronômetro */}
                   <div className="px-5 py-4 bg-gradient-to-r from-emerald-50 to-white border-b border-emerald-100 flex items-center justify-between">
@@ -756,47 +813,74 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {/* LEILÕES ANTERIORES (cards) */}
-              {pastAuctions.length > 0 && (
+              {/* === LEILÕES FECHADOS (sub-tab) === */}
+              {auctionSubTab === "closed" && (
                 <div>
-                  <h3 className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-3 px-1">
-                    Leilões anteriores ({pastAuctions.length})
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    {pastAuctions.map((past) => {
-                      const r = RARITIES.find((x) => x.label.toLowerCase() === past.rarity) || RARITIES[0];
-                      return (
-                        <button
-                          key={past.id}
-                          onClick={() => setOpenPastAuction(past)}
-                          className="bg-white border border-gray-200 rounded-2xl overflow-hidden text-left hover:border-gray-400 transition"
-                        >
-                          <div className="relative aspect-square bg-gray-100">
-                            <img src={past.image_url} alt="" className="w-full h-full object-cover blur-sm" />
-                            <div className="absolute top-2 left-2 bg-white/95 px-2 py-0.5 text-[8px] font-semibold uppercase tracking-wider rounded-full text-gray-900">
-                              {r.label}
-                            </div>
-                            <div className="absolute bottom-2 right-2 text-2xl">{past.buyer.flag}</div>
-                          </div>
-                          <div className="p-3">
-                            <div className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">Arrematado por</div>
-                            <div className="font-display text-lg text-emerald-600 tabular-nums font-semibold">
-                              R$ {fmtBRL(past.final_amount_brl)}
-                            </div>
-                            <div className="text-[10px] text-gray-500 truncate mt-1">
-                              {past.buyer.name}
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {pastAuctions.length === 0 ? (
+                    <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center">
+                      <div className="w-14 h-14 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                        <svg className="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                      </div>
+                      <p className="font-semibold text-gray-700 mb-1">Nenhum leilão fechado ainda</p>
+                      <p className="text-xs text-gray-500">Suas vendas finalizadas aparecerão aqui.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-3 px-1">
+                        Histórico ({pastAuctions.length})
+                      </h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        {pastAuctions.map((past) => {
+                          const r = RARITIES.find((x) => x.label.toLowerCase() === past.rarity) || RARITIES[0];
+                          return (
+                            <button
+                              key={past.id}
+                              onClick={() => setOpenPastAuction(past)}
+                              className="bg-white border border-gray-200 rounded-2xl overflow-hidden text-left hover:border-gray-400 transition"
+                            >
+                              <div className="relative aspect-square bg-gray-100">
+                                <img src={past.image_url} alt="" className="w-full h-full object-cover blur-sm" />
+                                <div className="absolute top-2 left-2 bg-white/95 px-2 py-0.5 text-[8px] font-semibold uppercase tracking-wider rounded-full text-gray-900">
+                                  {r.label}
+                                </div>
+                                <div className="absolute bottom-2 right-2 text-2xl">{past.buyer.flag}</div>
+                              </div>
+                              <div className="p-3">
+                                <div className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">Arrematado por</div>
+                                <div className="font-display text-lg text-emerald-600 tabular-nums font-semibold">
+                                  R$ {fmtBRL(past.final_amount_brl)}
+                                </div>
+                                <div className="text-[10px] text-gray-500 truncate mt-1">
+                                  {past.buyer.name}
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
-              {pastAuctions.length === 0 && hasSold === false && !activeListing && (
-                <div className="text-center py-12 text-gray-400">
-                  <p className="text-sm">Nenhum leilão ainda. Envie sua primeira foto pelo feed.</p>
+              {/* Estado vazio na aba "ativo" sem ativo */}
+              {auctionSubTab === "active" && (!activeListing || hasSold) && (
+                <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center">
+                  <div className="w-14 h-14 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                    <svg className="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <p className="font-semibold text-gray-700 mb-1">Nenhum leilão ativo agora</p>
+                  <p className="text-xs text-gray-500 mb-3">Envie uma nova foto pelo Feed para começar.</p>
+                  <button
+                    onClick={() => setTab("feed")}
+                    className="text-sm text-gray-900 font-semibold underline underline-offset-4"
+                  >
+                    Ir pro Feed →
+                  </button>
                 </div>
               )}
             </div>
@@ -909,38 +993,6 @@ export default function DashboardPage() {
                 <p className="text-[11px] text-gray-500 text-center mt-3 leading-relaxed">
                   Quanto mais você vende, menos a plataforma cobra.
                 </p>
-              </div>
-
-              {/* Banner app em breve */}
-              <div className="relative bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-5 overflow-hidden shadow-md">
-                <div className="absolute -right-6 -top-6 text-7xl opacity-20">📱</div>
-                <div className="relative">
-                  <div className="inline-block bg-white/20 backdrop-blur text-white text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full mb-2">
-                    Em breve
-                  </div>
-                  <h4 className="text-white font-bold text-base leading-tight mb-1">
-                    Vocês pediram e está quase lá!
-                  </h4>
-                  <p className="text-white/90 text-xs leading-relaxed mb-3">
-                    Nos próximos dias, o FootFans estará disponível na <strong>App Store</strong> e <strong>Play Store</strong>.
-                  </p>
-                  <div className="flex gap-2">
-                    <div className="bg-black/40 backdrop-blur rounded-lg px-3 py-1.5 flex items-center gap-1.5">
-                      <span className="text-base"></span>
-                      <div className="text-white">
-                        <div className="text-[8px] leading-none uppercase opacity-80">Em breve na</div>
-                        <div className="text-[11px] leading-tight font-bold">App Store</div>
-                      </div>
-                    </div>
-                    <div className="bg-black/40 backdrop-blur rounded-lg px-3 py-1.5 flex items-center gap-1.5">
-                      <span className="text-base">▶</span>
-                      <div className="text-white">
-                        <div className="text-[8px] leading-none uppercase opacity-80">Em breve no</div>
-                        <div className="text-[11px] leading-tight font-bold">Google Play</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           )}
@@ -1381,6 +1433,41 @@ function Icon({ name, active }: { name: string; active: boolean }) {
   if (name === "wallet") return <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 12a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h14a2 2 0 002-2v-6zM7 10V7a4 4 0 118 0v3" /></svg>;
   if (name === "user") return <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>;
   return null;
+}
+
+function AppBanner() {
+  return (
+    <div className="relative bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-5 overflow-hidden shadow-md mx-0 lg:mx-0">
+      <div className="absolute -right-6 -top-6 text-7xl opacity-20">📱</div>
+      <div className="relative">
+        <div className="inline-block bg-white/20 backdrop-blur text-white text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full mb-2">
+          Em breve
+        </div>
+        <h4 className="text-white font-bold text-base leading-tight mb-1">
+          Vocês pediram e está quase lá!
+        </h4>
+        <p className="text-white/90 text-xs leading-relaxed mb-3">
+          Nos próximos dias, o FootFans estará disponível na <strong>App Store</strong> e <strong>Play Store</strong>.
+        </p>
+        <div className="flex gap-2 flex-wrap">
+          <div className="bg-black/40 backdrop-blur rounded-lg px-3 py-1.5 flex items-center gap-1.5">
+            <span className="text-base"></span>
+            <div className="text-white">
+              <div className="text-[8px] leading-none uppercase opacity-80">Em breve na</div>
+              <div className="text-[11px] leading-tight font-bold">App Store</div>
+            </div>
+          </div>
+          <div className="bg-black/40 backdrop-blur rounded-lg px-3 py-1.5 flex items-center gap-1.5">
+            <span className="text-base">▶</span>
+            <div className="text-white">
+              <div className="text-[8px] leading-none uppercase opacity-80">Em breve no</div>
+              <div className="text-[11px] leading-tight font-bold">Google Play</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function UserAvatar({ url, initial, size }: { url: string | null; initial: string; size: number }) {
