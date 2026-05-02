@@ -101,6 +101,43 @@ function fmtCurrency(v: number, currency: string): string {
   return `${currency} ${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+// === Persistência local do estado do usuário ===
+// Usamos listing.id (não user.id) como chave: cada leilão tem seu próprio
+// estado (lances, hasSold etc), e quando a usuária sobe foto nova, é leilão
+// novo e o estado começa zerado.
+
+type PersistedState = {
+  walletBalance: number;
+  hasSold: boolean;
+  auctionEnded: boolean;
+  currentBidBRL: number;
+  bidHistory: any[];
+  pastAuctions: any[];
+  lastUploadAt: number | null;
+  selectedBidId?: string | null;
+  saleStep?: string | null;
+};
+
+function userStateKey(userId: string): string {
+  return `ff_state_${userId}`;
+}
+
+function loadUserState(userId: string): PersistedState | null {
+  try {
+    const raw = localStorage.getItem(userStateKey(userId));
+    if (!raw) return null;
+    return JSON.parse(raw) as PersistedState;
+  } catch {
+    return null;
+  }
+}
+
+function saveUserState(userId: string, state: PersistedState) {
+  try {
+    localStorage.setItem(userStateKey(userId), JSON.stringify(state));
+  } catch {}
+}
+
 export default function DashboardPage({ initialConfig }: { initialConfig: LandingConfig }) {
   const config = initialConfig;
   const dash = config.dashboard;
@@ -187,10 +224,31 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         .order("created_at", { ascending: false }).limit(1).single();
       if (listingData) {
         setActiveListing(listingData);
-        // Lance inicial em R$ 220 (não usa current_bid antigo de CC)
-        setCurrentBidBRL(MIN_BID);
-        // Timer 30-45s aleatório
-        setTimeLeft(30 + Math.floor(Math.random() * 16));
+
+        // Tenta restaurar estado salvo
+        const saved = loadUserState(user.id);
+        if (saved) {
+          // Restaura tudo
+          setWalletBalance(saved.walletBalance ?? 0);
+          setHasSold(saved.hasSold ?? false);
+          setAuctionEnded(saved.auctionEnded ?? false);
+          setCurrentBidBRL(saved.currentBidBRL ?? MIN_BID);
+          setBidHistory(saved.bidHistory ?? []);
+          setPastAuctions(saved.pastAuctions ?? []);
+          setLastUploadAt(saved.lastUploadAt ?? null);
+
+          // Se já vendeu OU leilão acabou, timer fica em 0 (não precisa contar)
+          if (saved.hasSold || saved.auctionEnded) {
+            setTimeLeft(0);
+          } else {
+            // Restaura timer aleatório (não tem como saber tempo exato)
+            setTimeLeft(30 + Math.floor(Math.random() * 16));
+          }
+        } else {
+          // Primeira vez — estado inicial
+          setCurrentBidBRL(MIN_BID);
+          setTimeLeft(30 + Math.floor(Math.random() * 16));
+        }
       }
       generateMockData();
       setLoading(false);
@@ -265,6 +323,22 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     }, 1000);
     return () => clearInterval(i);
   }, [lastUploadAt]);
+
+  // ============ AUTO-SAVE DO ESTADO ============
+  // Persiste no localStorage sempre que algo importante muda.
+  useEffect(() => {
+    if (!profile?.id) return;
+    saveUserState(profile.id, {
+      walletBalance,
+      hasSold,
+      auctionEnded,
+      currentBidBRL,
+      bidHistory,
+      pastAuctions,
+      lastUploadAt,
+    });
+  }, [profile?.id, walletBalance, hasSold, auctionEnded, currentBidBRL, bidHistory, pastAuctions, lastUploadAt]);
+
 
   function formatCooldown(ms: number): string {
     const totalSec = Math.ceil(ms / 1000);
