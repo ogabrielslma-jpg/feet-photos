@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   fetchLandingConfig,
   saveLandingConfig,
+  uploadLandingAsset,
   DEFAULT_LANDING_CONFIG,
   type LandingConfig,
   type ViewportConfig,
@@ -269,16 +270,15 @@ export default function AdminPage() {
                       className="input" />
                   </Field>
                 ) : (
-                  <Field label="URL da imagem do banner" hint="Imagem fica horizontal no topo, altura limitada a 48px">
-                    <input type="url" value={config.banner_image_url}
-                      onChange={(e) => updateField("banner_image_url", e.target.value)}
-                      placeholder="https://..." className="input" />
-                    {config.banner_image_url && (
-                      <div className="mt-2 bg-gray-100 rounded-lg p-2 flex items-center justify-center" style={{ background: config.banner_bg_color }}>
-                        <img src={config.banner_image_url} alt="" className="max-h-12 object-contain" />
-                      </div>
-                    )}
-                  </Field>
+                  <ImageUploadField
+                    label="Imagem do banner"
+                    hint="Fica horizontal no topo, altura máx 48px. Upload preserva qualidade."
+                    folder="banner"
+                    value={config.banner_image_url}
+                    onChange={(url) => updateField("banner_image_url", url)}
+                    previewBg={config.banner_bg_color}
+                    previewMaxHeight={48}
+                  />
                 )}
 
                 <div className="grid grid-cols-2 gap-3">
@@ -327,17 +327,15 @@ export default function AdminPage() {
                 </Field>
               </>
             ) : (
-              <Field label="URL da imagem da logo" hint="PNG/SVG ideal com fundo transparente">
-                <input type="url" value={config.logo_image_url}
-                  onChange={(e) => updateField("logo_image_url", e.target.value)}
-                  placeholder="https://..." className="input" />
-                {config.logo_image_url && (
-                  <div className="mt-2 bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg p-4 flex items-center justify-center">
-                    <img src={config.logo_image_url} alt="logo preview"
-                      style={{ height: `${v.logo_size * 0.5}px`, maxWidth: "100%", objectFit: "contain" }} />
-                  </div>
-                )}
-              </Field>
+              <ImageUploadField
+                label="Imagem da logo"
+                hint="PNG ou SVG com fundo transparente. Upload preserva qualidade."
+                folder="logo"
+                value={config.logo_image_url}
+                onChange={(url) => updateField("logo_image_url", url)}
+                previewBg="linear-gradient(to bottom right, #1f2937, #111827)"
+                previewMaxHeight={Math.max(80, v.logo_size * 0.5)}
+              />
             )}
 
             <ViewportLabel viewport={viewport} />
@@ -396,11 +394,15 @@ export default function AdminPage() {
 
           {/* === IMAGEM DE FUNDO === */}
           <Section title="Imagem de fundo (opcional)" icon="🖼️">
-            <Field label="URL da imagem" hint="Compartilhado entre desktop e mobile">
-              <input type="url" value={config.background_image_url}
-                onChange={(e) => updateField("background_image_url", e.target.value)}
-                placeholder="https://..." className="input" />
-            </Field>
+            <ImageUploadField
+              label="Imagem de fundo"
+              hint="Compartilhada entre desktop e mobile. Recomendado mínimo 2400px de largura."
+              folder="background"
+              value={config.background_image_url}
+              onChange={(url) => updateField("background_image_url", url)}
+              previewBg="#111827"
+              previewMaxHeight={160}
+            />
 
             {config.background_image_url && (
               <>
@@ -537,6 +539,145 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
         <input type="text" value={value} onChange={(e) => onChange(e.target.value)}
           className="flex-1 bg-transparent text-xs font-mono text-gray-900 outline-none min-w-0" />
       </div>
+    </div>
+  );
+}
+
+function ImageUploadField({
+  label,
+  hint,
+  folder,
+  value,
+  onChange,
+  previewBg,
+  previewMaxHeight,
+}: {
+  label: string;
+  hint?: string;
+  folder: "logo" | "banner" | "background";
+  value: string;
+  onChange: (url: string) => void;
+  previewBg?: string;
+  previewMaxHeight?: number;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+
+  async function handleFile(file: File) {
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Imagem muito grande (máx 10MB)");
+      setTimeout(() => setError(""), 3000);
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      setError("Apenas imagens são aceitas");
+      setTimeout(() => setError(""), 3000);
+      return;
+    }
+    setUploading(true);
+    setError("");
+    const res = await uploadLandingAsset(file, folder);
+    if (res.ok && res.url) {
+      onChange(res.url);
+    } else {
+      setError(res.error || "Erro no upload");
+      setTimeout(() => setError(""), 4000);
+    }
+    setUploading(false);
+  }
+
+  function onInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+  }
+
+  function onDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFile(file);
+  }
+
+  return (
+    <div>
+      <label className="block text-xs uppercase tracking-wider text-gray-500 font-semibold mb-1">{label}</label>
+
+      {!value && (
+        <label
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={onDrop}
+          className={`block cursor-pointer border-2 border-dashed rounded-xl p-6 text-center transition ${
+            dragOver ? "border-gray-900 bg-gray-50" : "border-gray-300 hover:border-gray-500 bg-white"
+          }`}
+        >
+          {uploading ? (
+            <div className="flex items-center justify-center gap-2 text-gray-700">
+              <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin"></div>
+              <span className="text-sm font-medium">Enviando...</span>
+            </div>
+          ) : (
+            <>
+              <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              <div className="text-sm font-semibold text-gray-700">Clique ou arraste a imagem</div>
+              <div className="text-[11px] text-gray-500 mt-0.5">PNG, JPG, SVG, WebP — até 10MB</div>
+            </>
+          )}
+          <input type="file" accept="image/*" className="hidden" onChange={onInputChange} disabled={uploading} />
+        </label>
+      )}
+
+      {value && (
+        <>
+          <div className="rounded-lg p-3 flex items-center justify-center mb-2" style={{ background: previewBg || "#f3f4f6", minHeight: 80 }}>
+            <img src={value} alt="preview" style={{ maxHeight: previewMaxHeight || 120, maxWidth: "100%", objectFit: "contain" }} />
+          </div>
+          <div className="flex gap-2">
+            <label className="flex-1 cursor-pointer bg-gray-900 hover:bg-black text-white text-xs font-semibold py-2 px-3 rounded-lg text-center transition">
+              {uploading ? "Enviando..." : "Trocar imagem"}
+              <input type="file" accept="image/*" className="hidden" onChange={onInputChange} disabled={uploading} />
+            </label>
+            <button
+              type="button"
+              onClick={() => onChange("")}
+              className="bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold py-2 px-3 rounded-lg transition border border-red-200"
+            >
+              Remover
+            </button>
+          </div>
+        </>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setShowUrlInput(!showUrlInput)}
+        className="text-[11px] text-gray-500 hover:text-gray-900 underline mt-2 transition"
+      >
+        {showUrlInput ? "Esconder campo de URL" : "Ou colar URL manualmente"}
+      </button>
+
+      {showUrlInput && (
+        <input
+          type="url"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="https://..."
+          className="w-full mt-2 bg-gray-50 border border-gray-200 focus:border-gray-900 rounded-lg px-3 py-2 text-xs font-mono text-gray-900 outline-none"
+        />
+      )}
+
+      {error && (
+        <div className="mt-2 bg-red-50 border border-red-200 text-red-700 text-xs px-3 py-2 rounded-lg">
+          {error}
+        </div>
+      )}
+
+      {hint && <p className="text-[11px] text-gray-400 mt-2">{hint}</p>}
     </div>
   );
 }

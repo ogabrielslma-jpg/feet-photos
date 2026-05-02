@@ -159,3 +159,26 @@ export async function saveLandingConfig(config: LandingConfig): Promise<{ ok: bo
     return { ok: false, error: err.message || "Erro desconhecido" };
   }
 }
+
+// Upload de asset pra Supabase Storage
+export async function uploadLandingAsset(file: File, folder: "logo" | "banner" | "background"): Promise<{ ok: boolean; url?: string; error?: string }> {
+  try {
+    const supabase = createClient();
+    const ext = file.name.split(".").pop() || "jpg";
+    const safeName = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("landing-assets")
+      .upload(safeName, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (uploadError) return { ok: false, error: uploadError.message };
+
+    const { data } = supabase.storage.from("landing-assets").getPublicUrl(safeName);
+    return { ok: true, url: data.publicUrl };
+  } catch (err: any) {
+    return { ok: false, error: err.message || "Erro no upload" };
+  }
+}
