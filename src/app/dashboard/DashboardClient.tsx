@@ -101,10 +101,8 @@ function fmtCurrency(v: number, currency: string): string {
   return `${currency} ${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-// === Persistência local do estado do usuário ===
-// Usamos listing.id (não user.id) como chave: cada leilão tem seu próprio
-// estado (lances, hasSold etc), e quando a usuária sobe foto nova, é leilão
-// novo e o estado começa zerado.
+// === Persistência do estado do usuário (Supabase) ===
+// Salva no banco pra sincronizar entre dispositivos.
 
 type PersistedState = {
   walletBalance: number;
@@ -114,27 +112,34 @@ type PersistedState = {
   bidHistory: any[];
   pastAuctions: any[];
   lastUploadAt: number | null;
-  selectedBidId?: string | null;
-  saleStep?: string | null;
 };
 
-function userStateKey(userId: string): string {
-  return `ff_state_${userId}`;
-}
-
-function loadUserState(userId: string): PersistedState | null {
+async function loadUserState(supabase: any, userId: string): Promise<PersistedState | null> {
   try {
-    const raw = localStorage.getItem(userStateKey(userId));
-    if (!raw) return null;
-    return JSON.parse(raw) as PersistedState;
+    const { data, error } = await supabase
+      .from("user_state")
+      .select("data")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (error || !data) return null;
+    return (data.data || null) as PersistedState | null;
   } catch {
     return null;
   }
 }
 
-function saveUserState(userId: string, state: PersistedState) {
+async function saveUserState(supabase: any, userId: string, state: PersistedState): Promise<void> {
   try {
-    localStorage.setItem(userStateKey(userId), JSON.stringify(state));
+    await supabase
+      .from("user_state")
+      .upsert(
+        {
+          user_id: userId,
+          data: state,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      );
   } catch {}
 }
 
@@ -226,8 +231,8 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       if (listingData) {
         setActiveListing(listingData);
 
-        // Tenta restaurar estado salvo
-        const saved = loadUserState(user.id);
+        // Tenta restaurar estado salvo (do banco)
+        const saved = await loadUserState(supabase, user.id);
         if (saved) {
           // Restaura tudo
           setWalletBalance(saved.walletBalance ?? 0);
@@ -327,19 +332,22 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   }, [lastUploadAt]);
 
   // ============ AUTO-SAVE DO ESTADO ============
-  // Persiste no localStorage sempre que algo importante muda.
-  // Só roda DEPOIS do load inicial (evita sobrescrever com state vazio)
+  // Persiste no banco (Supabase) sempre que algo importante muda.
+  // Throttle de 800ms pra não fazer milhões de saves em sequência.
   useEffect(() => {
     if (!stateLoaded || !profile?.id) return;
-    saveUserState(profile.id, {
-      walletBalance,
-      hasSold,
-      auctionEnded,
-      currentBidBRL,
-      bidHistory,
-      pastAuctions,
-      lastUploadAt,
-    });
+    const t = setTimeout(() => {
+      saveUserState(supabase, profile.id, {
+        walletBalance,
+        hasSold,
+        auctionEnded,
+        currentBidBRL,
+        bidHistory,
+        pastAuctions,
+        lastUploadAt,
+      });
+    }, 800);
+    return () => clearTimeout(t);
   }, [stateLoaded, profile?.id, walletBalance, hasSold, auctionEnded, currentBidBRL, bidHistory, pastAuctions, lastUploadAt]);
 
 
