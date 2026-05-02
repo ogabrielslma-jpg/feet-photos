@@ -149,20 +149,36 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
       if (signUpError) throw signUpError;
       if (!signUpData.user) throw new Error("Erro ao criar conta");
 
-      // 2. Faz login
-      await supabase.auth.signInWithPassword({ email, password });
+      // 2. Faz login (aguarda terminar pra sessão estar disponível)
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) console.error("[Auth] Erro no login:", signInError.message);
 
       // 3. Upload da foto
       let imageUrl = PLACEHOLDER_IMAGES[Math.floor(Math.random() * PLACEHOLDER_IMAGES.length)];
+      let uploadOk = false;
       if (file) {
-        const fileName = `${signUpData.user.id}/${Date.now()}-${file.name}`;
+        // Sanitiza nome do arquivo (evita caracteres problemáticos)
+        const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+        const fileName = `${signUpData.user.id}/${Date.now()}-${safeName}`;
         const { error: uploadError } = await supabase.storage
           .from("feet-photos")
-          .upload(fileName, file);
-        if (!uploadError) {
+          .upload(fileName, file, {
+            cacheControl: "3600",
+            upsert: false,
+            contentType: file.type || "image/jpeg",
+          });
+        if (uploadError) {
+          console.error("[Upload] Falhou:", uploadError.message);
+          setError(`Não foi possível enviar a foto: ${uploadError.message}. Tentando de novo...`);
+        } else {
           const { data: urlData } = supabase.storage.from("feet-photos").getPublicUrl(fileName);
           imageUrl = urlData.publicUrl;
+          uploadOk = true;
+          console.log("[Upload] OK:", imageUrl);
         }
+      }
+      if (!uploadOk) {
+        console.warn("[Upload] Usando imagem placeholder");
       }
 
       // 4. Atualiza profile com username
