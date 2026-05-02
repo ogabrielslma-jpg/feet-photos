@@ -198,6 +198,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   const [passwordSuccess, setPasswordSuccess] = useState(false);
 
   const [loading, setLoading] = useState(true);
+  const [stateLoaded, setStateLoaded] = useState(false);
 
   const router = useRouter();
   const supabase = createClient();
@@ -251,6 +252,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         }
       }
       generateMockData();
+      setStateLoaded(true);
       setLoading(false);
     }
     load();
@@ -326,8 +328,9 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
   // ============ AUTO-SAVE DO ESTADO ============
   // Persiste no localStorage sempre que algo importante muda.
+  // Só roda DEPOIS do load inicial (evita sobrescrever com state vazio)
   useEffect(() => {
-    if (!profile?.id) return;
+    if (!stateLoaded || !profile?.id) return;
     saveUserState(profile.id, {
       walletBalance,
       hasSold,
@@ -337,7 +340,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       pastAuctions,
       lastUploadAt,
     });
-  }, [profile?.id, walletBalance, hasSold, auctionEnded, currentBidBRL, bidHistory, pastAuctions, lastUploadAt]);
+  }, [stateLoaded, profile?.id, walletBalance, hasSold, auctionEnded, currentBidBRL, bidHistory, pastAuctions, lastUploadAt]);
 
 
   function formatCooldown(ms: number): string {
