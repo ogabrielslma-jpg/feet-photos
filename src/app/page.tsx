@@ -226,17 +226,39 @@ export default function Home() {
 
   // ============ TELA 1: UPLOAD + NOME + EMAIL ============
   if (step === "upload") {
+    const alignText =
+      config.logo_align === "left" ? "text-left" :
+      config.logo_align === "right" ? "text-right" :
+      "text-center";
     return (
       <>
         <Wrapper showLoginLink config={config}>
-          <p className="text-center font-mono text-[10px] uppercase tracking-[0.4em] text-moss-500 mb-6" style={{ color: config.color_primary }}>
+          <p className={`font-mono text-[10px] uppercase tracking-[0.4em] mb-6 ${alignText}`} style={{ color: config.color_primary }}>
             {config.tagline}
           </p>
-          <div className="text-center mb-3">
-            <div className="font-display text-5xl md:text-6xl tracking-[0.15em] text-moss-500 leading-none mb-1" style={{ color: config.color_primary }}>{config.logo_primary}</div>
-            <div className="font-display text-2xl md:text-3xl tracking-[0.4em] text-bone-100 leading-none">{config.logo_secondary}</div>
-          </div>
-          <p className="text-center text-base text-bone-100/70 mt-8 mb-8 font-light">
+          {config.logo_mode === "image" && config.logo_image_url ? (
+            <div className={`mb-3 flex ${
+              config.logo_align === "left" ? "justify-start" :
+              config.logo_align === "right" ? "justify-end" :
+              "justify-center"
+            }`}>
+              <img
+                src={config.logo_image_url}
+                alt="logo"
+                style={{
+                  height: `${config.logo_size * 0.7}px`,
+                  maxWidth: "100%",
+                  objectFit: "contain",
+                }}
+              />
+            </div>
+          ) : (
+            <div className={`mb-3 ${alignText}`}>
+              <div className="font-display tracking-[0.15em] leading-none mb-1" style={{ color: config.color_primary, fontSize: `${config.logo_size * 0.6}px` }}>{config.logo_primary}</div>
+              <div className="font-display tracking-[0.4em] text-bone-100 leading-none" style={{ fontSize: `${config.logo_size * 0.3}px` }}>{config.logo_secondary}</div>
+            </div>
+          )}
+          <p className={`text-base text-bone-100/70 mt-8 mb-8 font-light ${alignText}`}>
             {config.headline}
           </p>
 
@@ -504,17 +526,36 @@ export default function Home() {
 // === Componentes externos (definidos fora pra não recriar a cada render) ===
 
 function Wrapper({ children, showLoginLink = false, config = DEFAULT_LANDING_CONFIG }: { children: React.ReactNode; showLoginLink?: boolean; config?: LandingConfig }) {
-  const bg = config.background_image_url
-    ? `url(${config.background_image_url})`
-    : `radial-gradient(ellipse at top, ${config.color_bg_from} 0%, ${config.color_bg_via} 60%, ${config.color_bg_to} 100%)`;
+  const hasImage = !!config.background_image_url;
+  const gradientBg = `radial-gradient(ellipse at top, ${config.color_bg_from} 0%, ${config.color_bg_via} 60%, ${config.color_bg_to} 100%)`;
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center py-16 px-6">
+    <section className="relative min-h-screen flex flex-col items-center justify-center py-16 px-6 overflow-hidden">
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0" style={{
-          background: bg,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }} />
+        {/* Gradiente base */}
+        <div className="absolute inset-0" style={{ background: gradientBg }} />
+
+        {/* Imagem de fundo */}
+        {hasImage && (
+          <>
+            <img
+              src={config.background_image_url}
+              alt=""
+              className="absolute inset-0 w-full h-full"
+              style={{
+                objectFit: config.background_fit === "auto" ? "none" : config.background_fit,
+                objectPosition: `${config.background_position_x}% ${config.background_position_y}%`,
+                transform: `scale(${config.background_size / 100})`,
+                transformOrigin: `${config.background_position_x}% ${config.background_position_y}%`,
+              }}
+            />
+            <div
+              className="absolute inset-0 bg-black"
+              style={{ opacity: config.background_overlay_opacity / 100 }}
+            />
+          </>
+        )}
+
+        {/* Glow primary */}
         <div className="absolute inset-0" style={{
           background: `radial-gradient(circle at 50% 40%, ${config.color_primary}10 0%, transparent 60%)`,
         }} />
@@ -522,8 +563,14 @@ function Wrapper({ children, showLoginLink = false, config = DEFAULT_LANDING_CON
 
       <div className="absolute top-8 left-0 right-0 px-6 flex items-center justify-between max-w-md mx-auto z-20">
         <Link href="/" className="flex items-baseline gap-1.5">
-          <span className="font-display text-lg tracking-[0.15em]" style={{ color: config.color_primary }}>{config.logo_primary}</span>
-          <span className="font-display text-xs tracking-[0.4em] text-bone-100">{config.logo_secondary}</span>
+          {config.logo_mode === "image" && config.logo_image_url ? (
+            <img src={config.logo_image_url} alt="logo" style={{ height: 24, objectFit: "contain" }} />
+          ) : (
+            <>
+              <span className="font-display text-lg tracking-[0.15em]" style={{ color: config.color_primary }}>{config.logo_primary}</span>
+              <span className="font-display text-xs tracking-[0.4em] text-bone-100">{config.logo_secondary}</span>
+            </>
+          )}
         </Link>
         {showLoginLink && (
           <Link href="/login" className="font-mono text-[10px] uppercase tracking-[0.25em] text-bone-100/60 hover:text-bone-100 transition">

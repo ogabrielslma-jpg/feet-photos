@@ -180,24 +180,114 @@ export default function AdminPage() {
       <div className="grid lg:grid-cols-2 gap-0 lg:h-[calc(100vh-73px)]">
         {/* === FORMULÁRIO === */}
         <div className="overflow-y-auto p-6 lg:border-r border-gray-200">
-          {/* SEÇÃO LOGO + TAGLINE */}
+          {/* SEÇÃO LOGO */}
           <Section title="Logo & Identidade" icon="✨">
-            <Field label="Texto principal do logo">
+            {/* Toggle Texto / Imagem */}
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-gray-500 font-semibold mb-2">Tipo de logo</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => updateField("logo_mode", "text")}
+                  className={`py-2.5 rounded-lg text-sm font-semibold transition border ${
+                    config.logo_mode === "text"
+                      ? "bg-gray-900 text-white border-gray-900"
+                      : "bg-white text-gray-700 border-gray-200 hover:border-gray-400"
+                  }`}
+                >
+                  Aa Texto
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateField("logo_mode", "image")}
+                  className={`py-2.5 rounded-lg text-sm font-semibold transition border ${
+                    config.logo_mode === "image"
+                      ? "bg-gray-900 text-white border-gray-900"
+                      : "bg-white text-gray-700 border-gray-200 hover:border-gray-400"
+                  }`}
+                >
+                  🖼 Imagem
+                </button>
+              </div>
+            </div>
+
+            {config.logo_mode === "text" && (
+              <>
+                <Field label="Texto principal">
+                  <input
+                    type="text"
+                    value={config.logo_primary}
+                    onChange={(e) => updateField("logo_primary", e.target.value)}
+                    className="input"
+                  />
+                </Field>
+                <Field label="Texto secundário">
+                  <input
+                    type="text"
+                    value={config.logo_secondary}
+                    onChange={(e) => updateField("logo_secondary", e.target.value)}
+                    className="input"
+                  />
+                </Field>
+              </>
+            )}
+
+            {config.logo_mode === "image" && (
+              <>
+                <Field label="URL da imagem da logo" hint="Cole o link público da imagem (PNG/SVG ideal com fundo transparente)">
+                  <input
+                    type="url"
+                    value={config.logo_image_url}
+                    onChange={(e) => updateField("logo_image_url", e.target.value)}
+                    placeholder="https://..."
+                    className="input"
+                  />
+                </Field>
+                {config.logo_image_url && (
+                  <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg p-4 flex items-center justify-center">
+                    <img
+                      src={config.logo_image_url}
+                      alt="logo preview"
+                      style={{ height: `${config.logo_size * 0.5}px`, maxWidth: "100%", objectFit: "contain" }}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Tamanho da logo */}
+            <Field label={`Tamanho da logo: ${config.logo_size}%`}>
               <input
-                type="text"
-                value={config.logo_primary}
-                onChange={(e) => updateField("logo_primary", e.target.value)}
-                className="input"
+                type="range"
+                min="40"
+                max="200"
+                value={config.logo_size}
+                onChange={(e) => updateField("logo_size", parseInt(e.target.value))}
+                className="w-full accent-gray-900"
               />
             </Field>
-            <Field label="Texto secundário do logo">
-              <input
-                type="text"
-                value={config.logo_secondary}
-                onChange={(e) => updateField("logo_secondary", e.target.value)}
-                className="input"
-              />
-            </Field>
+
+            {/* Alinhamento */}
+            <div>
+              <label className="block text-xs uppercase tracking-wider text-gray-500 font-semibold mb-2">Alinhamento</label>
+              <div className="grid grid-cols-3 gap-2">
+                {(["left", "center", "right"] as const).map((align) => (
+                  <button
+                    key={align}
+                    type="button"
+                    onClick={() => updateField("logo_align", align)}
+                    className={`py-2 rounded-lg text-xs font-semibold transition border ${
+                      config.logo_align === align
+                        ? "bg-gray-900 text-white border-gray-900"
+                        : "bg-white text-gray-700 border-gray-200 hover:border-gray-400"
+                    }`}
+                  >
+                    {align === "left" ? "← Esquerda" : align === "center" ? "Centro" : "Direita →"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <Field label="Tagline (acima do logo)" hint="Ex: Discreto · Anônimo · Lucrativo">
               <input
                 type="text"
@@ -262,7 +352,7 @@ export default function AdminPage() {
 
           {/* SEÇÃO IMAGEM FUNDO */}
           <Section title="Imagem de fundo (opcional)" icon="🖼️">
-            <Field label="URL da imagem" hint="Cole aqui um link público de imagem. Deixe vazio pra usar só o gradiente.">
+            <Field label="URL da imagem" hint="Cole aqui um link público. Deixe vazio pra usar só o gradiente.">
               <input
                 type="url"
                 value={config.background_image_url}
@@ -271,10 +361,101 @@ export default function AdminPage() {
                 className="input"
               />
             </Field>
+
             {config.background_image_url && (
-              <div className="mt-2 relative aspect-video rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
-                <img src={config.background_image_url} alt="" className="w-full h-full object-cover" />
-              </div>
+              <>
+                {/* Modo de ajuste */}
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-gray-500 font-semibold mb-2">Comportamento</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(["cover", "contain", "auto"] as const).map((fit) => (
+                      <button
+                        key={fit}
+                        type="button"
+                        onClick={() => updateField("background_fit", fit)}
+                        className={`py-2 rounded-lg text-xs font-semibold transition border ${
+                          config.background_fit === fit
+                            ? "bg-gray-900 text-white border-gray-900"
+                            : "bg-white text-gray-700 border-gray-200 hover:border-gray-400"
+                        }`}
+                        title={
+                          fit === "cover" ? "Preenche toda a tela (corta se precisar)" :
+                          fit === "contain" ? "Imagem inteira aparece (pode ter espaço)" :
+                          "Tamanho original"
+                        }
+                      >
+                        {fit === "cover" ? "Preencher" : fit === "contain" ? "Conter" : "Auto"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Posição X */}
+                <Field label={`Posição horizontal: ${config.background_position_x}%`} hint="0% = esquerda · 100% = direita">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={config.background_position_x}
+                    onChange={(e) => updateField("background_position_x", parseInt(e.target.value))}
+                    className="w-full accent-gray-900"
+                  />
+                </Field>
+
+                {/* Posição Y */}
+                <Field label={`Posição vertical: ${config.background_position_y}%`} hint="0% = topo · 100% = base">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={config.background_position_y}
+                    onChange={(e) => updateField("background_position_y", parseInt(e.target.value))}
+                    className="w-full accent-gray-900"
+                  />
+                </Field>
+
+                {/* Zoom/Tamanho */}
+                <Field label={`Zoom: ${config.background_size}%`} hint="50% = afasta · 200% = aproxima">
+                  <input
+                    type="range"
+                    min="50"
+                    max="250"
+                    value={config.background_size}
+                    onChange={(e) => updateField("background_size", parseInt(e.target.value))}
+                    className="w-full accent-gray-900"
+                  />
+                </Field>
+
+                {/* Escurecimento */}
+                <Field label={`Escurecimento: ${config.background_overlay_opacity}%`} hint="Camada escura sobre a imagem pra texto ficar legível">
+                  <input
+                    type="range"
+                    min="0"
+                    max="90"
+                    value={config.background_overlay_opacity}
+                    onChange={(e) => updateField("background_overlay_opacity", parseInt(e.target.value))}
+                    className="w-full accent-gray-900"
+                  />
+                </Field>
+
+                {/* Preview da imagem */}
+                <div className="mt-2 relative aspect-video rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                  <img
+                    src={config.background_image_url}
+                    alt=""
+                    className="w-full h-full"
+                    style={{
+                      objectFit: config.background_fit === "auto" ? "none" : config.background_fit,
+                      objectPosition: `${config.background_position_x}% ${config.background_position_y}%`,
+                      transform: `scale(${config.background_size / 100})`,
+                    }}
+                  />
+                  <div
+                    className="absolute inset-0 bg-black"
+                    style={{ opacity: config.background_overlay_opacity / 100 }}
+                  ></div>
+                </div>
+              </>
             )}
           </Section>
 
@@ -396,9 +577,13 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
 }
 
 function Preview({ config }: { config: LandingConfig }) {
-  const bg = config.background_image_url
-    ? `url(${config.background_image_url})`
-    : `radial-gradient(ellipse at top, ${config.color_bg_from} 0%, ${config.color_bg_via} 60%, ${config.color_bg_to} 100%)`;
+  const hasImage = !!config.background_image_url;
+  const gradientBg = `radial-gradient(ellipse at top, ${config.color_bg_from} 0%, ${config.color_bg_via} 60%, ${config.color_bg_to} 100%)`;
+
+  const alignClass =
+    config.logo_align === "left" ? "items-start text-left" :
+    config.logo_align === "right" ? "items-end text-right" :
+    "items-center text-center";
 
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-xl border border-gray-200">
@@ -407,34 +592,76 @@ function Preview({ config }: { config: LandingConfig }) {
           {config.banner_top_text}
         </div>
       )}
-      <div
-        className="relative p-8 text-center min-h-[480px] flex flex-col items-center justify-center"
-        style={{
-          background: bg,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        <p className="text-[10px] uppercase tracking-[0.4em] mb-4" style={{ color: config.color_primary }}>
-          {config.tagline}
-        </p>
-        <div className="text-center mb-3">
-          <div className="text-5xl tracking-[0.15em] leading-none mb-1 font-serif" style={{ color: config.color_primary }}>
-            {config.logo_primary}
-          </div>
-          <div className="text-2xl tracking-[0.4em] leading-none text-white font-serif">
-            {config.logo_secondary}
-          </div>
+      <div className="relative min-h-[480px] overflow-hidden" style={{ background: gradientBg }}>
+        {/* Camada da imagem de fundo */}
+        {hasImage && (
+          <>
+            <img
+              src={config.background_image_url}
+              alt=""
+              className="absolute inset-0 w-full h-full"
+              style={{
+                objectFit: config.background_fit === "auto" ? "none" : config.background_fit,
+                objectPosition: `${config.background_position_x}% ${config.background_position_y}%`,
+                transform: `scale(${config.background_size / 100})`,
+                transformOrigin: `${config.background_position_x}% ${config.background_position_y}%`,
+              }}
+            />
+            <div
+              className="absolute inset-0 bg-black"
+              style={{ opacity: config.background_overlay_opacity / 100 }}
+            ></div>
+          </>
+        )}
+
+        {/* Conteúdo */}
+        <div className={`relative p-8 min-h-[480px] flex flex-col justify-center ${alignClass}`}>
+          <p className="text-[10px] uppercase tracking-[0.4em] mb-4" style={{ color: config.color_primary }}>
+            {config.tagline}
+          </p>
+
+          {config.logo_mode === "image" && config.logo_image_url ? (
+            <img
+              src={config.logo_image_url}
+              alt="logo"
+              className="mb-4"
+              style={{ height: `${config.logo_size * 0.6}px`, maxWidth: "80%", objectFit: "contain" }}
+            />
+          ) : (
+            <div className="mb-3">
+              <div
+                className="tracking-[0.15em] leading-none mb-1 font-serif"
+                style={{
+                  color: config.color_primary,
+                  fontSize: `${config.logo_size * 0.5}px`,
+                }}
+              >
+                {config.logo_primary}
+              </div>
+              <div
+                className="tracking-[0.4em] leading-none text-white font-serif"
+                style={{ fontSize: `${config.logo_size * 0.25}px` }}
+              >
+                {config.logo_secondary}
+              </div>
+            </div>
+          )}
+
+          <p className="text-base text-white/70 mt-6 mb-6 font-light max-w-xs">
+            {config.headline}
+          </p>
+          <button
+            className="font-bold py-3 px-8 rounded-2xl uppercase tracking-wide text-sm self-start"
+            style={{
+              backgroundColor: config.color_primary,
+              color: "#0a0a0a",
+              alignSelf: config.logo_align === "left" ? "flex-start" :
+                          config.logo_align === "right" ? "flex-end" : "center",
+            }}
+          >
+            {config.cta_text}
+          </button>
         </div>
-        <p className="text-base text-white/70 mt-6 mb-6 font-light max-w-xs">
-          {config.headline}
-        </p>
-        <button
-          className="font-bold py-3 px-8 rounded-2xl uppercase tracking-wide text-sm"
-          style={{ backgroundColor: config.color_primary, color: "#0a0a0a" }}
-        >
-          {config.cta_text}
-        </button>
       </div>
     </div>
   );

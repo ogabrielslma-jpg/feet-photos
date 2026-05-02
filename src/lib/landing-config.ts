@@ -4,8 +4,14 @@
 import { createClient } from "./supabase-client";
 
 export type LandingConfig = {
+  // Logo
   logo_primary: string;
   logo_secondary: string;
+  logo_mode: "text" | "image"; // texto vs imagem
+  logo_image_url: string;
+  logo_size: number; // 40-200 (px da altura da imagem ou tamanho do texto)
+  logo_align: "left" | "center" | "right";
+
   tagline: string;
   headline: string;
   cta_text: string;
@@ -16,13 +22,25 @@ export type LandingConfig = {
   color_bg_from: string;
   color_bg_via: string;
   color_bg_to: string;
+
+  // Imagem de fundo
   background_image_url: string;
+  background_position_x: number; // 0-100
+  background_position_y: number; // 0-100
+  background_size: number; // 50-200 (% do zoom)
+  background_overlay_opacity: number; // 0-100 — escurece sobre a imagem
+  background_fit: "cover" | "contain" | "auto";
+
   faqs: { q: string; a: string }[];
 };
 
 export const DEFAULT_LANDING_CONFIG: LandingConfig = {
   logo_primary: "FOOT",
   logo_secondary: "FANS",
+  logo_mode: "text",
+  logo_image_url: "",
+  logo_size: 100,
+  logo_align: "center",
   tagline: "Discreto · Anônimo · Lucrativo",
   headline: "Mais de 43.730 compradores ativos aguardando sua foto agora",
   cta_text: "Enviar aos compradores",
@@ -34,6 +52,11 @@ export const DEFAULT_LANDING_CONFIG: LandingConfig = {
   color_bg_via: "#0a0a0a",
   color_bg_to: "#000000",
   background_image_url: "",
+  background_position_x: 50,
+  background_position_y: 50,
+  background_size: 100,
+  background_overlay_opacity: 40,
+  background_fit: "cover",
   faqs: [
     { q: "Como funciona?", a: "Você envia a foto do seu pé no formulário acima e recebe propostas de compra de algum dos nossos 43.730 usuários compradores." },
     { q: "Como eu vou receber o pagamento?", a: "Dentro da plataforma você cadastra uma conta bancária e uma chave pix. Os pagamentos caem na conta dentro de 15 minutos após a venda." },
