@@ -216,55 +216,13 @@ export default function Home() {
     }
   }
 
-  // Container compartilhado
-  const Wrapper = ({ children, showHeader = true }: any) => (
-    <section className="relative min-h-screen flex flex-col items-center justify-center py-16 px-6">
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0" style={{
-          background: "radial-gradient(ellipse at top, #1a1a2e 0%, #0a0a0a 60%, #000000 100%)",
-        }} />
-        <div className="absolute inset-0" style={{
-          background: "radial-gradient(circle at 50% 40%, rgba(34, 197, 94, 0.05) 0%, transparent 60%)",
-        }} />
-      </div>
-
-      {showHeader && (
-        <div className="absolute top-8 left-0 right-0 px-6 flex items-center justify-between max-w-md mx-auto z-20">
-          <Link href="/" className="flex items-baseline gap-1.5">
-            <span className="font-display text-lg tracking-[0.15em] text-moss-500">FOOT</span>
-            <span className="font-display text-xs tracking-[0.4em] text-bone-100">FANS</span>
-          </Link>
-          {step === "upload" && (
-            <Link href="/login" className="font-mono text-[10px] uppercase tracking-[0.25em] text-bone-100/60 hover:text-bone-100 transition">
-              Entrar
-            </Link>
-          )}
-        </div>
-      )}
-
-      <div className="relative z-10 w-full max-w-md mx-auto pt-8">
-        {children}
-      </div>
-    </section>
-  );
-
-  // Progress indicator pras telas de onboarding
-  const Progress = ({ current, total }: { current: number; total: number }) => (
-    <div className="flex items-center justify-center gap-1.5 mb-8">
-      {Array.from({ length: total }).map((_, i) => (
-        <div
-          key={i}
-          className={`h-1 rounded-full transition-all ${i === current - 1 ? "w-8 bg-moss-500" : i < current - 1 ? "w-4 bg-moss-700" : "w-4 bg-ink-700"}`}
-        />
-      ))}
-    </div>
-  );
+  // Container e Progress estão definidos como componentes externos no final do arquivo
 
   // ============ TELA 1: UPLOAD + NOME + EMAIL ============
   if (step === "upload") {
     return (
       <>
-        <Wrapper>
+        <Wrapper showLoginLink>
           <p className="text-center font-mono text-[10px] uppercase tracking-[0.4em] text-moss-500 mb-6">
             Discreto · Anônimo · Lucrativo
           </p>
@@ -535,4 +493,50 @@ export default function Home() {
   }
 
   return null;
+}
+
+// === Componentes externos (definidos fora pra não recriar a cada render) ===
+
+function Wrapper({ children, showLoginLink = false }: { children: React.ReactNode; showLoginLink?: boolean }) {
+  return (
+    <section className="relative min-h-screen flex flex-col items-center justify-center py-16 px-6">
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0" style={{
+          background: "radial-gradient(ellipse at top, #1a1a2e 0%, #0a0a0a 60%, #000000 100%)",
+        }} />
+        <div className="absolute inset-0" style={{
+          background: "radial-gradient(circle at 50% 40%, rgba(34, 197, 94, 0.05) 0%, transparent 60%)",
+        }} />
+      </div>
+
+      <div className="absolute top-8 left-0 right-0 px-6 flex items-center justify-between max-w-md mx-auto z-20">
+        <Link href="/" className="flex items-baseline gap-1.5">
+          <span className="font-display text-lg tracking-[0.15em] text-moss-500">FOOT</span>
+          <span className="font-display text-xs tracking-[0.4em] text-bone-100">FANS</span>
+        </Link>
+        {showLoginLink && (
+          <Link href="/login" className="font-mono text-[10px] uppercase tracking-[0.25em] text-bone-100/60 hover:text-bone-100 transition">
+            Entrar
+          </Link>
+        )}
+      </div>
+
+      <div className="relative z-10 w-full max-w-md mx-auto pt-8">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function Progress({ current, total }: { current: number; total: number }) {
+  return (
+    <div className="flex items-center justify-center gap-1.5 mb-8">
+      {Array.from({ length: total }).map((_, i) => (
+        <div
+          key={i}
+          className={`h-1 rounded-full transition-all ${i === current - 1 ? "w-8 bg-moss-500" : i < current - 1 ? "w-4 bg-moss-700" : "w-4 bg-ink-700"}`}
+        />
+      ))}
+    </div>
+  );
 }
