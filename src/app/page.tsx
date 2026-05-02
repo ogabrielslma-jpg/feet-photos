@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { generateListingTitle, RARITIES, PLACEHOLDER_IMAGES } from "@/lib/fake-data";
+import { fetchLandingConfig, DEFAULT_LANDING_CONFIG, type LandingConfig } from "@/lib/landing-config";
 
 type Step =
   | "upload"      // foto + nome + email
@@ -93,9 +94,14 @@ export default function Home() {
   const [error, setError] = useState("");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [activeBuyers, setActiveBuyers] = useState(43730);
+  const [config, setConfig] = useState<LandingConfig>(DEFAULT_LANDING_CONFIG);
 
   const router = useRouter();
   const supabase = createClient();
+
+  useEffect(() => {
+    fetchLandingConfig().then(setConfig);
+  }, []);
 
   useEffect(() => {
     const i = setInterval(() => {
@@ -222,17 +228,16 @@ export default function Home() {
   if (step === "upload") {
     return (
       <>
-        <Wrapper showLoginLink>
-          <p className="text-center font-mono text-[10px] uppercase tracking-[0.4em] text-moss-500 mb-6">
-            Discreto · Anônimo · Lucrativo
+        <Wrapper showLoginLink config={config}>
+          <p className="text-center font-mono text-[10px] uppercase tracking-[0.4em] text-moss-500 mb-6" style={{ color: config.color_primary }}>
+            {config.tagline}
           </p>
           <div className="text-center mb-3">
-            <div className="font-display text-5xl md:text-6xl tracking-[0.15em] text-moss-500 leading-none mb-1">FOOT</div>
-            <div className="font-display text-2xl md:text-3xl tracking-[0.4em] text-bone-100 leading-none">FANS</div>
+            <div className="font-display text-5xl md:text-6xl tracking-[0.15em] text-moss-500 leading-none mb-1" style={{ color: config.color_primary }}>{config.logo_primary}</div>
+            <div className="font-display text-2xl md:text-3xl tracking-[0.4em] text-bone-100 leading-none">{config.logo_secondary}</div>
           </div>
           <p className="text-center text-base text-bone-100/70 mt-8 mb-8 font-light">
-            Mais de <span className="text-moss-400 font-semibold">{activeBuyers.toLocaleString("pt-BR")}</span> compradores ativos<br />
-            aguardando sua foto agora
+            {config.headline}
           </p>
 
           <form onSubmit={handleSubmitInitial} className="space-y-3">
@@ -269,8 +274,9 @@ export default function Home() {
               className="w-full bg-ink-900/80 border border-ink-700 focus:border-moss-700 rounded-2xl px-6 py-4 text-bone-100 placeholder-ink-600 focus:outline-none transition text-base" />
 
             <button type="submit" disabled={!file || !firstName || !email}
-              className="w-full bg-moss-500 hover:bg-moss-400 disabled:bg-ink-700 disabled:cursor-not-allowed text-ink-950 disabled:text-ink-600 font-bold py-5 rounded-2xl transition text-base tracking-wide uppercase">
-              Enviar aos compradores
+              className="w-full bg-moss-500 hover:bg-moss-400 disabled:bg-ink-700 disabled:cursor-not-allowed text-ink-950 disabled:text-ink-600 font-bold py-5 rounded-2xl transition text-base tracking-wide uppercase"
+              style={{ backgroundColor: file && firstName && email ? config.color_primary : undefined }}>
+              {config.cta_text}
             </button>
           </form>
 
@@ -288,7 +294,7 @@ export default function Home() {
               Perguntas <span className="italic-accent text-moss-500">frequentes</span>
             </h2>
             <div className="space-y-3">
-              {FAQS.map((faq, i) => (
+              {config.faqs.map((faq, i) => (
                 <div key={i} className={`border rounded-2xl transition-all ${openFaq === i ? "border-moss-700 bg-ink-900/80" : "border-ink-800 bg-ink-900/40"}`}>
                   <button onClick={() => setOpenFaq(openFaq === i ? null : i)} className="w-full flex items-center justify-between px-5 py-4 text-left">
                     <span className={`text-base ${openFaq === i ? "text-bone-100" : "text-bone-100/80"}`}>{faq.q}</span>
@@ -305,8 +311,8 @@ export default function Home() {
               ))}
             </div>
             <div className="text-center mt-20">
-              <div className="font-display text-3xl tracking-[0.15em] text-moss-500 leading-none mb-1">FOOT</div>
-              <div className="font-display text-base tracking-[0.4em] text-bone-100/60 leading-none">FANS</div>
+              <div className="font-display text-3xl tracking-[0.15em] text-moss-500 leading-none mb-1" style={{ color: config.color_primary }}>{config.logo_primary}</div>
+              <div className="font-display text-base tracking-[0.4em] text-bone-100/60 leading-none">{config.logo_secondary}</div>
               <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-ink-600 mt-6">© 2026 — Projeto acadêmico fictício</p>
             </div>
           </div>
@@ -318,7 +324,7 @@ export default function Home() {
   // ============ TELA 2: SUBMITTED (loading) ============
   if (step === "submitted") {
     return (
-      <Wrapper>
+      <Wrapper config={config}>
         <div className="text-center">
           <div className="w-20 h-20 mx-auto mb-8 relative">
             <div className="absolute inset-0 border-4 border-moss-700/30 rounded-full"></div>
@@ -343,7 +349,7 @@ export default function Home() {
   if (questionIndex >= 0) {
     const q = QUESTIONS[questionIndex];
     return (
-      <Wrapper>
+      <Wrapper config={config}>
         <Progress current={questionIndex + 1} total={7} />
         <p className="text-center font-mono text-[10px] uppercase tracking-[0.3em] text-moss-500 mb-3">
           Pergunta {questionIndex + 1} de 5
@@ -372,7 +378,7 @@ export default function Home() {
   // ============ TELA: BIRTHDATE ============
   if (step === "birthdate") {
     return (
-      <Wrapper>
+      <Wrapper config={config}>
         <Progress current={6} total={7} />
         <p className="text-center font-mono text-[10px] uppercase tracking-[0.3em] text-moss-500 mb-3">
           Quase lá
@@ -413,7 +419,7 @@ export default function Home() {
   // ============ TELA: CREDENTIALS (username + senha) ============
   if (step === "credentials") {
     return (
-      <Wrapper>
+      <Wrapper config={config}>
         <Progress current={7} total={7} />
         <p className="text-center font-mono text-[10px] uppercase tracking-[0.3em] text-moss-500 mb-3">
           Última etapa
@@ -474,7 +480,7 @@ export default function Home() {
   // ============ TELA: DONE (redirecting) ============
   if (step === "done") {
     return (
-      <Wrapper>
+      <Wrapper config={config}>
         <div className="text-center">
           <div className="w-20 h-20 mx-auto mb-8 bg-moss-500 rounded-full flex items-center justify-center">
             <svg className="w-10 h-10 text-ink-950" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
@@ -497,22 +503,27 @@ export default function Home() {
 
 // === Componentes externos (definidos fora pra não recriar a cada render) ===
 
-function Wrapper({ children, showLoginLink = false }: { children: React.ReactNode; showLoginLink?: boolean }) {
+function Wrapper({ children, showLoginLink = false, config = DEFAULT_LANDING_CONFIG }: { children: React.ReactNode; showLoginLink?: boolean; config?: LandingConfig }) {
+  const bg = config.background_image_url
+    ? `url(${config.background_image_url})`
+    : `radial-gradient(ellipse at top, ${config.color_bg_from} 0%, ${config.color_bg_via} 60%, ${config.color_bg_to} 100%)`;
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center py-16 px-6">
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0" style={{
-          background: "radial-gradient(ellipse at top, #1a1a2e 0%, #0a0a0a 60%, #000000 100%)",
+          background: bg,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
         }} />
         <div className="absolute inset-0" style={{
-          background: "radial-gradient(circle at 50% 40%, rgba(34, 197, 94, 0.05) 0%, transparent 60%)",
+          background: `radial-gradient(circle at 50% 40%, ${config.color_primary}10 0%, transparent 60%)`,
         }} />
       </div>
 
       <div className="absolute top-8 left-0 right-0 px-6 flex items-center justify-between max-w-md mx-auto z-20">
         <Link href="/" className="flex items-baseline gap-1.5">
-          <span className="font-display text-lg tracking-[0.15em] text-moss-500">FOOT</span>
-          <span className="font-display text-xs tracking-[0.4em] text-bone-100">FANS</span>
+          <span className="font-display text-lg tracking-[0.15em]" style={{ color: config.color_primary }}>{config.logo_primary}</span>
+          <span className="font-display text-xs tracking-[0.4em] text-bone-100">{config.logo_secondary}</span>
         </Link>
         {showLoginLink && (
           <Link href="/login" className="font-mono text-[10px] uppercase tracking-[0.25em] text-bone-100/60 hover:text-bone-100 transition">
