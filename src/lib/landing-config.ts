@@ -34,7 +34,7 @@ export type FeedPost = {
   id: string;
   seller_name: string;
   seller_avatar_url: string;  // pode ser vazio (gera fallback)
-  buyer_name: string;          // ex: "Sheik Khalid bin Faisal"
+  buyer_name: string;          // ex: "Khalid bin Faisal"
   buyer_emirate: string;       // ex: "Dubai · UAE"
   buyer_flag: string;          // emoji 🇦🇪
   amount_brl: number;          // valor da venda
@@ -146,7 +146,7 @@ const DEFAULT_FEED_POSTS: FeedPost[] = [
     id: "post-1",
     seller_name: "isabella_22",
     seller_avatar_url: "",
-    buyer_name: "Sheik Khalid bin Faisal",
+    buyer_name: "Khalid bin Faisal",
     buyer_emirate: "Dubai · UAE",
     buyer_flag: "🇦🇪",
     amount_brl: 287.50,
@@ -159,7 +159,7 @@ const DEFAULT_FEED_POSTS: FeedPost[] = [
     id: "post-2",
     seller_name: "mariana.s",
     seller_avatar_url: "",
-    buyer_name: "Sheik Mohammed Al Saud",
+    buyer_name: "Mohammed Al Saud",
     buyer_emirate: "Riyadh · KSA",
     buyer_flag: "🇸🇦",
     amount_brl: 342.00,
@@ -172,7 +172,7 @@ const DEFAULT_FEED_POSTS: FeedPost[] = [
     id: "post-3",
     seller_name: "carolina_lf",
     seller_avatar_url: "",
-    buyer_name: "Sheik Ahmed bin Hamad",
+    buyer_name: "Ahmed bin Hamad",
     buyer_emirate: "Doha · QAT",
     buyer_flag: "🇶🇦",
     amount_brl: 219.90,
@@ -185,7 +185,7 @@ const DEFAULT_FEED_POSTS: FeedPost[] = [
     id: "post-4",
     seller_name: "julia.melo",
     seller_avatar_url: "",
-    buyer_name: "Sheik Tariq Al Maktoum",
+    buyer_name: "Tariq Al Maktoum",
     buyer_emirate: "Abu Dhabi · UAE",
     buyer_flag: "🇦🇪",
     amount_brl: 399.70,
@@ -198,7 +198,7 @@ const DEFAULT_FEED_POSTS: FeedPost[] = [
     id: "post-5",
     seller_name: "beatriz_a",
     seller_avatar_url: "",
-    buyer_name: "Sheik Hamdan bin Rashid",
+    buyer_name: "Hamdan bin Rashid",
     buyer_emirate: "Kuwait City · KWT",
     buyer_flag: "🇰🇼",
     amount_brl: 256.40,
@@ -211,7 +211,7 @@ const DEFAULT_FEED_POSTS: FeedPost[] = [
     id: "post-6",
     seller_name: "rafaela.t",
     seller_avatar_url: "",
-    buyer_name: "Sheik Saif bin Zayed",
+    buyer_name: "Saif bin Zayed",
     buyer_emirate: "Manama · BHR",
     buyer_flag: "🇧🇭",
     amount_brl: 312.10,

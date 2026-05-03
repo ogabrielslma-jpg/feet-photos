@@ -115,22 +115,46 @@ type PersistedState = {
 };
 
 async function loadUserState(supabase: any, userId: string): Promise<PersistedState | null> {
+  // Tenta DB primeiro
   try {
     const { data, error } = await supabase
       .from("user_state")
       .select("data")
       .eq("user_id", userId)
       .maybeSingle();
-    if (error || !data) return null;
-    return (data.data || null) as PersistedState | null;
-  } catch {
-    return null;
+    if (!error && data) {
+      console.log("[State] Carregado do banco");
+      return (data.data || null) as PersistedState | null;
+    }
+    if (error) {
+      console.warn("[State] Erro ao carregar do banco:", error.message);
+    }
+  } catch (e: any) {
+    console.warn("[State] Falha no banco:", e?.message);
   }
+
+  // Fallback localStorage
+  try {
+    const raw = localStorage.getItem(`ff_state_${userId}`);
+    if (raw) {
+      console.log("[State] Carregado do localStorage (fallback)");
+      return JSON.parse(raw) as PersistedState;
+    }
+  } catch {}
+
+  console.log("[State] Sem estado salvo");
+  return null;
 }
 
 async function saveUserState(supabase: any, userId: string, state: PersistedState): Promise<void> {
+  // Salva no localStorage SEMPRE (pra não perder)
   try {
-    await supabase
+    localStorage.setItem(`ff_state_${userId}`, JSON.stringify(state));
+  } catch {}
+
+  // Tenta salvar no banco também
+  try {
+    const { error } = await supabase
       .from("user_state")
       .upsert(
         {
@@ -140,7 +164,12 @@ async function saveUserState(supabase: any, userId: string, state: PersistedStat
         },
         { onConflict: "user_id" }
       );
-  } catch {}
+    if (error) {
+      console.warn("[State] Erro ao salvar no banco:", error.message, "(salvo no localStorage como fallback)");
+    }
+  } catch (e: any) {
+    console.warn("[State] Falha no save:", e?.message);
+  }
 }
 
 export default function DashboardPage({ initialConfig }: { initialConfig: LandingConfig }) {
@@ -655,7 +684,12 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     setTimeout(() => {
       setSaleStep("success");
       const liquid = Math.round(bid.amount_brl * (1 - PLATFORM_FEE) * 100) / 100;
-      setWalletBalance((b) => Math.round((b + liquid) * 100) / 100);
+      console.log(`[Venda] Lance R$ ${bid.amount_brl} → líquido R$ ${liquid} adicionado à carteira`);
+      setWalletBalance((b) => {
+        const newBalance = Math.round((b + liquid) * 100) / 100;
+        console.log(`[Carteira] Saldo: R$ ${b} → R$ ${newBalance}`);
+        return newBalance;
+      });
       setHasSold(true);
 
       // Salva como leilão histórico

@@ -200,7 +200,7 @@ export default function AdminPage() {
       id: `post-${Date.now()}`,
       seller_name: "novo_user",
       seller_avatar_url: "",
-      buyer_name: "Sheik Novo Comprador",
+      buyer_name: "Novo Comprador",
       buyer_emirate: "Dubai · UAE",
       buyer_flag: "🇦🇪",
       amount_brl: 250.00,

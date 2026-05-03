@@ -10,18 +10,18 @@ export type Sheik = {
 };
 
 export const FAKE_SHEIKS: Sheik[] = [
-  { name: "Sheikh Abdullah Al-Footim", emirate: "Dubai", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currencyRate: 0.74 },
-  { name: "Prince Khalid bin Toetalla", emirate: "Riyadh", country: "Arábia Saudita", flag: "🇸🇦", currency: "SAR", currencyRate: 0.75 },
-  { name: "Sultan Mohammed Al-Pedalov", emirate: "Abu Dhabi", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currencyRate: 0.74 },
-  { name: "Sheikh Yusuf Al-Heelman", emirate: "Doha", country: "Catar", flag: "🇶🇦", currency: "QAR", currencyRate: 0.73 },
-  { name: "Prince Faisal Bin Soleyman", emirate: "Kuwait City", country: "Kuwait", flag: "🇰🇼", currency: "KWD", currencyRate: 0.061 },
-  { name: "Sheikh Omar Ankleworth III", emirate: "Sharjah", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currencyRate: 0.74 },
-  { name: "Sultan Rashid Al-Archski", emirate: "Manama", country: "Bahrein", flag: "🇧🇭", currency: "BHD", currencyRate: 0.075 },
-  { name: "Prince Tariq bin Bunionov", emirate: "Muscat", country: "Omã", flag: "🇴🇲", currency: "OMR", currencyRate: 0.077 },
-  { name: "Sheikh Ibrahim Al-Tarsali", emirate: "Dubai", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currencyRate: 0.74 },
-  { name: "Sultan Hamad Bin Calluso", emirate: "Riyadh", country: "Arábia Saudita", flag: "🇸🇦", currency: "SAR", currencyRate: 0.75 },
-  { name: "Prince Nasser Al-Insteppi", emirate: "Doha", country: "Catar", flag: "🇶🇦", currency: "QAR", currencyRate: 0.73 },
-  { name: "Sheikh Mansour Bin Pedicur", emirate: "Abu Dhabi", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currencyRate: 0.74 },
+  { name: "Abdullah Al-Footim", emirate: "Dubai", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currencyRate: 0.74 },
+  { name: "Khalid bin Toetalla", emirate: "Riyadh", country: "Arábia Saudita", flag: "🇸🇦", currency: "SAR", currencyRate: 0.75 },
+  { name: "Mohammed Al-Pedalov", emirate: "Abu Dhabi", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currencyRate: 0.74 },
+  { name: "Yusuf Al-Heelman", emirate: "Doha", country: "Catar", flag: "🇶🇦", currency: "QAR", currencyRate: 0.73 },
+  { name: "Faisal Bin Soleyman", emirate: "Kuwait City", country: "Kuwait", flag: "🇰🇼", currency: "KWD", currencyRate: 0.061 },
+  { name: "Omar Ankleworth III", emirate: "Sharjah", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currencyRate: 0.74 },
+  { name: "Rashid Al-Archski", emirate: "Manama", country: "Bahrein", flag: "🇧🇭", currency: "BHD", currencyRate: 0.075 },
+  { name: "Tariq bin Bunionov", emirate: "Muscat", country: "Omã", flag: "🇴🇲", currency: "OMR", currencyRate: 0.077 },
+  { name: "Ibrahim Al-Tarsali", emirate: "Dubai", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currencyRate: 0.74 },
+  { name: "Hamad Bin Calluso", emirate: "Riyadh", country: "Arábia Saudita", flag: "🇸🇦", currency: "SAR", currencyRate: 0.75 },
+  { name: "Nasser Al-Insteppi", emirate: "Doha", country: "Catar", flag: "🇶🇦", currency: "QAR", currencyRate: 0.73 },
+  { name: "Mansour Bin Pedicur", emirate: "Abu Dhabi", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currencyRate: 0.74 },
 ];
 
 export const RARITIES = [
