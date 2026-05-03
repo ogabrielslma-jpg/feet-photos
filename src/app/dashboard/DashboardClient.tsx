@@ -74,6 +74,12 @@ type PastAuction = {
 
 const PLATFORM_FEE = 0.10;
 const MIN_BID = 220;
+
+const PLANS_DATA: Record<"starter" | "creator" | "super", { name: string; yearly: number; fee: number }> = {
+  starter: { name: "Basic", yearly: 79, fee: 10 },
+  creator: { name: "Médio", yearly: 149, fee: 8 },
+  super: { name: "Top Creator", yearly: 169, fee: 4 },
+};
 const MAX_BID = 399.70;
 const UPLOAD_COOLDOWN_HOURS = 2;
 
@@ -191,7 +197,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
   // ============ SAQUE ============
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
-  type WithdrawStep = "method" | "details" | "confirm" | "plan" | "processing" | "success";
+  type WithdrawStep = "method" | "details" | "confirm" | "plan" | "pix" | "processing" | "success";
   const [withdrawStep, setWithdrawStep] = useState<WithdrawStep>("method");
   const [withdrawMethod, setWithdrawMethod] = useState<"pix" | "ted">("pix");
   const [withdrawDocType, setWithdrawDocType] = useState<"cpf" | "cnpj">("cpf");
@@ -206,6 +212,13 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   const [selectedPlanId, setSelectedPlanId] = useState<"starter" | "creator" | "super">("super");
   const [withdrawError, setWithdrawError] = useState("");
   const [withdrawNumber, setWithdrawNumber] = useState("");
+  // Estados do checkout via gateway (assinatura do plano)
+  const [pixQrCode, setPixQrCode] = useState<string>("");
+  const [pixKey, setPixKey] = useState<string>("");
+  const [pixCopied, setPixCopied] = useState(false);
+  const [subscriptionId, setSubscriptionId] = useState<string>("");
+  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [creatingPix, setCreatingPix] = useState(false);
 
   function openWithdrawModal() {
     if (walletBalance <= 0) return;
@@ -221,7 +234,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     setShowWithdrawModal(false);
   }
 
-  function nextWithdrawStep() {
+  async function nextWithdrawStep() {
     setWithdrawError("");
     if (withdrawStep === "method") {
       setWithdrawStep("details");
@@ -260,13 +273,43 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         setTimeout(() => setWithdrawStep("success"), 2000);
       }
     } else if (withdrawStep === "plan") {
-      // Selecionou plano — processa
+      // Selecionou plano — chama gateway para gerar PIX
+      setCreatingPix(true);
+      setWithdrawError("");
+      try {
+        const res = await fetch("/api/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            plan_id: selectedPlanId,
+            customer_name: withdrawHolderName,
+            customer_email: profile?.email || "user@footpriv.com",
+            customer_doc: withdrawDoc,
+            customer_doc_type: withdrawDocType,
+            customer_phone: "",
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || "Erro ao gerar PIX");
+        }
+        setPixQrCode(data.qr_code_base64 || "");
+        setPixKey(data.pix_key || "");
+        setSubscriptionId(data.subscription_id);
+        setIsDemoMode(!!data.demo);
+        setWithdrawStep("pix");
+      } catch (e: any) {
+        setWithdrawError(e?.message || "Erro ao processar pagamento");
+      } finally {
+        setCreatingPix(false);
+      }
+    } else if (withdrawStep === "pix") {
+      // Confirmação manual após pagamento (ou via polling)
       setWithdrawStep("processing");
       setTimeout(() => {
-        // Aqui em produção seria a integração de pagamento — agora só simula
         setWalletBalance(0);
         setWithdrawStep("success");
-      }, 2200);
+      }, 1500);
     }
   }
 
@@ -274,6 +317,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     if (withdrawStep === "details") setWithdrawStep("method");
     else if (withdrawStep === "confirm") setWithdrawStep("details");
     else if (withdrawStep === "plan") setWithdrawStep("confirm");
+    else if (withdrawStep === "pix") setWithdrawStep("plan");
   }
 
   // Reset state do leilão (debug/restart)
@@ -541,6 +585,26 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     }, 1000);
     return () => clearInterval(i);
   }, [lastUploadAt]);
+
+  // ============ POLLING STATUS DO PIX ============
+  useEffect(() => {
+    if (withdrawStep !== "pix" || !subscriptionId) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/checkout?subscription_id=${subscriptionId}`);
+        const data = await res.json();
+        if (data.status === "paid") {
+          clearInterval(interval);
+          setWithdrawStep("processing");
+          setTimeout(() => {
+            setWalletBalance(0);
+            setWithdrawStep("success");
+          }, 1500);
+        }
+      } catch {}
+    }, 3000); // checa a cada 3s
+    return () => clearInterval(interval);
+  }, [withdrawStep, subscriptionId]);
 
   // ============ AUTO-SAVE DO ESTADO ============
   // Persiste no banco (Supabase) sempre que algo importante muda.
@@ -1643,7 +1707,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
             {/* Header */}
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
-                {(withdrawStep === "details" || withdrawStep === "confirm" || withdrawStep === "plan") && (
+                {(withdrawStep === "details" || withdrawStep === "confirm" || withdrawStep === "plan" || withdrawStep === "pix") && (
                   <button onClick={backWithdrawStep} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition">
                     <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -1655,6 +1719,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   {withdrawStep === "details" && "Dados do beneficiário"}
                   {withdrawStep === "confirm" && "Confirmar saque"}
                   {withdrawStep === "plan" && "Antes de sacar..."}
+                  {withdrawStep === "pix" && "Pague via PIX"}
                   {withdrawStep === "processing" && "Processando..."}
                   {withdrawStep === "success" && "Saque solicitado!"}
                 </h2>
@@ -2037,12 +2102,88 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   ))}
                 </div>
 
-                <button onClick={nextWithdrawStep}
-                  className="w-full bg-gray-900 hover:bg-black text-white font-bold py-3.5 rounded-xl transition text-sm">
-                  Confirmar plano e finalizar saque
+                {withdrawError && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-3 py-2 rounded-xl mb-3">
+                    {withdrawError}
+                  </div>
+                )}
+
+                <button onClick={nextWithdrawStep} disabled={creatingPix}
+                  className="w-full bg-gray-900 hover:bg-black disabled:bg-gray-400 disabled:cursor-wait text-white font-bold py-3.5 rounded-xl transition text-sm flex items-center justify-center gap-2">
+                  {creatingPix ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>
+                      Gerando PIX...
+                    </>
+                  ) : (
+                    "Gerar PIX e finalizar"
+                  )}
                 </button>
                 <p className="text-[10px] text-center text-gray-500 mt-2">
-                  Pagamento anual via PIX ou cartão. Renova a cada 12 meses.
+                  Pagamento anual via PIX. Renova a cada 12 meses.
+                </p>
+              </>
+            )}
+
+            {/* PASSO 4.5: PIX QR Code */}
+            {withdrawStep === "pix" && (
+              <>
+                {isDemoMode && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3">
+                    <p className="text-[11px] text-amber-800 leading-relaxed">
+                      ⚠ <strong>Modo demonstração.</strong> Este QR Code é apenas ilustrativo. Quando a chave da gateway for configurada, será um PIX real da ImperiumPay.
+                    </p>
+                  </div>
+                )}
+
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4 text-center">
+                  <p className="text-[10px] uppercase tracking-wider text-emerald-700 font-bold mb-1">Pague para ativar seu plano</p>
+                  <p className="text-2xl font-display text-gray-900">R$ {(PLANS_DATA[selectedPlanId]?.yearly || 79).toFixed(2).replace(".", ",")}</p>
+                  <p className="text-[10px] text-gray-600 mt-1">Plano {PLANS_DATA[selectedPlanId]?.name} · 1 ano</p>
+                </div>
+
+                {/* QR Code */}
+                {pixQrCode && (
+                  <div className="bg-white border-2 border-gray-200 rounded-2xl p-4 mb-3 flex justify-center">
+                    <img src={pixQrCode} alt="QR Code PIX" className="w-56 h-56" />
+                  </div>
+                )}
+
+                {/* Chave copia-e-cola */}
+                <div className="mb-4">
+                  <label className="block text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1.5">PIX Copia e Cola</label>
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+                    <p className="text-[10px] text-gray-700 font-mono break-all leading-relaxed">{pixKey}</p>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(pixKey);
+                        setPixCopied(true);
+                        setTimeout(() => setPixCopied(false), 2000);
+                      }}
+                      className={`w-full mt-2 py-2 rounded-lg text-xs font-bold transition ${
+                        pixCopied ? "bg-emerald-500 text-white" : "bg-gray-900 text-white hover:bg-black"
+                      }`}
+                    >
+                      {pixCopied ? "✓ Copiado!" : "Copiar código"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Loader esperando pagamento */}
+                <div className="flex items-center justify-center gap-2 text-xs text-gray-600 mb-4">
+                  <div className="w-3 h-3 border-2 border-gray-300 border-t-emerald-500 rounded-full animate-spin"></div>
+                  <span>Aguardando pagamento...</span>
+                </div>
+
+                {isDemoMode && (
+                  <button onClick={nextWithdrawStep}
+                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition text-sm">
+                    Simular pagamento (demo)
+                  </button>
+                )}
+
+                <p className="text-[10px] text-center text-gray-400 mt-3">
+                  Assim que confirmarmos seu pagamento, seu saque será liberado automaticamente.
                 </p>
               </>
             )}
