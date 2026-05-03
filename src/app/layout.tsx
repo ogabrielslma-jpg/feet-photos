@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "FootFans — Discreto. Anônimo. Lucrativo.",
+  title: "FootPriv — Discreto. Anônimo. Lucrativo.",
   description: "PROJETO ACADÊMICO FICTÍCIO. Marketplace simulado.",
 };
 

@@ -248,7 +248,7 @@ export default function AdminPage() {
               </svg>
             </div>
             <h1 className="font-display text-2xl text-gray-900 mb-1">Painel Admin</h1>
-            <p className="text-sm text-gray-500">Foot Fans · Editor da landing</p>
+            <p className="text-sm text-gray-500">Foot Priv · Editor da landing</p>
           </div>
           <input type="password" placeholder="Senha de acesso" value={passwordInput}
             onChange={(e) => setPasswordInput(e.target.value)} autoFocus

@@ -337,7 +337,7 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
             <div className="text-center mt-20">
               <div className="font-display text-3xl tracking-[0.15em] text-moss-500 leading-none mb-1" style={{ color: config.color_primary }}>{config.logo_primary}</div>
               <div className="font-display text-base tracking-[0.4em] text-bone-100/60 leading-none">{config.logo_secondary}</div>
-              <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-ink-600 mt-6">© 2026 — Foot Fans</p>
+              <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-ink-600 mt-6">© 2026 — Foot Priv</p>
             </div>
           </div>
         </section>

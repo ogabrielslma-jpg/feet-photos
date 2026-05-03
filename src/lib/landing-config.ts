@@ -225,7 +225,7 @@ const DEFAULT_FEED_POSTS: FeedPost[] = [
 const DEFAULT_DASHBOARD_CONFIG: DashboardConfig = {
   logo_mode: "same_as_landing",
   logo_primary: "FOOT",
-  logo_secondary: "FANS",
+  logo_secondary: "PRIV",
   logo_image_url: "",
   logo_size: 100,
 
@@ -254,7 +254,7 @@ const DEFAULT_DASHBOARD_CONFIG: DashboardConfig = {
 export const DEFAULT_LANDING_CONFIG: LandingConfig = {
   logo_mode: "text",
   logo_primary: "FOOT",
-  logo_secondary: "FANS",
+  logo_secondary: "PRIV",
   logo_image_url: "",
 
   tagline: "Discreto · Anônimo · Lucrativo",

@@ -1291,7 +1291,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                 <div className="relative">
                   <div className="flex items-center justify-between mb-8">
                     <div>
-                      <p className="text-[10px] uppercase tracking-[0.2em] text-white/50 mb-1">Carteira FootFans</p>
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-white/50 mb-1">Carteira FootPriv</p>
                       <p className="text-xs text-white/70">@{profile?.username || "user"}</p>
                     </div>
                     <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur flex items-center justify-center">
@@ -1565,7 +1565,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
           )}
 
           <p className="text-center text-[10px] text-gray-400 mt-auto">
-            © 2026 — Foot Fans
+            © 2026 — Foot Priv
           </p>
         </aside>
       </div>
@@ -2289,7 +2289,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                     <span className="text-gray-700 tabular-nums">R$ {fmtBRL(selectedBid.amount_brl)}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600">Taxa Foot Fans (10%)</span>
+                    <span className="text-gray-600">Taxa FootPriv (10%)</span>
                     <span className="font-semibold text-red-500 tabular-nums">
                       − R$ {fmtBRL(selectedBid.amount_brl * PLATFORM_FEE)}
                     </span>
@@ -2479,7 +2479,7 @@ function AppBanner() {
           Vocês pediram e está quase lá!
         </h4>
         <p className="text-white/90 text-xs leading-relaxed mb-3">
-          Nos próximos dias, o FootFans estará disponível na <strong>App Store</strong> e <strong>Play Store</strong>.
+          Nos próximos dias, a FootPriv estará disponível na <strong>App Store</strong> e <strong>Play Store</strong>.
         </p>
         <div className="flex gap-2 flex-wrap">
           <div className="bg-black/40 backdrop-blur rounded-lg px-3 py-1.5 flex items-center gap-1.5">
