@@ -158,6 +158,103 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   const [timeLeft, setTimeLeft] = useState(0);
   const [auctionEnded, setAuctionEnded] = useState(false);
   const [showFinalModal, setShowFinalModal] = useState(false);
+
+  // ============ SAQUE ============
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  type WithdrawStep = "method" | "details" | "confirm" | "plan" | "processing" | "success";
+  const [withdrawStep, setWithdrawStep] = useState<WithdrawStep>("method");
+  const [withdrawMethod, setWithdrawMethod] = useState<"pix" | "ted">("pix");
+  const [withdrawDocType, setWithdrawDocType] = useState<"cpf" | "cnpj">("cpf");
+  const [withdrawDoc, setWithdrawDoc] = useState("");
+  const [withdrawHolderName, setWithdrawHolderName] = useState("");
+  const [withdrawPixKeyType, setWithdrawPixKeyType] = useState<"cpf" | "phone" | "email" | "random">("cpf");
+  const [withdrawPixKey, setWithdrawPixKey] = useState("");
+  const [withdrawBankCode, setWithdrawBankCode] = useState("");
+  const [withdrawAgency, setWithdrawAgency] = useState("");
+  const [withdrawAccount, setWithdrawAccount] = useState("");
+  const [withdrawAmount, setWithdrawAmount] = useState(0);
+  const [selectedPlanId, setSelectedPlanId] = useState<"starter" | "creator" | "super">("super");
+  const [withdrawError, setWithdrawError] = useState("");
+
+  function openWithdrawModal() {
+    if (walletBalance <= 0) return;
+    setWithdrawAmount(walletBalance);
+    setWithdrawStep("method");
+    setWithdrawError("");
+    setShowWithdrawModal(true);
+  }
+
+  function closeWithdrawModal() {
+    setShowWithdrawModal(false);
+  }
+
+  function nextWithdrawStep() {
+    setWithdrawError("");
+    if (withdrawStep === "method") {
+      setWithdrawStep("details");
+    } else if (withdrawStep === "details") {
+      // Valida campos
+      if (!withdrawDoc || withdrawDoc.length < 11) {
+        setWithdrawError(`Informe um ${withdrawDocType === "cpf" ? "CPF" : "CNPJ"} válido.`);
+        return;
+      }
+      if (!withdrawHolderName || withdrawHolderName.trim().length < 3) {
+        setWithdrawError("Informe o nome completo do beneficiário.");
+        return;
+      }
+      if (withdrawMethod === "pix") {
+        if (!withdrawPixKey) {
+          setWithdrawError("Informe a chave PIX.");
+          return;
+        }
+        if (withdrawPixKeyType === "cpf" && withdrawPixKey.replace(/\D/g, "") !== withdrawDoc.replace(/\D/g, "")) {
+          setWithdrawError("A chave PIX (CPF) precisa ser igual ao CPF do beneficiário.");
+          return;
+        }
+      } else {
+        if (!withdrawBankCode || !withdrawAgency || !withdrawAccount) {
+          setWithdrawError("Preencha todos os dados bancários.");
+          return;
+        }
+      }
+      setWithdrawStep("confirm");
+    } else if (withdrawStep === "confirm") {
+      // Vai pra paywall do plano (ou direto pra success se já tem plano)
+      if (!profile?.plan) {
+        setWithdrawStep("plan");
+      } else {
+        setWithdrawStep("processing");
+        setTimeout(() => setWithdrawStep("success"), 2000);
+      }
+    } else if (withdrawStep === "plan") {
+      // Selecionou plano — processa
+      setWithdrawStep("processing");
+      setTimeout(() => {
+        // Aqui em produção seria a integração de pagamento — agora só simula
+        setWalletBalance(0);
+        setWithdrawStep("success");
+      }, 2200);
+    }
+  }
+
+  function backWithdrawStep() {
+    if (withdrawStep === "details") setWithdrawStep("method");
+    else if (withdrawStep === "confirm") setWithdrawStep("details");
+    else if (withdrawStep === "plan") setWithdrawStep("confirm");
+  }
+
+  // Reset state do leilão (debug/restart)
+  async function resetLeilao() {
+    if (!confirm("Resetar TUDO? Isso vai apagar saldo, lances, histórico e estado do leilão. Não tem como desfazer.")) return;
+    try {
+      if (profile?.id) {
+        await supabase.from("user_state").delete().eq("user_id", profile.id);
+      }
+      window.location.reload();
+    } catch (e) {
+      alert("Erro ao resetar. Tenta de novo.");
+    }
+  }
   const [hasSold, setHasSold] = useState(false);
 
   // Modal venda
@@ -362,7 +459,9 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
   // ============ BIDS FAKE + NOTIFICAÇÕES (2min) ============
   useEffect(() => {
-    if (!activeListing || bidScheduledRef.current || auctionEnded) return;
+    if (!stateLoaded) return;
+    if (!activeListing || auctionEnded || hasSold) return;
+    if (bidScheduledRef.current) return;
     bidScheduledRef.current = true;
     let timeoutId: any;
     const scheduleNextBid = (lastBid: number) => {
@@ -406,8 +505,11 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       }, delay);
     };
     scheduleNextBid(currentBidBRL);
-    return () => clearTimeout(timeoutId);
-  }, [activeListing, auctionEnded]);
+    return () => {
+      clearTimeout(timeoutId);
+      bidScheduledRef.current = false;
+    };
+  }, [stateLoaded, activeListing?.id, auctionEnded, hasSold]);
 
   async function logout() {
     await supabase.auth.signOut();
@@ -1030,13 +1132,14 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
               {/* Botão saque */}
               <button
+                onClick={openWithdrawModal}
                 disabled={walletBalance === 0}
                 className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl transition tracking-wide text-sm flex items-center justify-center gap-2 shadow-md mb-5"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                 </svg>
-                {walletBalance > 0 ? "Sacar via PIX agora" : "Sem saldo disponível"}
+                {walletBalance > 0 ? "Sacar saldo" : "Sem saldo disponível"}
               </button>
 
               {/* Card taxa progressiva */}
@@ -1199,6 +1302,11 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                 </button>
               </div>
 
+              <button onClick={resetLeilao}
+                className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold py-3 rounded-xl transition text-sm border border-amber-200 mb-2">
+                🔄 Resetar leilão (debug)
+              </button>
+
               <button onClick={logout}
                 className="w-full bg-red-50 hover:bg-red-100 text-red-600 font-semibold py-3 rounded-xl transition text-sm border border-red-200">
                 Sair da conta
@@ -1339,6 +1447,357 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
               >
                 Fechar
               </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* === MODAL DE SAQUE === */}
+      {showWithdrawModal && (
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 my-8 shadow-2xl relative">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                {(withdrawStep === "details" || withdrawStep === "confirm" || withdrawStep === "plan") && (
+                  <button onClick={backWithdrawStep} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition">
+                    <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                )}
+                <h2 className="font-display text-xl text-gray-900">
+                  {withdrawStep === "method" && "Escolha como sacar"}
+                  {withdrawStep === "details" && "Dados do beneficiário"}
+                  {withdrawStep === "confirm" && "Confirmar saque"}
+                  {withdrawStep === "plan" && "Antes de sacar..."}
+                  {withdrawStep === "processing" && "Processando..."}
+                  {withdrawStep === "success" && "Saque solicitado!"}
+                </h2>
+              </div>
+              {withdrawStep !== "processing" && withdrawStep !== "success" && (
+                <button onClick={closeWithdrawModal} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition">
+                  <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            {/* PASSO 1: Método */}
+            {withdrawStep === "method" && (
+              <>
+                <p className="text-sm text-gray-600 mb-4">Saldo disponível: <strong>R$ {fmtBRL(withdrawAmount)}</strong></p>
+
+                <button onClick={() => { setWithdrawMethod("pix"); nextWithdrawStep(); }}
+                  className="w-full bg-white border-2 border-gray-200 hover:border-emerald-500 rounded-2xl p-4 mb-3 text-left transition group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center group-hover:bg-emerald-100 transition">
+                      <svg className="w-6 h-6 text-emerald-600" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M11.917 11.71a2.046 2.046 0 0 1-1.454-.602l-2.1-2.1a.4.4 0 0 0-.282-.117h-.575l2.348 2.349c.467.464.9.713 1.514.713h.575v-.001c-.61 0-1.043-.244-1.51-.708-.47-.464-.9-.713-1.51-.713h-.575v-.821z M16.494 8.886l-2.842-2.842a2.045 2.045 0 0 0-1.454-.602.4.4 0 0 0-.283.117L9.815 7.66l-1.1 1.1a3.158 3.158 0 0 0-.901-.135H6.388L3.566 5.804a.4.4 0 0 0-.283-.117h-1.31a.197.197 0 0 0-.139.336l3.42 3.42c.398.394.626.926.626 1.491v1.057c0 .56-.224 1.09-.626 1.483l-3.42 3.42a.197.197 0 0 0 .14.336h1.309a.4.4 0 0 0 .283-.117l2.822-2.821h1.426c.305 0 .609-.046.901-.135l1.1 1.1 2.1 2.099a.4.4 0 0 0 .283.117 2.045 2.045 0 0 0 1.454-.602l2.842-2.842c.811-.811.811-2.118 0-2.929l-2.842-2.84z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-bold text-gray-900">PIX</div>
+                      <div className="text-xs text-gray-500">Recebe na hora</div>
+                    </div>
+                    <span className="text-xs bg-emerald-50 text-emerald-700 font-bold rounded-full px-2 py-1">Instantâneo</span>
+                  </div>
+                </button>
+
+                <button onClick={() => { setWithdrawMethod("ted"); nextWithdrawStep(); }}
+                  className="w-full bg-white border-2 border-gray-200 hover:border-gray-700 rounded-2xl p-4 text-left transition group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+                      <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-bold text-gray-900">Transferência bancária</div>
+                      <div className="text-xs text-gray-500">Cai no próximo dia útil</div>
+                    </div>
+                    <span className="text-xs bg-gray-100 text-gray-700 font-semibold rounded-full px-2 py-1">D+1</span>
+                  </div>
+                </button>
+              </>
+            )}
+
+            {/* PASSO 2: Detalhes */}
+            {withdrawStep === "details" && (
+              <>
+                <p className="text-xs text-gray-500 mb-4">
+                  Os dados do beneficiário precisam coincidir com o titular da conta cadastrada.
+                </p>
+
+                {/* Tipo de documento */}
+                <div className="mb-3">
+                  <label className="block text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1.5">Tipo de documento</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button type="button" onClick={() => setWithdrawDocType("cpf")}
+                      className={`py-2.5 rounded-xl text-sm font-bold transition border ${
+                        withdrawDocType === "cpf"
+                          ? "bg-gray-900 text-white border-gray-900"
+                          : "bg-white text-gray-700 border-gray-200"
+                      }`}>CPF</button>
+                    <button type="button" onClick={() => setWithdrawDocType("cnpj")}
+                      className={`py-2.5 rounded-xl text-sm font-bold transition border ${
+                        withdrawDocType === "cnpj"
+                          ? "bg-gray-900 text-white border-gray-900"
+                          : "bg-white text-gray-700 border-gray-200"
+                      }`}>CNPJ</button>
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <label className="block text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1.5">
+                    {withdrawDocType === "cpf" ? "CPF do beneficiário" : "CNPJ"}
+                  </label>
+                  <input type="text" value={withdrawDoc}
+                    onChange={(e) => setWithdrawDoc(e.target.value.replace(/\D/g, "").slice(0, withdrawDocType === "cpf" ? 11 : 14))}
+                    placeholder={withdrawDocType === "cpf" ? "000.000.000-00" : "00.000.000/0000-00"}
+                    className="w-full bg-gray-50 border border-gray-200 focus:border-gray-900 rounded-xl px-4 py-3 text-sm text-gray-900 outline-none transition" />
+                </div>
+
+                <div className="mb-3">
+                  <label className="block text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1.5">
+                    {withdrawDocType === "cpf" ? "Nome completo" : "Razão social"}
+                  </label>
+                  <input type="text" value={withdrawHolderName}
+                    onChange={(e) => setWithdrawHolderName(e.target.value)}
+                    placeholder={withdrawDocType === "cpf" ? "Como está no documento" : "Razão social da empresa"}
+                    className="w-full bg-gray-50 border border-gray-200 focus:border-gray-900 rounded-xl px-4 py-3 text-sm text-gray-900 outline-none transition" />
+                </div>
+
+                {/* PIX */}
+                {withdrawMethod === "pix" && (
+                  <>
+                    <div className="mb-3">
+                      <label className="block text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1.5">Tipo de chave PIX</label>
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {([
+                          { id: "cpf", label: "CPF" },
+                          { id: "phone", label: "Celular" },
+                          { id: "email", label: "Email" },
+                          { id: "random", label: "Aleatória" },
+                        ] as const).map((k) => (
+                          <button key={k.id} type="button" onClick={() => setWithdrawPixKeyType(k.id)}
+                            className={`py-2 rounded-lg text-[11px] font-bold transition border ${
+                              withdrawPixKeyType === k.id
+                                ? "bg-gray-900 text-white border-gray-900"
+                                : "bg-white text-gray-700 border-gray-200"
+                            }`}>{k.label}</button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mb-3">
+                      <label className="block text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1.5">Chave PIX</label>
+                      <input type="text" value={withdrawPixKey}
+                        onChange={(e) => setWithdrawPixKey(e.target.value)}
+                        placeholder={
+                          withdrawPixKeyType === "cpf" ? "Mesmo CPF acima" :
+                          withdrawPixKeyType === "phone" ? "+55 (00) 00000-0000" :
+                          withdrawPixKeyType === "email" ? "seu@email.com" :
+                          "abc12345-..."
+                        }
+                        className="w-full bg-gray-50 border border-gray-200 focus:border-gray-900 rounded-xl px-4 py-3 text-sm text-gray-900 outline-none transition" />
+                      <p className="text-[10px] text-gray-500 mt-1">
+                        ⓘ A chave precisa estar vinculada ao mesmo CPF/CNPJ do beneficiário.
+                      </p>
+                    </div>
+                  </>
+                )}
+
+                {/* TED */}
+                {withdrawMethod === "ted" && (
+                  <>
+                    <div className="mb-3">
+                      <label className="block text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1.5">Banco (código)</label>
+                      <input type="text" value={withdrawBankCode}
+                        onChange={(e) => setWithdrawBankCode(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                        placeholder="Ex: 341 (Itaú), 237 (Bradesco)"
+                        className="w-full bg-gray-50 border border-gray-200 focus:border-gray-900 rounded-xl px-4 py-3 text-sm text-gray-900 outline-none transition" />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      <div>
+                        <label className="block text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1.5">Agência</label>
+                        <input type="text" value={withdrawAgency}
+                          onChange={(e) => setWithdrawAgency(e.target.value.replace(/\D/g, ""))}
+                          placeholder="0000"
+                          className="w-full bg-gray-50 border border-gray-200 focus:border-gray-900 rounded-xl px-3 py-3 text-sm text-gray-900 outline-none transition" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1.5">Conta + dígito</label>
+                        <input type="text" value={withdrawAccount}
+                          onChange={(e) => setWithdrawAccount(e.target.value)}
+                          placeholder="00000-0"
+                          className="w-full bg-gray-50 border border-gray-200 focus:border-gray-900 rounded-xl px-3 py-3 text-sm text-gray-900 outline-none transition" />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Aviso CNPJ */}
+                {withdrawDocType === "cpf" && withdrawAmount >= 3800 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3">
+                    <div className="flex items-start gap-2">
+                      <span className="text-base">💡</span>
+                      <div>
+                        <p className="text-xs font-bold text-amber-900 mb-1">Recomendação fiscal</p>
+                        <p className="text-[11px] text-amber-800 leading-relaxed">
+                          Creators que recebem mais de <strong>R$ 3.800/mês</strong> são incentivadas a abrir um <strong>CNPJ MEI</strong> pra pagar menos imposto e poder emitir nota fiscal. A taxa é de R$ 75,90/mês e isenta IR sobre a maioria das atividades.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {withdrawError && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-3 py-2 rounded-xl mb-3">
+                    {withdrawError}
+                  </div>
+                )}
+
+                <button onClick={nextWithdrawStep}
+                  className="w-full bg-gray-900 hover:bg-black text-white font-bold py-3.5 rounded-xl transition text-sm">
+                  Continuar
+                </button>
+              </>
+            )}
+
+            {/* PASSO 3: Confirmação */}
+            {withdrawStep === "confirm" && (
+              <>
+                <p className="text-sm text-gray-600 mb-4">Confira os dados antes de confirmar:</p>
+
+                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 mb-4 space-y-2.5">
+                  <Row label="Valor" value={`R$ ${fmtBRL(withdrawAmount)}`} bold />
+                  <Row label="Método" value={withdrawMethod === "pix" ? "PIX (instantâneo)" : "Transferência (D+1)"} />
+                  <Row label={withdrawDocType === "cpf" ? "CPF" : "CNPJ"} value={withdrawDoc} />
+                  <Row label={withdrawDocType === "cpf" ? "Nome" : "Razão social"} value={withdrawHolderName} />
+                  {withdrawMethod === "pix" ? (
+                    <>
+                      <Row label="Tipo de chave" value={
+                        withdrawPixKeyType === "cpf" ? "CPF" :
+                        withdrawPixKeyType === "phone" ? "Celular" :
+                        withdrawPixKeyType === "email" ? "Email" :
+                        "Aleatória"
+                      } />
+                      <Row label="Chave PIX" value={withdrawPixKey} />
+                    </>
+                  ) : (
+                    <>
+                      <Row label="Banco" value={withdrawBankCode} />
+                      <Row label="Agência" value={withdrawAgency} />
+                      <Row label="Conta" value={withdrawAccount} />
+                    </>
+                  )}
+                </div>
+
+                <button onClick={nextWithdrawStep}
+                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl transition text-sm">
+                  Confirmar saque
+                </button>
+              </>
+            )}
+
+            {/* PASSO 4: Paywall plano */}
+            {withdrawStep === "plan" && (
+              <>
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
+                  <p className="text-xs font-bold text-amber-900 mb-1">⚠ Sua conta ainda não tem um plano ativo</p>
+                  <p className="text-[11px] text-amber-800 leading-relaxed">
+                    Pra sacar seu saldo, escolha um plano que se encaixe no seu volume de vendas. Você pode trocar de plano a qualquer momento.
+                  </p>
+                </div>
+
+                <div className="space-y-2 mb-4">
+                  {[
+                    { id: "starter" as const, name: "Starter", monthly: 79, fee: 10, emoji: "🪙", tagline: "Até 4 leilões/mês" },
+                    { id: "creator" as const, name: "Creator", monthly: 149, fee: 8, emoji: "⭐", tagline: "Leilões ilimitados" },
+                    { id: "super" as const, name: "Super Creator", monthly: 169, fee: 4, emoji: "👑", tagline: "Saque instantâneo + selo verificado", highlight: true },
+                  ].map((p) => (
+                    <button key={p.id} onClick={() => setSelectedPlanId(p.id)}
+                      className={`w-full text-left rounded-2xl p-4 border-2 transition relative ${
+                        selectedPlanId === p.id
+                          ? p.highlight
+                            ? "border-emerald-500 bg-emerald-50"
+                            : "border-gray-900 bg-gray-50"
+                          : "border-gray-200 bg-white hover:border-gray-400"
+                      }`}>
+                      {p.highlight && (
+                        <span className="absolute -top-2 right-3 bg-emerald-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                          Mais popular
+                        </span>
+                      )}
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">{p.emoji}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-gray-900 text-sm">{p.name}</div>
+                          <div className="text-[11px] text-gray-500 truncate">{p.tagline}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-display text-lg text-gray-900 tabular-nums">R$ {p.monthly}</div>
+                          <div className="text-[10px] text-gray-500">{p.fee}% taxa</div>
+                        </div>
+                        {selectedPlanId === p.id && (
+                          <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                <button onClick={nextWithdrawStep}
+                  className="w-full bg-gray-900 hover:bg-black text-white font-bold py-3.5 rounded-xl transition text-sm">
+                  Confirmar plano e finalizar saque
+                </button>
+                <p className="text-[10px] text-center text-gray-500 mt-2">
+                  Você não será cobrado agora. Primeira mensalidade em 7 dias.
+                </p>
+              </>
+            )}
+
+            {/* PASSO 5: Processamento */}
+            {withdrawStep === "processing" && (
+              <div className="py-10 text-center">
+                <div className="w-20 h-20 mx-auto mb-6 relative">
+                  <div className="absolute inset-0 border-4 border-gray-200 rounded-full"></div>
+                  <div className="absolute inset-0 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+                <h3 className="font-display text-xl text-gray-900 mb-2">Processando saque</h3>
+                <p className="text-sm text-gray-600">Validando dados bancários...</p>
+              </div>
+            )}
+
+            {/* PASSO 6: Sucesso */}
+            {withdrawStep === "success" && (
+              <div className="py-6 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 bg-emerald-500 rounded-full flex items-center justify-center">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="font-display text-2xl text-gray-900 mb-2">Saque solicitado!</h3>
+                <p className="text-sm text-gray-600 mb-1">
+                  R$ {fmtBRL(withdrawAmount)} via {withdrawMethod === "pix" ? "PIX" : "TED"}
+                </p>
+                <p className="text-xs text-gray-500 mb-6">
+                  {withdrawMethod === "pix"
+                    ? "O dinheiro cai na sua conta em até 2 minutos."
+                    : "O dinheiro cai na sua conta no próximo dia útil."}
+                </p>
+                <button onClick={closeWithdrawModal}
+                  className="w-full bg-gray-900 hover:bg-black text-white font-bold py-3.5 rounded-xl transition text-sm">
+                  Voltar pra carteira
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -1631,6 +2090,15 @@ function UserAvatar({ url, initial, size }: { url: string | null; initial: strin
       style={{ width: size, height: size, fontSize: size * 0.42 }}
     >
       {initial}
+    </div>
+  );
+}
+
+function Row({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold">{label}</span>
+      <span className={`text-sm text-gray-900 ${bold ? "font-bold tabular-nums" : "font-medium"} text-right break-all`}>{value}</span>
     </div>
   );
 }
