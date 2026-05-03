@@ -348,9 +348,9 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
           title,
           image_url: imageUrl,
           rarity: rarity.label.toLowerCase(),
-          starting_bid: MIN_BID,
+          starting_price: MIN_BID,
           current_bid: MIN_BID,
-          status: "active",
+          bid_count: 0,
         })
         .select()
         .single();
