@@ -218,6 +218,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   const [pixCopied, setPixCopied] = useState(false);
   const [subscriptionId, setSubscriptionId] = useState<string>("");
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [demoReason, setDemoReason] = useState<string>("");
   const [creatingPix, setCreatingPix] = useState(false);
 
   function openWithdrawModal() {
@@ -297,6 +298,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         setPixKey(data.pix_key || "");
         setSubscriptionId(data.subscription_id);
         setIsDemoMode(!!data.demo);
+        setDemoReason(data.demo_reason || "");
         setWithdrawStep("pix");
       } catch (e: any) {
         setWithdrawError(e?.message || "Erro ao processar pagamento");
@@ -2131,7 +2133,12 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                 {isDemoMode && (
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3">
                     <p className="text-[11px] text-amber-800 leading-relaxed">
-                      ⚠ <strong>Modo demonstração.</strong> Este QR Code é apenas ilustrativo. Quando a chave da gateway for configurada, será um PIX real da ImperiumPay.
+                      ⚠ <strong>Modo demonstração.</strong> Este QR Code é apenas ilustrativo.
+                      {demoReason && (
+                        <>
+                          <br /><strong>Motivo:</strong> {demoReason}
+                        </>
+                      )}
                     </p>
                   </div>
                 )}

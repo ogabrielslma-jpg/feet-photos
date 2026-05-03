@@ -37,9 +37,23 @@ export async function POST(req: NextRequest) {
     const publicKey = process.env.IMPERIUMPAY_PUBLIC_KEY;
     const privateKey = process.env.IMPERIUMPAY_PRIVATE_KEY;
 
+    // DIAGNÓSTICO: log detalhado do estado das variáveis
+    const envDiagnostic = {
+      has_public_key: !!publicKey,
+      has_private_key: !!privateKey,
+      public_key_prefix: publicKey ? publicKey.substring(0, 8) + "..." : "MISSING",
+      private_key_length: privateKey ? privateKey.length : 0,
+    };
+    console.log("[Checkout] Env diagnostic:", JSON.stringify(envDiagnostic));
+
     if (!publicKey || !privateKey) {
       // Modo demo: gateway não configurado, retorna mock
-      console.warn("[Checkout] Gateway não configurado — retornando mock");
+      const reason = !publicKey && !privateKey
+        ? "Nenhuma das duas chaves está configurada"
+        : !publicKey
+          ? "IMPERIUMPAY_PUBLIC_KEY não está configurada"
+          : "IMPERIUMPAY_PRIVATE_KEY não está configurada";
+      console.warn("[Checkout] Modo demo. Motivo:", reason);
       const mockSaleId = `mock_${Date.now()}`;
       const { data: sub, error: subError } = await supabase
         .from("subscriptions")
@@ -61,6 +75,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         demo: true,
+        demo_reason: reason,
+        env_diagnostic: envDiagnostic,
         subscription_id: sub.id,
         sale_id: mockSaleId,
         qr_code_base64: sub.pix_qr_code,
