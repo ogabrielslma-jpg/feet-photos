@@ -2,15 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 type Plan = {
   id: "starter" | "creator" | "super";
   name: string;
   emoji: string;
-  monthly: number;
+  yearly: number;
   fee_pct: number;
   tagline: string;
+  withdraw_limit: string;
   features: string[];
   highlight?: boolean;
   badge?: string;
@@ -19,48 +19,53 @@ type Plan = {
 const PLANS: Plan[] = [
   {
     id: "starter",
-    name: "Starter",
+    name: "Basic",
     emoji: "🪙",
-    monthly: 79,
+    yearly: 79,
     fee_pct: 10,
-    tagline: "Pra quem está começando agora",
+    tagline: "Pra quem está começando",
+    withdraw_limit: "Saques até R$ 12.000 / mês",
     features: [
-      "Até 4 leilões por mês",
-      "Carteira digital + Pix",
+      "Saque PIX 24h por dia",
+      "Saque instantâneo",
+      "Leilões ilimitados",
+      "Carteira digital",
       "Suporte por email",
-      "Saque em 24h",
     ],
   },
   {
     id: "creator",
-    name: "Creator",
+    name: "Médio",
     emoji: "⭐",
-    monthly: 149,
+    yearly: 149,
     fee_pct: 8,
-    tagline: "Pra quem quer crescer rápido",
+    tagline: "Pra quem fatura todo mês",
+    withdraw_limit: "Saques até R$ 48.000 / mês",
     features: [
+      "Saque PIX 24h por dia",
+      "Saque instantâneo",
       "Leilões ilimitados",
-      "Acesso a leilões VIP",
       "Suporte prioritário",
-      "Saque em 4h",
+      "Acesso a leilões VIP",
       "Analytics básico",
     ],
   },
   {
     id: "super",
-    name: "Super Creator",
+    name: "Top Creator",
     emoji: "👑",
-    monthly: 169,
+    yearly: 169,
     fee_pct: 4,
-    tagline: "Pra creators sérias que vivem disso",
+    tagline: "Pra creators de alto volume",
+    withdraw_limit: "Saques acima de R$ 48.000 / mês",
     features: [
-      "Tudo do Creator",
+      "Saque PIX instantâneo 24h",
+      "Limite de saque ilimitado",
       "Taxa de apenas 4% (a menor)",
-      "Saque instantâneo (PIX em 2min)",
       "Selo verificado no perfil",
       "Posicionamento prioritário no feed",
       "Relatório semanal personalizado",
-      "Acesso antecipado a novidades",
+      "Atendimento dedicado",
     ],
     highlight: true,
     badge: "⭐ MAIS POPULAR",
@@ -68,25 +73,26 @@ const PLANS: Plan[] = [
 ];
 
 const SAMPLE_REVENUES = [
-  { monthly: 1000, label: "Iniciante" },
-  { monthly: 3000, label: "Intermediária" },
-  { monthly: 6000, label: "Top Creator" },
+  { monthly: 5000, label: "Iniciante" },
+  { monthly: 25000, label: "Intermediária" },
+  { monthly: 60000, label: "Top Creator" },
 ];
 
 export default function PlanosPage() {
   const router = useRouter();
   const [selectedRevenue, setSelectedRevenue] = useState(SAMPLE_REVENUES[1]);
 
-  function calcNet(plan: Plan, monthly: number): number {
-    const fee = monthly * (plan.fee_pct / 100);
-    return monthly - fee - plan.monthly;
+  function calcAnnualNet(plan: Plan, monthly: number): number {
+    const annualGross = monthly * 12;
+    const fee = annualGross * (plan.fee_pct / 100);
+    return annualGross - fee - plan.yearly;
   }
 
   function bestPlanFor(monthly: number): string {
     let bestId = PLANS[0].id;
     let bestNet = -Infinity;
     PLANS.forEach((p) => {
-      const net = calcNet(p, monthly);
+      const net = calcAnnualNet(p, monthly);
       if (net > bestNet) {
         bestNet = net;
         bestId = p.id;
@@ -120,22 +126,22 @@ export default function PlanosPage() {
         {/* Hero */}
         <div className="text-center mb-12">
           <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-emerald-600 mb-3">
-            Planos & Preços
+            Planos Anuais
           </p>
           <h1 className="font-display text-4xl md:text-5xl text-gray-900 mb-4 leading-tight">
-            Escolha como você quer<br />ganhar mais
+            Pague uma vez por ano<br />e foque em vender
           </h1>
           <p className="text-base text-gray-600 max-w-xl mx-auto">
-            Quanto mais você fatura, menor a taxa. Quanto melhor o plano, mais rápido o dinheiro cai na sua conta.
+            Quanto mais você fatura, menor a taxa. Saques via PIX 24h por dia, instantâneos.
           </p>
         </div>
 
         {/* Calculadora */}
         <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 border border-emerald-200 rounded-2xl p-5 mb-10 max-w-2xl mx-auto">
           <p className="text-xs uppercase tracking-wider text-emerald-700 font-bold mb-3 text-center">
-            💡 Simule quanto você ganharia
+            💡 Quanto você ganharia em 1 ano
           </p>
-          <div className="grid grid-cols-3 gap-2 mb-4">
+          <div className="grid grid-cols-3 gap-2 mb-3">
             {SAMPLE_REVENUES.map((r) => (
               <button
                 key={r.monthly}
@@ -159,9 +165,8 @@ export default function PlanosPage() {
         {/* Cards de planos */}
         <div className="grid md:grid-cols-3 gap-5 mb-12">
           {PLANS.map((plan) => {
-            const net = calcNet(plan, selectedRevenue.monthly);
+            const annualNet = calcAnnualNet(plan, selectedRevenue.monthly);
             const isBest = plan.id === currentBest;
-            const totalCost = plan.monthly + (selectedRevenue.monthly * plan.fee_pct / 100);
 
             return (
               <div
@@ -172,7 +177,6 @@ export default function PlanosPage() {
                     : "border border-gray-200 shadow-sm"
                 }`}
               >
-                {/* Badge */}
                 {plan.badge && (
                   <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-center py-1.5 text-[10px] font-bold uppercase tracking-wider">
                     {plan.badge}
@@ -180,19 +184,24 @@ export default function PlanosPage() {
                 )}
 
                 <div className={`p-6 ${plan.badge ? "pt-12" : ""}`}>
-                  {/* Header do plano */}
+                  {/* Header */}
                   <div className="text-center mb-4">
                     <div className="text-4xl mb-2">{plan.emoji}</div>
                     <h3 className="font-display text-2xl text-gray-900">{plan.name}</h3>
                     <p className="text-xs text-gray-500 mt-1">{plan.tagline}</p>
+                    <div className="mt-2 inline-flex bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
+                      <span className="text-[10px] uppercase tracking-wider text-emerald-700 font-bold">{plan.withdraw_limit}</span>
+                    </div>
                   </div>
 
                   {/* Preço */}
                   <div className="text-center py-5 border-y border-gray-100 mb-4">
                     <div className="flex items-baseline justify-center gap-1">
                       <span className="text-sm text-gray-500">R$</span>
-                      <span className="font-display text-5xl text-gray-900 tabular-nums">{plan.monthly}</span>
-                      <span className="text-sm text-gray-500">/mês</span>
+                      <span className="font-display text-5xl text-gray-900 tabular-nums">{plan.yearly}</span>
+                    </div>
+                    <div className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mt-1">
+                      Pagamento único · 1 ano
                     </div>
                     <div className="mt-2 inline-flex items-center gap-1 bg-gray-100 rounded-full px-3 py-1">
                       <span className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Taxa por venda</span>
@@ -216,10 +225,10 @@ export default function PlanosPage() {
                       Faturando R$ {selectedRevenue.monthly.toLocaleString("pt-BR")}/mês
                     </div>
                     <div className="text-2xl font-display text-gray-900 tabular-nums">
-                      R$ {net.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      R$ {annualNet.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                     <div className="text-[10px] text-gray-500 mt-1">
-                      Líquido pra você
+                      Líquido em 1 ano
                     </div>
                     {isBest && (
                       <div className="mt-2 inline-flex items-center gap-1 bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
@@ -242,7 +251,6 @@ export default function PlanosPage() {
                     ))}
                   </ul>
 
-                  {/* CTA */}
                   <button
                     className={`w-full py-3.5 rounded-xl font-bold transition text-sm tracking-wide uppercase ${
                       plan.highlight
@@ -250,7 +258,7 @@ export default function PlanosPage() {
                         : "bg-white border-2 border-gray-200 hover:border-gray-900 text-gray-900"
                     }`}
                   >
-                    {plan.highlight ? "Começar agora" : "Selecionar plano"}
+                    {plan.highlight ? "Assinar agora" : "Selecionar plano"}
                   </button>
                 </div>
               </div>
@@ -258,30 +266,33 @@ export default function PlanosPage() {
           })}
         </div>
 
-        {/* FAQ rápido */}
+        {/* FAQ */}
         <div className="max-w-3xl mx-auto bg-white border border-gray-200 rounded-2xl p-6">
           <h3 className="font-display text-xl text-gray-900 mb-4">Perguntas frequentes</h3>
           <div className="space-y-4">
             <div>
               <div className="text-sm font-semibold text-gray-900 mb-1">Posso cancelar quando quiser?</div>
-              <p className="text-xs text-gray-600">Sim. Sem multa, sem fidelidade. Cancele a qualquer momento e continua usando até o fim do período pago.</p>
+              <p className="text-xs text-gray-600">Sim. Sem multa, sem fidelidade. Cancele a qualquer momento e continue usando até o fim do ano contratado.</p>
             </div>
             <div>
               <div className="text-sm font-semibold text-gray-900 mb-1">Como funciona a taxa por venda?</div>
               <p className="text-xs text-gray-600">A taxa é descontada automaticamente quando o lance vencedor é confirmado. Você recebe o valor já líquido na carteira.</p>
             </div>
             <div>
-              <div className="text-sm font-semibold text-gray-900 mb-1">Posso trocar de plano depois?</div>
-              <p className="text-xs text-gray-600">Pode trocar a qualquer momento. Upgrade aplica imediatamente, downgrade no próximo ciclo.</p>
+              <div className="text-sm font-semibold text-gray-900 mb-1">E se eu passar do limite mensal de saque?</div>
+              <p className="text-xs text-gray-600">O excedente fica disponível pra sacar no mês seguinte, ou você pode fazer upgrade pra um plano superior. O saldo nunca é perdido.</p>
             </div>
             <div>
-              <div className="text-sm font-semibold text-gray-900 mb-1">Tem teste grátis?</div>
-              <p className="text-xs text-gray-600">Os primeiros 7 dias do plano Creator são grátis pra novas usuárias. Sem cobrança até você confirmar.</p>
+              <div className="text-sm font-semibold text-gray-900 mb-1">Posso trocar de plano depois?</div>
+              <p className="text-xs text-gray-600">Pode. No upgrade, paga só a diferença proporcional. No downgrade, vale no próximo ciclo anual.</p>
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-gray-900 mb-1">Como pago?</div>
+              <p className="text-xs text-gray-600">Pagamento único anual via PIX (à vista, com 5% de cashback) ou cartão (até 12x sem juros).</p>
             </div>
           </div>
         </div>
 
-        {/* Garantia/segurança */}
         <div className="text-center mt-10">
           <div className="inline-flex items-center gap-3 text-xs text-gray-500">
             <span className="flex items-center gap-1">
@@ -291,9 +302,9 @@ export default function PlanosPage() {
               Pagamento seguro
             </span>
             <span>·</span>
-            <span>Sem fidelidade</span>
-            <span>·</span>
             <span>Cancele quando quiser</span>
+            <span>·</span>
+            <span>Saques 24h por dia</span>
           </div>
         </div>
       </div>

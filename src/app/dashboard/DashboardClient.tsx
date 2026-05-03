@@ -158,6 +158,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   const [timeLeft, setTimeLeft] = useState(0);
   const [auctionEnded, setAuctionEnded] = useState(false);
   const [showFinalModal, setShowFinalModal] = useState(false);
+  const [showConfirmPhotoModal, setShowConfirmPhotoModal] = useState(false);
 
   // ============ SAQUE ============
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
@@ -427,9 +428,10 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
             setTimeLeft(30 + Math.floor(Math.random() * 16));
           }
         } else {
-          // Primeira vez — estado inicial
+          // Primeira vez — estado inicial + modal de confirmação da foto
           setCurrentBidBRL(MIN_BID);
           setTimeLeft(30 + Math.floor(Math.random() * 16));
+          setShowConfirmPhotoModal(true);
         }
       }
       generateMockData();
@@ -1540,6 +1542,63 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         </div>
       )}
 
+      {/* === MODAL CONFIRMAÇÃO DA FOTO INICIAL === */}
+      {showConfirmPhotoModal && activeListing && (
+        <div className="fixed inset-0 z-[110] bg-black/70 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 my-8 shadow-2xl">
+            <div className="text-center mb-5">
+              <div className="w-14 h-14 mx-auto mb-3 bg-emerald-50 rounded-full flex items-center justify-center">
+                <svg className="w-7 h-7 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <h2 className="font-display text-2xl text-gray-900 mb-2">Confirme sua foto</h2>
+              <p className="text-sm text-gray-600">
+                Essa é a foto que vai pro leilão.<br />
+                <strong>Você não pode trocar depois</strong> — então confira se é a certa.
+              </p>
+            </div>
+
+            {/* Preview da foto */}
+            <div className="aspect-square rounded-2xl overflow-hidden bg-gray-900 mb-4 border border-gray-200">
+              <img
+                src={activeListing.image_url}
+                alt="sua foto"
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            {/* Aviso */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
+              <p className="text-[11px] text-amber-800 leading-relaxed">
+                ⚠ <strong>Os compradores valorizam exclusividade.</strong> Cada foto é vendida apenas uma vez.
+                Se mandou qualquer coisa só pra ver como funciona, troque agora — depois de confirmar, a foto vai pra leilão e os lances começam a chegar.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => {
+                  setShowConfirmPhotoModal(false);
+                  fileInputRef.current?.click();
+                }}
+                disabled={uploadingNew}
+                className="bg-white border-2 border-gray-200 hover:border-gray-900 text-gray-900 font-bold py-3 rounded-xl transition text-sm disabled:opacity-50"
+              >
+                Trocar foto
+              </button>
+              <button
+                onClick={() => setShowConfirmPhotoModal(false)}
+                className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition text-sm shadow-md"
+              >
+                Confirmar e leiloar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* === MODAL DE SAQUE === */}
       {showWithdrawModal && (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
@@ -1797,15 +1856,40 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
                   <p className="text-xs font-bold text-amber-900 mb-1">⚠ Sua conta ainda não tem um plano ativo</p>
                   <p className="text-[11px] text-amber-800 leading-relaxed">
-                    Pra sacar seu saldo, escolha um plano que se encaixe no seu volume de vendas. Você pode trocar de plano a qualquer momento.
+                    Pra liberar saques, escolha um plano <strong>anual</strong>. Pague <strong>uma vez por ano</strong> e use a plataforma sem se preocupar.
                   </p>
                 </div>
 
                 <div className="space-y-2 mb-4">
                   {[
-                    { id: "starter" as const, name: "Starter", monthly: 79, fee: 10, emoji: "🪙", tagline: "Até 4 leilões/mês" },
-                    { id: "creator" as const, name: "Creator", monthly: 149, fee: 8, emoji: "⭐", tagline: "Leilões ilimitados" },
-                    { id: "super" as const, name: "Super Creator", monthly: 169, fee: 4, emoji: "👑", tagline: "Saque instantâneo + selo verificado", highlight: true },
+                    {
+                      id: "starter" as const,
+                      name: "Basic",
+                      yearly: 79,
+                      fee: 10,
+                      emoji: "🪙",
+                      tagline: "Receba até R$ 12.000 / mês",
+                      features: ["Saque PIX 24h por dia", "Leilões ilimitados"],
+                    },
+                    {
+                      id: "creator" as const,
+                      name: "Médio",
+                      yearly: 149,
+                      fee: 8,
+                      emoji: "⭐",
+                      tagline: "Receba até R$ 48.000 / mês",
+                      features: ["Saque PIX 24h por dia", "Leilões ilimitados", "Suporte prioritário"],
+                    },
+                    {
+                      id: "super" as const,
+                      name: "Top Creator",
+                      yearly: 169,
+                      fee: 4,
+                      emoji: "👑",
+                      tagline: "Saques acima de R$ 48.000 / mês",
+                      features: ["Saque PIX instantâneo 24h", "Limite de saque ilimitado", "Selo verificado", "Posicionamento prioritário"],
+                      highlight: true,
+                    },
                   ].map((p) => (
                     <button key={p.id} onClick={() => setSelectedPlanId(p.id)}
                       className={`w-full text-left rounded-2xl p-4 border-2 transition relative ${
@@ -1820,15 +1904,16 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                           Mais popular
                         </span>
                       )}
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-start gap-3 mb-2">
                         <span className="text-2xl">{p.emoji}</span>
                         <div className="flex-1 min-w-0">
                           <div className="font-bold text-gray-900 text-sm">{p.name}</div>
-                          <div className="text-[11px] text-gray-500 truncate">{p.tagline}</div>
+                          <div className="text-[11px] text-gray-600 mt-0.5">{p.tagline}</div>
                         </div>
-                        <div className="text-right">
-                          <div className="font-display text-lg text-gray-900 tabular-nums">R$ {p.monthly}</div>
-                          <div className="text-[10px] text-gray-500">{p.fee}% taxa</div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="font-display text-lg text-gray-900 tabular-nums">R$ {p.yearly}</div>
+                          <div className="text-[9px] text-gray-500 uppercase tracking-wider">/ano</div>
+                          <div className="text-[10px] text-emerald-700 font-bold mt-0.5">{p.fee}% taxa</div>
                         </div>
                         {selectedPlanId === p.id && (
                           <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
@@ -1838,6 +1923,16 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                           </div>
                         )}
                       </div>
+                      <ul className="space-y-0.5 ml-9">
+                        {p.features.map((f, fi) => (
+                          <li key={fi} className="flex items-center gap-1.5 text-[10px] text-gray-600">
+                            <svg className="w-3 h-3 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>{f}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </button>
                   ))}
                 </div>
@@ -1847,7 +1942,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   Confirmar plano e finalizar saque
                 </button>
                 <p className="text-[10px] text-center text-gray-500 mt-2">
-                  Você não será cobrado agora. Primeira mensalidade em 7 dias.
+                  Pagamento anual via PIX ou cartão. Renova a cada 12 meses.
                 </p>
               </>
             )}
