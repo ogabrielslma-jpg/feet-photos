@@ -305,6 +305,85 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   const router = useRouter();
   const supabase = createClient();
   const bidScheduledRef = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingNew, setUploadingNew] = useState(false);
+
+  // Faz upload de nova foto e abre novo leilão
+  async function handleNewUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!profile?.id) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Apenas imagens são aceitas");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Imagem muito grande (máx 10MB)");
+      return;
+    }
+
+    setUploadingNew(true);
+    try {
+      // 1. Upload da imagem
+      const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+      const fileName = `${profile.id}/${Date.now()}-${safeName}`;
+      const { error: uploadError } = await supabase.storage
+        .from("feet-photos")
+        .upload(fileName, file, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: file.type || "image/jpeg",
+        });
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage.from("feet-photos").getPublicUrl(fileName);
+      const imageUrl = urlData.publicUrl;
+
+      // 2. Salva listing nova no banco
+      const rarity = RARITIES[Math.floor(Math.random() * RARITIES.length)];
+      const title = generateListingTitle();
+      const { data: newListing, error: insertError } = await supabase
+        .from("listings")
+        .insert({
+          seller_id: profile.id,
+          title,
+          image_url: imageUrl,
+          rarity: rarity.label.toLowerCase(),
+          starting_bid: MIN_BID,
+          current_bid: MIN_BID,
+          status: "active",
+        })
+        .select()
+        .single();
+      if (insertError) throw insertError;
+
+      // 3. Salva o leilão atual no histórico ANTES de resetar (se já vendeu)
+      if (hasSold && activeListing) {
+        // Já tá no pastAuctions provavelmente, não precisa fazer nada
+      }
+
+      // 4. Reseta estado pro novo leilão
+      setActiveListing(newListing);
+      setCurrentBidBRL(MIN_BID);
+      setBidHistory([]);
+      setHasSold(false);
+      setAuctionEnded(false);
+      setShowFinalModal(false);
+      setSelectedBid(null);
+      setSaleStep(null);
+      setTimeLeft(30 + Math.floor(Math.random() * 16));
+      setLastUploadAt(Date.now());
+      bidScheduledRef.current = false; // libera lances pra rodar de novo
+
+      alert("✓ Foto enviada! Novo leilão começou.");
+    } catch (err: any) {
+      console.error("[Upload] Falhou:", err);
+      alert(`Erro no upload: ${err?.message || "tente novamente"}`);
+    } finally {
+      setUploadingNew(false);
+      // Limpa input pra permitir mesmo arquivo de novo
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
 
   // ============ LOAD INICIAL ============
   useEffect(() => {
@@ -726,31 +805,40 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   </div>
                 </div>
 
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleNewUpload}
+                  className="hidden"
+                />
                 <button
-                  disabled={!canUpload}
-                  onClick={() => {
-                    if (!canUpload) return;
-                    alert("Para fins de demonstração: upload de nova foto seria aqui. Após enviar, cooldown de 2h é iniciado.");
-                  }}
+                  disabled={uploadingNew}
+                  onClick={() => fileInputRef.current?.click()}
                   className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition ${
-                    canUpload
-                      ? "bg-gray-900 hover:bg-black text-white"
-                      : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    uploadingNew
+                      ? "bg-gray-300 text-gray-500 cursor-wait"
+                      : "bg-gray-900 hover:bg-black text-white"
                   }`}
                 >
-                  {canUpload ? (
+                  {uploadingNew ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
+                      <span>Enviando foto...</span>
+                    </>
+                  ) : !canUpload ? (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>Enviar mesmo assim ({formatCooldown(cooldownRemaining)})</span>
+                    </>
+                  ) : (
                     <>
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                       </svg>
                       <span>Enviar novo upload para leilão</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>Próximo upload em {formatCooldown(cooldownRemaining)}</span>
                     </>
                   )}
                 </button>
