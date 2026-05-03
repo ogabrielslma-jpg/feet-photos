@@ -199,19 +199,21 @@ export default function PlanosPage() {
                     <div className="flex items-baseline justify-center gap-1">
                       <span className="text-sm text-gray-500">R$</span>
                       <span className="font-display text-5xl text-gray-900 tabular-nums">{plan.yearly}</span>
+                      <span className="text-sm text-gray-500">/ano</span>
                     </div>
-                    <div className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mt-1">
-                      Pagamento único · 1 ano
-                    </div>
-                    <div className="mt-2 inline-flex items-center gap-1 bg-gray-100 rounded-full px-3 py-1">
-                      <span className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Taxa por venda</span>
+                    <div className="mt-2 flex items-center justify-center gap-2 flex-wrap">
+                      <span className="text-[11px] text-gray-500">+</span>
                       <span className={`text-sm font-bold tabular-nums ${
                         plan.fee_pct <= 4 ? "text-emerald-600" :
                         plan.fee_pct <= 8 ? "text-gray-900" :
                         "text-gray-700"
                       }`}>
-                        {plan.fee_pct}%
+                        {plan.fee_pct}% de taxa
                       </span>
+                      <span className="text-[11px] text-gray-500">por venda</span>
+                    </div>
+                    <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mt-2">
+                      Pagamento único · cobra 1 vez por ano
                     </div>
                   </div>
 

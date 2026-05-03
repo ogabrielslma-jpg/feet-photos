@@ -205,12 +205,15 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   const [withdrawAmount, setWithdrawAmount] = useState(0);
   const [selectedPlanId, setSelectedPlanId] = useState<"starter" | "creator" | "super">("super");
   const [withdrawError, setWithdrawError] = useState("");
+  const [withdrawNumber, setWithdrawNumber] = useState("");
 
   function openWithdrawModal() {
     if (walletBalance <= 0) return;
     setWithdrawAmount(walletBalance);
     setWithdrawStep("method");
     setWithdrawError("");
+    // Gera número único do saque (6 dígitos)
+    setWithdrawNumber(Math.floor(100000 + Math.random() * 900000).toString());
     setShowWithdrawModal(true);
   }
 
@@ -1848,34 +1851,97 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
               </>
             )}
 
-            {/* PASSO 3: Confirmação */}
+            {/* PASSO 3: Confirmação - RECIBO */}
             {withdrawStep === "confirm" && (
               <>
-                <p className="text-sm text-gray-600 mb-4">Confira os dados antes de confirmar:</p>
-
-                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 mb-4 space-y-2.5">
-                  <Row label="Valor" value={`R$ ${fmtBRL(withdrawAmount)}`} bold />
-                  <Row label="Método" value={withdrawMethod === "pix" ? "PIX (instantâneo)" : "Transferência (D+1)"} />
-                  <Row label={withdrawDocType === "cpf" ? "CPF" : "CNPJ"} value={withdrawDoc} />
-                  <Row label={withdrawDocType === "cpf" ? "Nome" : "Razão social"} value={withdrawHolderName} />
-                  {withdrawMethod === "pix" ? (
-                    <>
-                      <Row label="Tipo de chave" value={
-                        withdrawPixKeyType === "cpf" ? "CPF" :
-                        withdrawPixKeyType === "phone" ? "Celular" :
-                        withdrawPixKeyType === "email" ? "Email" :
-                        "Aleatória"
-                      } />
-                      <Row label="Chave PIX" value={withdrawPixKey} />
-                    </>
-                  ) : (
-                    <>
-                      <Row label="Banco" value={withdrawBankCode} />
-                      <Row label="Agência" value={withdrawAgency} />
-                      <Row label="Conta" value={withdrawAccount} />
-                    </>
-                  )}
+                {/* Header recibo */}
+                <div className="bg-gradient-to-br from-gray-900 to-black rounded-t-2xl p-4 -mx-1 mb-0">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className="text-[9px] uppercase tracking-[0.2em] text-white/50 mb-1">Solicitação de saque</p>
+                      <p className="text-white font-mono text-lg tabular-nums">#{withdrawNumber}</p>
+                    </div>
+                    <div className="bg-emerald-500/20 border border-emerald-400/30 rounded-full px-2.5 py-1">
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-300">
+                        {withdrawMethod === "pix" ? "PIX" : "TED"}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-[9px] uppercase tracking-[0.2em] text-white/50 mb-1">Valor</p>
+                  <div className="flex items-baseline gap-1 text-white">
+                    <span className="text-sm">R$</span>
+                    <span className="font-display text-3xl tabular-nums">{fmtBRL(withdrawAmount)}</span>
+                  </div>
                 </div>
+
+                {/* Recibo */}
+                <div className="bg-white border border-gray-200 border-t-0 rounded-b-2xl p-4 -mx-1 mb-4">
+                  {/* Pagador */}
+                  <div className="mb-3">
+                    <p className="text-[9px] uppercase tracking-[0.2em] text-gray-400 font-bold mb-1.5">Pagador (origem)</p>
+                    <div className="bg-gray-50 rounded-lg p-2.5 border border-gray-100">
+                      <p className="text-xs font-bold text-gray-900">FOOT PRIV TECNOLOGIA LTDA</p>
+                      <p className="text-[11px] text-gray-600 font-mono mt-0.5">CNPJ 89.255.980/0001-12</p>
+                      <p className="text-[10px] text-gray-500 mt-0.5">Banco 274 — Pagamento via gateway</p>
+                    </div>
+                  </div>
+
+                  {/* Beneficiário */}
+                  <div className="mb-3">
+                    <p className="text-[9px] uppercase tracking-[0.2em] text-gray-400 font-bold mb-1.5">Beneficiário (destino)</p>
+                    <div className="bg-emerald-50 rounded-lg p-2.5 border border-emerald-100">
+                      <p className="text-xs font-bold text-gray-900">{withdrawHolderName || "—"}</p>
+                      <p className="text-[11px] text-gray-700 font-mono mt-0.5">
+                        {withdrawDocType === "cpf" ? "CPF" : "CNPJ"} {withdrawDoc || "—"}
+                      </p>
+                      {withdrawMethod === "pix" ? (
+                        <>
+                          <p className="text-[10px] text-gray-600 mt-1.5 uppercase tracking-wider font-semibold">
+                            Chave {withdrawPixKeyType === "cpf" ? "CPF" : withdrawPixKeyType === "phone" ? "Celular" : withdrawPixKeyType === "email" ? "Email" : "Aleatória"}
+                          </p>
+                          <p className="text-[11px] text-gray-700 font-mono break-all">{withdrawPixKey || "—"}</p>
+                        </>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2 mt-1.5">
+                          <div>
+                            <p className="text-[9px] uppercase tracking-wider text-gray-500 font-semibold">Banco</p>
+                            <p className="text-[11px] text-gray-700 font-mono">{withdrawBankCode || "—"}</p>
+                          </div>
+                          <div>
+                            <p className="text-[9px] uppercase tracking-wider text-gray-500 font-semibold">Agência</p>
+                            <p className="text-[11px] text-gray-700 font-mono">{withdrawAgency || "—"}</p>
+                          </div>
+                          <div>
+                            <p className="text-[9px] uppercase tracking-wider text-gray-500 font-semibold">Conta</p>
+                            <p className="text-[11px] text-gray-700 font-mono">{withdrawAccount || "—"}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Detalhes */}
+                  <div className="border-t border-dashed border-gray-200 pt-3 space-y-1.5">
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-gray-500">Data da solicitação</span>
+                      <span className="text-gray-900 font-medium">{new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}</span>
+                    </div>
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-gray-500">Hora</span>
+                      <span className="text-gray-900 font-medium">{new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+                    </div>
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-gray-500">Tempo estimado</span>
+                      <span className="text-gray-900 font-medium">
+                        {withdrawMethod === "pix" ? "Até 2 minutos" : "Próximo dia útil"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-center text-gray-500 mb-3">
+                  Este é apenas um pré-recibo. A solicitação só é confirmada após o próximo passo.
+                </p>
 
                 <button onClick={nextWithdrawStep}
                   className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl transition text-sm">
@@ -1945,9 +2011,9 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                           <div className="text-[11px] text-gray-600 mt-0.5">{p.tagline}</div>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <div className="font-display text-lg text-gray-900 tabular-nums">R$ {p.yearly}</div>
-                          <div className="text-[9px] text-gray-500 uppercase tracking-wider">/ano</div>
-                          <div className="text-[10px] text-emerald-700 font-bold mt-0.5">{p.fee}% taxa</div>
+                          <div className="font-display text-lg text-gray-900 tabular-nums">R$ {p.yearly}<span className="text-[10px] text-gray-500">/ano</span></div>
+                          <div className="text-[10px] text-emerald-700 font-bold mt-0.5">+ {p.fee}% taxa/venda</div>
+                          <div className="text-[8px] text-gray-400 uppercase tracking-wider mt-0.5">cobra 1x/ano</div>
                         </div>
                         {selectedPlanId === p.id && (
                           <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
