@@ -52,8 +52,9 @@ export function randomBidder(): Sheik & { avatar: string } {
 }
 
 export function randomBidIncrementBRL(currentBidBRL: number): number {
-  const min = 5;
-  const max = 25;
+  // Increment entre R$ 2 e R$ 12 — leilão dura mais lances
+  const min = 2;
+  const max = 12;
   return Math.round((min + Math.random() * (max - min)) * 100) / 100;
 }
 

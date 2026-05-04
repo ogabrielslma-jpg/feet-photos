@@ -73,14 +73,29 @@ type PastAuction = {
 };
 
 const PLATFORM_FEE = 0.10;
-const MIN_BID = 220;
+const MIN_BID = 311.90;
 
 const PLANS_DATA: Record<"starter" | "creator" | "super", { name: string; yearly: number; fee: number }> = {
   starter: { name: "Basic", yearly: 79, fee: 10 },
   creator: { name: "Médio", yearly: 149, fee: 8 },
   super: { name: "Top Creator", yearly: 169, fee: 4 },
 };
-const MAX_BID = 399.70;
+
+// Lance máximo varia entre R$ 350 e R$ 420 — derivado do listing.id pra
+// cada foto ter um teto diferente (mas estável dentro do mesmo leilão)
+const MAX_BID_FLOOR = 350;
+const MAX_BID_CEIL = 420;
+
+function maxBidFor(listingId: string): number {
+  let hash = 0;
+  for (let i = 0; i < listingId.length; i++) {
+    hash = ((hash << 5) - hash + listingId.charCodeAt(i)) | 0;
+  }
+  const range = MAX_BID_CEIL - MAX_BID_FLOOR;
+  const offset = (Math.abs(hash) % (range * 100)) / 100; // 0 a range com 2 decimais
+  return Math.round((MAX_BID_FLOOR + offset) * 100) / 100;
+}
+
 const UPLOAD_COOLDOWN_HOURS = 2;
 
 const FAKE_USERNAMES = [
@@ -760,8 +775,9 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
           currencyRate = bidder.currencyRate;
         }
         const increment = randomBidIncrementBRL(lastBid);
+        const dynamicMax = activeListing ? maxBidFor(String(activeListing.id)) : MAX_BID_CEIL;
         let newBid = Math.round((lastBid + increment) * 100) / 100;
-        if (newBid > MAX_BID) newBid = MAX_BID;
+        if (newBid > dynamicMax) newBid = dynamicMax;
         const newBidObj: Bid = {
           id: `bid-${Date.now()}-${Math.random()}`,
           bidder_name: bidderName,
@@ -789,7 +805,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
           setNotifications((n) => n.filter((x) => x.id !== notif.id));
         }, 4500);
 
-        if (newBid < MAX_BID) {
+        if (newBid < dynamicMax) {
           scheduleNextBid(newBid);
         }
       }, delay);
@@ -2141,14 +2157,25 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
             {/* PASSO 4: Paywall plano */}
             {withdrawStep === "plan" && (
               <>
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
-                  <p className="text-xs font-bold text-amber-900 mb-1">⚠ Sua conta ainda não tem um plano ativo</p>
-                  <p className="text-[11px] text-amber-800 leading-relaxed">
-                    Pra liberar saques, escolha um plano <strong>anual</strong>. Pague <strong>uma vez por ano</strong> e use a plataforma sem se preocupar.
-                  </p>
+                {/* Banner topo */}
+                <div className="bg-gradient-to-br from-[#62C86E]/10 to-[#62C86E]/5 border border-[#62C86E]/30 rounded-2xl p-4 mb-5">
+                  <div className="flex items-start gap-2">
+                    <div className="w-9 h-9 rounded-full bg-[#62C86E] flex items-center justify-center flex-shrink-0 shadow-md">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-900 mb-0.5">Sua conta ainda não tem um plano ativo</p>
+                      <p className="text-xs text-gray-700 leading-relaxed">
+                        Pra liberar saques, escolha um plano <strong>anual</strong>. Pague <strong>uma vez por ano</strong> e use a plataforma sem se preocupar.
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-2 mb-4">
+                {/* Cards dos planos */}
+                <div className="space-y-3 mb-5">
                   {[
                     {
                       id: "starter" as const,
@@ -2178,51 +2205,92 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                       features: ["Saque PIX instantâneo 24h", "Limite de saque ilimitado", "Selo verificado", "Posicionamento prioritário"],
                       highlight: true,
                     },
-                  ].map((p) => (
-                    <button key={p.id} onClick={() => setSelectedPlanId(p.id)}
-                      className={`w-full text-left rounded-2xl p-4 border-2 transition relative ${
-                        selectedPlanId === p.id
-                          ? p.highlight
-                            ? "border-emerald-500 bg-emerald-50"
-                            : "border-gray-900 bg-gray-50"
-                          : "border-gray-200 bg-white hover:border-gray-400"
-                      }`}>
-                      {p.highlight && (
-                        <span className="absolute -top-2 right-3 bg-emerald-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                          Mais popular
-                        </span>
-                      )}
-                      <div className="flex items-start gap-3 mb-2">
-                        <span className="text-2xl">{p.emoji}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-bold text-gray-900 text-sm">{p.name}</div>
-                          <div className="text-[11px] text-gray-600 mt-0.5">{p.tagline}</div>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <div className="font-display text-lg text-gray-900 tabular-nums">R$ {p.yearly}<span className="text-[10px] text-gray-500">/ano</span></div>
-                          <div className="text-[10px] text-emerald-700 font-bold mt-0.5">+ {p.fee}% taxa/venda</div>
-                          <div className="text-[8px] text-gray-400 uppercase tracking-wider mt-0.5">cobra 1x/ano</div>
-                        </div>
-                        {selectedPlanId === p.id && (
-                          <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
-                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                  ].map((p) => {
+                    const selected = selectedPlanId === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => setSelectedPlanId(p.id)}
+                        className={`relative w-full text-left rounded-2xl overflow-hidden transition-all ${
+                          selected
+                            ? p.highlight
+                              ? "ring-2 ring-[#62C86E] shadow-lg"
+                              : "ring-2 ring-gray-900 shadow-md"
+                            : "ring-1 ring-gray-200 hover:ring-gray-400"
+                        } ${
+                          p.highlight && selected
+                            ? "bg-[#62C86E]/5"
+                            : "bg-white"
+                        }`}
+                      >
+                        {/* Badge MAIS POPULAR */}
+                        {p.highlight && (
+                          <div className="absolute -top-px left-1/2 -translate-x-1/2 bg-[#62C86E] text-white text-[9px] font-bold px-3 py-1 rounded-b-lg uppercase tracking-[0.15em] shadow-sm">
+                            ⭐ Mais Popular
+                          </div>
+                        )}
+
+                        {/* Selected check */}
+                        {selected && (
+                          <div className="absolute top-3 right-3 w-7 h-7 rounded-full bg-[#62C86E] flex items-center justify-center shadow-md">
+                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                             </svg>
                           </div>
                         )}
-                      </div>
-                      <ul className="space-y-0.5 ml-9">
-                        {p.features.map((f, fi) => (
-                          <li key={fi} className="flex items-center gap-1.5 text-[10px] text-gray-600">
-                            <svg className="w-3 h-3 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                            <span>{f}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </button>
-                  ))}
+
+                        <div className={`p-5 ${p.highlight ? "pt-7" : ""}`}>
+                          {/* Header */}
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className="w-11 h-11 rounded-xl bg-gray-50 flex items-center justify-center text-2xl flex-shrink-0">
+                              {p.emoji}
+                            </div>
+                            <div className="flex-1 min-w-0 pr-9">
+                              <div className="font-display text-xl text-gray-900 leading-none mb-1">{p.name}</div>
+                              <div className="text-[11px] text-gray-600">{p.tagline}</div>
+                            </div>
+                          </div>
+
+                          {/* Preço */}
+                          <div className={`rounded-xl p-3 mb-3 ${
+                            p.highlight ? "bg-[#62C86E]/10" : "bg-gray-50"
+                          }`}>
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-xs text-gray-500">R$</span>
+                              <span className="font-display text-3xl text-gray-900 tabular-nums leading-none">{p.yearly}</span>
+                              <span className="text-xs text-gray-500">/ano</span>
+                            </div>
+                            <div className="flex items-center gap-1 mt-1.5">
+                              <span className="text-[10px] text-gray-500">+</span>
+                              <span className={`text-sm font-bold tabular-nums ${
+                                p.fee <= 4 ? "text-[#62C86E]" : "text-gray-900"
+                              }`}>
+                                {p.fee}%
+                              </span>
+                              <span className="text-[10px] text-gray-500">de taxa por venda</span>
+                            </div>
+                            <div className="text-[9px] uppercase tracking-wider text-gray-400 font-bold mt-1">
+                              Cobra 1× por ano
+                            </div>
+                          </div>
+
+                          {/* Features */}
+                          <ul className="space-y-1.5">
+                            {p.features.map((f, fi) => (
+                              <li key={fi} className="flex items-center gap-2 text-xs text-gray-700">
+                                <svg className={`w-3.5 h-3.5 flex-shrink-0 ${
+                                  p.highlight ? "text-[#62C86E]" : "text-gray-500"
+                                }`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                                <span>{f}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {withdrawError && (
@@ -2231,19 +2299,28 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   </div>
                 )}
 
-                <button onClick={nextWithdrawStep} disabled={creatingPix}
-                  className="w-full bg-gray-900 hover:bg-black disabled:bg-gray-400 disabled:cursor-wait text-white font-bold py-3.5 rounded-xl transition text-sm flex items-center justify-center gap-2">
+                <button
+                  onClick={nextWithdrawStep}
+                  disabled={creatingPix}
+                  className="w-full text-white font-bold py-4 rounded-2xl transition-all text-sm flex items-center justify-center gap-2 shadow-lg disabled:cursor-wait disabled:opacity-60"
+                  style={{ backgroundColor: creatingPix ? "#9ca3af" : "#62C86E" }}
+                >
                   {creatingPix ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>
                       Gerando PIX...
                     </>
                   ) : (
-                    "Gerar PIX e finalizar"
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                      Gerar PIX e finalizar
+                    </>
                   )}
                 </button>
-                <p className="text-[10px] text-center text-gray-500 mt-2">
-                  Pagamento anual via PIX. Renova a cada 12 meses.
+                <p className="text-[10px] text-center text-gray-500 mt-2.5">
+                  Pagamento anual via PIX · Renova a cada 12 meses
                 </p>
               </>
             )}
