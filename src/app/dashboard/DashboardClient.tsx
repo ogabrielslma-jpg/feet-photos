@@ -1147,10 +1147,10 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                               return (
                                 <>
                                   <div className="font-display text-3xl text-gray-900 tabular-nums">
-                                    {f.symbol} {f.value}
+                                    R$ {fmtBRL(sale.amount_brl)}
                                   </div>
                                   <div className="text-[10px] text-gray-400 mt-0.5 tabular-nums">
-                                    ≈ R$ {fmtBRL(sale.amount_brl)}
+                                    ≈ {f.symbol} {f.value}
                                   </div>
                                 </>
                               );
