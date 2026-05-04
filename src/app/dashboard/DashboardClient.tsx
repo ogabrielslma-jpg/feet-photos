@@ -91,16 +91,106 @@ const FAKE_USERNAMES = [
 ];
 
 const FAKE_COMMENTS = [
+  // Português
   "Lindíssima! 😍",
   "Que cuidado impecável...",
-  "Comprador de Dubai já tá de olho hehe",
   "Lance subindo rápido nessa!",
-  "Pharaonic merecidíssimo",
   "Inspiração total ✨",
+  "Os melhores arcos da plataforma",
+  "Tô apaixonada nesse bronze",
+  "Cada detalhe é uma obra de arte",
+  "Mereceu cada centavo!",
+  "Já tô esperando o próximo upload",
+  "Esse acabamento é coisa de outro nível",
+  // Inglês
+  "Absolutely stunning 🔥",
+  "Worth every dirham",
+  "Pristine work, as always",
+  "My favorite seller this week",
+  "Royalty-tier feet, no doubt",
+  "I'd outbid everyone for these",
+  "The way they catch the light...",
+  "Marble-smooth, exactly as advertised",
+  "Top tier craftsmanship",
+  "Pure elegance",
+  // Árabe
+  "ما شاء الله 👑",
+  "جميلة جداً",
+  "تحفة فنية حقيقية",
+  "أفضل ما رأيت",
+  "أتطلع إلى الشراء التالي",
+  // Francês
+  "Magnifique, vraiment",
+  "Une œuvre d'art, sincèrement",
+  "Élégance pure ✨",
+  "Je suis sous le charme",
+  "Travail impeccable",
+  // Italiano
+  "Stupenda, davvero",
+  "Capolavoro!",
+  "Eleganza assoluta",
+  "Il prezzo è giustificato",
+  // Espanhol
+  "Hermosísima",
+  "Una verdadera obra maestra",
+  "Vale cada euro",
+  "El mejor trabajo del mes",
+  // Alemão
+  "Wunderschön",
+  "Erstklassige Qualität",
+  // Reações curtas internacionais
+  "🇦🇪 fan club approves",
+  "Pharaonic indeed 👑",
+  "Saudi gold standard",
+  "Dubai approved ⭐",
+  "Worth every riyal",
 ];
+
+// Retorna comentário ESTÁVEL pra uma venda (não muda entre renders).
+// Hash simples do id pra escolher um índice fixo do pool.
+function commentForSale(saleId: string): string {
+  let hash = 0;
+  for (let i = 0; i < saleId.length; i++) {
+    hash = ((hash << 5) - hash + saleId.charCodeAt(i)) | 0;
+  }
+  return FAKE_COMMENTS[Math.abs(hash) % FAKE_COMMENTS.length];
+}
 
 function fmtBRL(v: number): string {
   return v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Detecta moeda local pela bandeira do comprador.
+// Cada par tem: rate (BRL→local), symbol (prefixo), locale (formatação).
+const FLAG_CURRENCY: Record<string, { rate: number; symbol: string; locale: string }> = {
+  "🇦🇪": { rate: 0.74, symbol: "AED", locale: "en-US" },     // Emirados
+  "🇸🇦": { rate: 0.75, symbol: "SAR", locale: "en-US" },     // Arábia
+  "🇶🇦": { rate: 0.73, symbol: "QAR", locale: "en-US" },     // Catar
+  "🇰🇼": { rate: 0.061, symbol: "KWD", locale: "en-US" },    // Kuwait
+  "🇧🇭": { rate: 0.075, symbol: "BHD", locale: "en-US" },    // Bahrein
+  "🇴🇲": { rate: 0.077, symbol: "OMR", locale: "en-US" },    // Omã
+  "🇺🇸": { rate: 0.20, symbol: "USD", locale: "en-US" },     // EUA
+  "🇬🇧": { rate: 0.16, symbol: "GBP", locale: "en-GB" },     // UK
+  "🇪🇺": { rate: 0.18, symbol: "EUR", locale: "de-DE" },     // EU
+  "🇫🇷": { rate: 0.18, symbol: "EUR", locale: "fr-FR" },     // França
+  "🇮🇹": { rate: 0.18, symbol: "EUR", locale: "it-IT" },     // Itália
+  "🇪🇸": { rate: 0.18, symbol: "EUR", locale: "es-ES" },     // Espanha
+  "🇩🇪": { rate: 0.18, symbol: "EUR", locale: "de-DE" },     // Alemanha
+  "🇨🇭": { rate: 0.17, symbol: "CHF", locale: "de-CH" },     // Suíça
+  "🇯🇵": { rate: 30, symbol: "¥", locale: "ja-JP" },          // Japão
+};
+
+function fmtSaleAmount(amountBRL: number, flag: string): { value: string; symbol: string } {
+  const cfg = FLAG_CURRENCY[flag];
+  if (!cfg) {
+    return { value: amountBRL.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), symbol: "R$" };
+  }
+  const local = amountBRL * cfg.rate;
+  const decimals = cfg.symbol === "¥" ? 0 : 2;
+  return {
+    value: local.toLocaleString(cfg.locale, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }),
+    symbol: cfg.symbol,
+  };
 }
 
 function fmtCurrency(v: number, currency: string): string {
@@ -1052,9 +1142,19 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                         <div className="absolute inset-0 flex items-center justify-center">
                           <div className="bg-white/90 backdrop-blur-sm rounded-2xl px-6 py-4 text-center shadow-xl">
                             <div className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">Vendido por</div>
-                            <div className="font-display text-3xl text-gray-900 tabular-nums">
-                              R$ {fmtBRL(sale.amount_brl)}
-                            </div>
+                            {(() => {
+                              const f = fmtSaleAmount(sale.amount_brl, sale.buyer_flag);
+                              return (
+                                <>
+                                  <div className="font-display text-3xl text-gray-900 tabular-nums">
+                                    {f.symbol} {f.value}
+                                  </div>
+                                  <div className="text-[10px] text-gray-400 mt-0.5 tabular-nums">
+                                    ≈ R$ {fmtBRL(sale.amount_brl)}
+                                  </div>
+                                </>
+                              );
+                            })()}
                           </div>
                         </div>
                       </div>
@@ -1081,7 +1181,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                           de {sale.buyer_emirate}
                         </div>
                         <div className="text-xs text-gray-500 mt-2 italic">
-                          {FAKE_COMMENTS[Math.floor(Math.random() * FAKE_COMMENTS.length)]}
+                          {commentForSale(sale.id)}
                         </div>
                       </div>
                     </article>
