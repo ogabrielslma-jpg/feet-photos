@@ -1841,13 +1841,13 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
       {/* === MODAL DE SAQUE === */}
       {showWithdrawModal && (
-        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 my-8 shadow-2xl relative">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-2">
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-lg w-full my-3 sm:my-8 shadow-2xl relative max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-4rem)] flex flex-col">
+            {/* Header sticky */}
+            <div className="flex items-center justify-between p-5 sm:p-6 pb-3 border-b border-gray-100 bg-white rounded-t-3xl flex-shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
                 {(withdrawStep === "details" || withdrawStep === "confirm" || withdrawStep === "plan" || withdrawStep === "pix") && (
-                  <button onClick={backWithdrawStep} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition">
+                  <button onClick={backWithdrawStep} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition flex-shrink-0">
                     <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                     </svg>
@@ -1871,6 +1871,9 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                 </button>
               )}
             </div>
+
+            {/* Body com scroll */}
+            <div className="overflow-y-auto p-5 sm:p-6 flex-1">
 
             {/* PASSO 1: Método */}
             {withdrawStep === "method" && (
@@ -2428,6 +2431,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                 </button>
               </div>
             )}
+            </div>
           </div>
         </div>
       )}
