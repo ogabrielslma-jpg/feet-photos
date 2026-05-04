@@ -95,6 +95,10 @@ export default function AdminPage() {
     setConfig((c) => ({ ...c, [key]: value }));
   }
 
+  function updateDashboard(patch: Partial<DashboardConfig>) {
+    setConfig((c) => ({ ...c, dashboard: { ...c.dashboard, ...patch } }));
+  }
+
   function updateViewportField<K extends keyof ViewportConfig>(key: K, value: ViewportConfig[K]) {
     setConfig((c) => ({
       ...c,
@@ -1034,6 +1038,158 @@ export default function AdminPage() {
               className="w-full border-2 border-dashed border-gray-300 hover:border-gray-500 text-gray-500 hover:text-gray-900 py-3 rounded-xl text-sm font-semibold transition"
             >
               + Adicionar post no feed
+            </button>
+          </Section>
+
+          {/* === COMPRADORES (BIDDERS) === */}
+          <Section title={`Compradores fictícios (${dash.bidders?.length || 0})`} icon="🤵">
+            <p className="text-[11px] text-gray-500 mb-2">
+              Pessoas que dão lance no leilão da usuária. Edite nome, foto, país e bandeira. A taxa de câmbio converte BRL → moeda local mostrada no lance.
+            </p>
+
+            <div className="space-y-2">
+              {(dash.bidders || []).map((bidder, idx) => (
+                <div key={bidder.id} className="bg-white border border-gray-200 rounded-xl p-3">
+                  <div className="flex items-start gap-3">
+                    {/* Avatar */}
+                    <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 border border-gray-300 flex-shrink-0 relative group">
+                      {bidder.avatar_url ? (
+                        <img src={bidder.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-2xl">{bidder.flag}</div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      {/* Nome */}
+                      <input
+                        type="text"
+                        value={bidder.name}
+                        onChange={(e) => {
+                          const next = [...(dash.bidders || [])];
+                          next[idx] = { ...next[idx], name: e.target.value };
+                          updateDashboard({ bidders: next });
+                        }}
+                        placeholder="Nome do comprador"
+                        className="w-full text-sm font-bold text-gray-900 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 focus:border-gray-900 outline-none"
+                      />
+
+                      {/* Linha 1: Cidade · País · Bandeira */}
+                      <div className="grid grid-cols-12 gap-1.5">
+                        <input
+                          type="text"
+                          value={bidder.emirate}
+                          onChange={(e) => {
+                            const next = [...(dash.bidders || [])];
+                            next[idx] = { ...next[idx], emirate: e.target.value };
+                            updateDashboard({ bidders: next });
+                          }}
+                          placeholder="Cidade"
+                          className="col-span-5 text-[11px] bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 focus:border-gray-900 outline-none"
+                        />
+                        <input
+                          type="text"
+                          value={bidder.country}
+                          onChange={(e) => {
+                            const next = [...(dash.bidders || [])];
+                            next[idx] = { ...next[idx], country: e.target.value };
+                            updateDashboard({ bidders: next });
+                          }}
+                          placeholder="País"
+                          className="col-span-5 text-[11px] bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 focus:border-gray-900 outline-none"
+                        />
+                        <input
+                          type="text"
+                          value={bidder.flag}
+                          onChange={(e) => {
+                            const next = [...(dash.bidders || [])];
+                            next[idx] = { ...next[idx], flag: e.target.value };
+                            updateDashboard({ bidders: next });
+                          }}
+                          placeholder="🇦🇪"
+                          className="col-span-2 text-base text-center bg-gray-50 border border-gray-200 rounded-lg px-1 py-1 focus:border-gray-900 outline-none"
+                        />
+                      </div>
+
+                      {/* Linha 2: Moeda · Taxa BRL */}
+                      <div className="grid grid-cols-12 gap-1.5">
+                        <input
+                          type="text"
+                          value={bidder.currency}
+                          onChange={(e) => {
+                            const next = [...(dash.bidders || [])];
+                            next[idx] = { ...next[idx], currency: e.target.value.toUpperCase().slice(0, 4) };
+                            updateDashboard({ bidders: next });
+                          }}
+                          placeholder="AED"
+                          className="col-span-3 text-[11px] uppercase bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 focus:border-gray-900 outline-none"
+                        />
+                        <div className="col-span-9 flex items-center gap-1.5">
+                          <span className="text-[10px] text-gray-500">1 BRL =</span>
+                          <input
+                            type="number"
+                            step="0.001"
+                            value={bidder.currency_rate}
+                            onChange={(e) => {
+                              const next = [...(dash.bidders || [])];
+                              next[idx] = { ...next[idx], currency_rate: parseFloat(e.target.value) || 0 };
+                              updateDashboard({ bidders: next });
+                            }}
+                            className="flex-1 text-[11px] tabular-nums bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 focus:border-gray-900 outline-none"
+                          />
+                          <span className="text-[10px] text-gray-500">{bidder.currency}</span>
+                        </div>
+                      </div>
+
+                      {/* Avatar URL upload */}
+                      <ImageUploadField
+                        label="Foto do comprador"
+                        value={bidder.avatar_url}
+                        onChange={(url) => {
+                          const next = [...(dash.bidders || [])];
+                          next[idx] = { ...next[idx], avatar_url: url };
+                          updateDashboard({ bidders: next });
+                        }}
+                        bucket="landing-assets"
+                        path={`bidder-${bidder.id}-${Date.now()}.jpg`}
+                      />
+
+                      {/* Botões */}
+                      <div className="flex gap-1 pt-1">
+                        <button
+                          onClick={() => {
+                            if (!confirm("Remover esse comprador?")) return;
+                            const next = (dash.bidders || []).filter((_, i) => i !== idx);
+                            updateDashboard({ bidders: next });
+                          }}
+                          className="flex-1 px-2 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-[10px] font-bold transition"
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => {
+                const newBidder = {
+                  id: `bidder-${Date.now()}`,
+                  name: "Novo Comprador",
+                  emirate: "Cidade",
+                  country: "País",
+                  flag: "🇦🇪",
+                  currency: "USD",
+                  currency_rate: 0.18,
+                  avatar_url: "",
+                };
+                updateDashboard({ bidders: [...(dash.bidders || []), newBidder] });
+              }}
+              className="mt-3 w-full border-2 border-dashed border-gray-300 hover:border-gray-500 text-gray-500 hover:text-gray-900 py-3 rounded-xl text-sm font-semibold transition"
+            >
+              + Adicionar comprador
             </button>
           </Section>
 

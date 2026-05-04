@@ -647,19 +647,40 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       const delay = 1500 + Math.random() * 3000;
       timeoutId = setTimeout(() => {
         if (auctionEnded) return;
-        const bidder = randomBidder();
+        // Pega bidder do config (admin) — fallback pro hardcoded se config vazia
+        const biddersList = dash.bidders && dash.bidders.length > 0 ? dash.bidders : null;
+        let bidderName: string, bidderAvatar: string, emirate: string, country: string, flag: string, currency: string, currencyRate: number;
+        if (biddersList) {
+          const b = biddersList[Math.floor(Math.random() * biddersList.length)];
+          bidderName = b.name;
+          bidderAvatar = b.avatar_url || `https://i.pravatar.cc/150?u=${encodeURIComponent(b.name)}`;
+          emirate = b.emirate;
+          country = b.country;
+          flag = b.flag;
+          currency = b.currency;
+          currencyRate = b.currency_rate;
+        } else {
+          const bidder = randomBidder();
+          bidderName = bidder.name;
+          bidderAvatar = bidder.avatar;
+          emirate = bidder.emirate;
+          country = bidder.country;
+          flag = bidder.flag;
+          currency = bidder.currency;
+          currencyRate = bidder.currencyRate;
+        }
         const increment = randomBidIncrementBRL(lastBid);
         let newBid = Math.round((lastBid + increment) * 100) / 100;
         if (newBid > MAX_BID) newBid = MAX_BID;
         const newBidObj: Bid = {
           id: `bid-${Date.now()}-${Math.random()}`,
-          bidder_name: bidder.name,
-          bidder_avatar: bidder.avatar,
-          emirate: bidder.emirate,
-          country: bidder.country,
-          flag: bidder.flag,
-          currency: bidder.currency,
-          currencyRate: bidder.currencyRate,
+          bidder_name: bidderName,
+          bidder_avatar: bidderAvatar,
+          emirate,
+          country,
+          flag,
+          currency,
+          currencyRate,
           amount_brl: newBid,
           created_at: new Date().toISOString(),
         };
@@ -669,8 +690,8 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         // Notificação dura 2 minutos
         const notif: Notification = {
           id: newBidObj.id,
-          bidder_name: bidder.name,
-          flag: bidder.flag,
+          bidder_name: bidderName,
+          flag,
           amount_brl: newBid,
         };
         setNotifications((n) => [notif, ...n].slice(0, 4));

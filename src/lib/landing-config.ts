@@ -77,6 +77,21 @@ export type DashboardConfig = {
 
   // Posts do feed (gerenciado manualmente no admin)
   feed_posts: FeedPost[];
+
+  // Compradores fictícios que dão lance no leilão (gerenciado no admin)
+  bidders: Bidder[];
+};
+
+// Comprador fictício
+export type Bidder = {
+  id: string;
+  name: string;
+  emirate: string;        // cidade
+  country: string;        // país
+  flag: string;           // emoji
+  currency: string;       // ex: AED
+  currency_rate: number;  // BRL → moeda local
+  avatar_url: string;     // foto da pessoa
 };
 
 // Config completa
@@ -222,6 +237,21 @@ const DEFAULT_FEED_POSTS: FeedPost[] = [
   },
 ];
 
+const DEFAULT_BIDDERS: Bidder[] = [
+  { id: "bidder-1", name: "Abdullah Al-Footim", emirate: "Dubai", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currency_rate: 0.74, avatar_url: "" },
+  { id: "bidder-2", name: "Khalid bin Toetalla", emirate: "Riyadh", country: "Arábia Saudita", flag: "🇸🇦", currency: "SAR", currency_rate: 0.75, avatar_url: "" },
+  { id: "bidder-3", name: "Mohammed Al-Pedalov", emirate: "Abu Dhabi", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currency_rate: 0.74, avatar_url: "" },
+  { id: "bidder-4", name: "Yusuf Al-Heelman", emirate: "Doha", country: "Catar", flag: "🇶🇦", currency: "QAR", currency_rate: 0.73, avatar_url: "" },
+  { id: "bidder-5", name: "Faisal Bin Soleyman", emirate: "Kuwait City", country: "Kuwait", flag: "🇰🇼", currency: "KWD", currency_rate: 0.061, avatar_url: "" },
+  { id: "bidder-6", name: "Omar Ankleworth III", emirate: "Sharjah", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currency_rate: 0.74, avatar_url: "" },
+  { id: "bidder-7", name: "Rashid Al-Archski", emirate: "Manama", country: "Bahrein", flag: "🇧🇭", currency: "BHD", currency_rate: 0.075, avatar_url: "" },
+  { id: "bidder-8", name: "Tariq bin Bunionov", emirate: "Muscat", country: "Omã", flag: "🇴🇲", currency: "OMR", currency_rate: 0.077, avatar_url: "" },
+  { id: "bidder-9", name: "Ibrahim Al-Tarsali", emirate: "Dubai", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currency_rate: 0.74, avatar_url: "" },
+  { id: "bidder-10", name: "Hamad Bin Calluso", emirate: "Riyadh", country: "Arábia Saudita", flag: "🇸🇦", currency: "SAR", currency_rate: 0.75, avatar_url: "" },
+  { id: "bidder-11", name: "Nasser Al-Insteppi", emirate: "Doha", country: "Catar", flag: "🇶🇦", currency: "QAR", currency_rate: 0.73, avatar_url: "" },
+  { id: "bidder-12", name: "Mansour Bin Pedicur", emirate: "Abu Dhabi", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currency_rate: 0.74, avatar_url: "" },
+];
+
 const DEFAULT_DASHBOARD_CONFIG: DashboardConfig = {
   logo_mode: "same_as_landing",
   logo_primary: "FOOT",
@@ -245,10 +275,11 @@ const DEFAULT_DASHBOARD_CONFIG: DashboardConfig = {
   label_top_creators: "Top creators",
   label_recent_sales: "Vendas recentes",
 
-  feed_blur_intensity: 12,  // px (equivalente a blur-md ~12px)
-  feed_grayscale: false,    // colorido por padrão agora
+  feed_blur_intensity: 12,
+  feed_grayscale: false,
 
   feed_posts: DEFAULT_FEED_POSTS,
+  bidders: DEFAULT_BIDDERS,
 };
 
 export const DEFAULT_LANDING_CONFIG: LandingConfig = {
@@ -400,6 +431,10 @@ function migrateConfig(raw: any): LandingConfig {
     // Se feed_posts não existir, usa default
     if (!Array.isArray(merged.dashboard.feed_posts) || merged.dashboard.feed_posts.length === 0) {
       merged.dashboard.feed_posts = DEFAULT_FEED_POSTS;
+    }
+    // Se bidders não existir, usa default (compat configs antigas)
+    if (!Array.isArray(merged.dashboard.bidders) || merged.dashboard.bidders.length === 0) {
+      merged.dashboard.bidders = DEFAULT_BIDDERS;
     }
   }
 
