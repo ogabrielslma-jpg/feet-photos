@@ -2157,27 +2157,18 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
               </>
             )}
 
-            {/* PASSO 4: Paywall plano */}
+            {/* PASSO 4: Paywall plano — Premium Dark */}
             {withdrawStep === "plan" && (
               <>
-                {/* Banner topo */}
-                <div className="bg-gradient-to-br from-[#62C86E]/10 to-[#62C86E]/5 border border-[#62C86E]/30 rounded-2xl p-4 mb-5">
-                  <div className="flex items-start gap-2">
-                    <div className="w-9 h-9 rounded-full bg-[#62C86E] flex items-center justify-center flex-shrink-0 shadow-md">
-                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-gray-900 mb-0.5">Sua conta ainda não tem um plano ativo</p>
-                      <p className="text-xs text-gray-700 leading-relaxed">
-                        Pra liberar saques, escolha um plano <strong>anual</strong>. Pague <strong>uma vez por ano</strong> e use a plataforma sem se preocupar.
-                      </p>
-                    </div>
-                  </div>
+                {/* Header preto premium */}
+                <div className="-mx-5 sm:-mx-6 -mt-5 sm:-mt-6 mb-5 px-5 sm:px-6 py-5 bg-gradient-to-br from-gray-900 to-black text-white">
+                  <h3 className="font-display text-xl sm:text-2xl mb-1.5">Escolha seu plano</h3>
+                  <p className="text-xs sm:text-[13px] text-white/70 leading-relaxed">
+                    Pra liberar saques, ative um plano <strong className="text-[#62C86E]">anual</strong>. Pague <strong>uma vez por ano</strong> e use a plataforma sem se preocupar.
+                  </p>
                 </div>
 
-                {/* Cards dos planos */}
+                {/* Cards empilhados */}
                 <div className="space-y-3 mb-5">
                   {[
                     {
@@ -2214,83 +2205,72 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                       <button
                         key={p.id}
                         onClick={() => setSelectedPlanId(p.id)}
-                        className={`relative w-full text-left rounded-2xl overflow-hidden transition-all ${
-                          selected
-                            ? p.highlight
-                              ? "ring-2 ring-[#62C86E] shadow-lg"
-                              : "ring-2 ring-gray-900 shadow-md"
-                            : "ring-1 ring-gray-200 hover:ring-gray-400"
-                        } ${
-                          p.highlight && selected
-                            ? "bg-[#62C86E]/5"
-                            : "bg-white"
+                        className={`relative w-full text-left rounded-2xl p-4 transition-all border-2 ${
+                          p.highlight
+                            ? "border-[#62C86E] bg-gradient-to-b from-[#62C86E]/5 to-transparent"
+                            : selected
+                              ? "border-gray-900 bg-white"
+                              : "border-gray-200 bg-white hover:border-gray-400"
                         }`}
                       >
                         {/* Badge MAIS POPULAR */}
                         {p.highlight && (
-                          <div className="absolute -top-px left-1/2 -translate-x-1/2 bg-[#62C86E] text-white text-[9px] font-bold px-3 py-1 rounded-b-lg uppercase tracking-[0.15em] shadow-sm">
+                          <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#62C86E] text-white text-[9px] font-bold px-3 py-1 rounded-full uppercase tracking-[0.12em] shadow-md whitespace-nowrap">
                             ⭐ Mais Popular
                           </div>
                         )}
 
-                        {/* Selected check */}
-                        {selected && (
-                          <div className="absolute top-3 right-3 w-7 h-7 rounded-full bg-[#62C86E] flex items-center justify-center shadow-md">
-                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                          </div>
-                        )}
-
-                        <div className={`p-5 ${p.highlight ? "pt-7" : ""}`}>
-                          {/* Header */}
-                          <div className="flex items-start gap-3 mb-3">
-                            <div className="w-11 h-11 rounded-xl bg-gray-50 flex items-center justify-center text-2xl flex-shrink-0">
-                              {p.emoji}
-                            </div>
-                            <div className="flex-1 min-w-0 pr-9">
-                              <div className="font-display text-xl text-gray-900 leading-none mb-1">{p.name}</div>
-                              <div className="text-[11px] text-gray-600">{p.tagline}</div>
-                            </div>
-                          </div>
-
-                          {/* Preço */}
-                          <div className={`rounded-xl p-3 mb-3 ${
-                            p.highlight ? "bg-[#62C86E]/10" : "bg-gray-50"
+                        <div className={`flex items-center gap-3 ${p.highlight ? "mt-1" : ""}`}>
+                          {/* Avatar circular */}
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl flex-shrink-0 ${
+                            p.highlight ? "bg-[#62C86E]/15" : "bg-gray-50"
                           }`}>
-                            <div className="flex items-baseline gap-1">
-                              <span className="text-xs text-gray-500">R$</span>
-                              <span className="font-display text-3xl text-gray-900 tabular-nums leading-none">{p.yearly}</span>
-                              <span className="text-xs text-gray-500">/ano</span>
+                            {p.emoji}
+                          </div>
+
+                          {/* Nome + tagline */}
+                          <div className="flex-1 min-w-0">
+                            <div className="font-display text-lg text-gray-900 leading-tight">{p.name}</div>
+                            <div className="text-[11px] text-gray-600 mt-0.5">{p.tagline}</div>
+                          </div>
+
+                          {/* Preço à direita */}
+                          <div className="text-right flex-shrink-0">
+                            <div className="flex items-baseline justify-end gap-0.5">
+                              <span className="text-[10px] text-gray-500">R$</span>
+                              <span className="font-display text-2xl text-gray-900 tabular-nums leading-none">{p.yearly}</span>
+                              <span className="text-[10px] text-gray-500">/ano</span>
                             </div>
-                            <div className="flex items-center gap-1 mt-1.5">
-                              <span className="text-[10px] text-gray-500">+</span>
-                              <span className={`text-sm font-bold tabular-nums ${
-                                p.fee <= 4 ? "text-[#62C86E]" : "text-gray-900"
-                              }`}>
-                                {p.fee}%
-                              </span>
-                              <span className="text-[10px] text-gray-500">de taxa por venda</span>
-                            </div>
-                            <div className="text-[9px] uppercase tracking-wider text-gray-400 font-bold mt-1">
-                              Cobra 1× por ano
+                            <div className={`text-[10px] font-bold tabular-nums mt-1 ${
+                              p.fee <= 4 ? "text-[#62C86E]" : "text-gray-700"
+                            }`}>
+                              + {p.fee}% taxa
                             </div>
                           </div>
 
-                          {/* Features */}
-                          <ul className="space-y-1.5">
-                            {p.features.map((f, fi) => (
-                              <li key={fi} className="flex items-center gap-2 text-xs text-gray-700">
-                                <svg className={`w-3.5 h-3.5 flex-shrink-0 ${
-                                  p.highlight ? "text-[#62C86E]" : "text-gray-500"
-                                }`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span>{f}</span>
-                              </li>
-                            ))}
-                          </ul>
+                          {/* Check selected */}
+                          {selected && !p.highlight && (
+                            <div className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-gray-900 flex items-center justify-center shadow-md">
+                              <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                          )}
                         </div>
+
+                        {/* Features */}
+                        <ul className="mt-3 pt-3 border-t border-gray-100 space-y-1.5">
+                          {p.features.map((f, fi) => (
+                            <li key={fi} className="flex items-center gap-2 text-[11px] text-gray-700">
+                              <svg className={`w-3 h-3 flex-shrink-0 ${
+                                p.highlight ? "text-[#62C86E]" : "text-gray-500"
+                              }`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                              <span>{f}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </button>
                     );
                   })}
@@ -2305,8 +2285,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                 <button
                   onClick={nextWithdrawStep}
                   disabled={creatingPix}
-                  className="w-full text-white font-bold py-4 rounded-2xl transition-all text-sm flex items-center justify-center gap-2 shadow-lg disabled:cursor-wait disabled:opacity-60"
-                  style={{ backgroundColor: creatingPix ? "#9ca3af" : "#62C86E" }}
+                  className="w-full bg-gray-900 hover:bg-black disabled:bg-gray-400 disabled:cursor-wait text-white font-bold py-3.5 rounded-2xl transition-all text-sm flex items-center justify-center gap-2 shadow-lg"
                 >
                   {creatingPix ? (
                     <>
