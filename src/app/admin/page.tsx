@@ -1882,13 +1882,44 @@ function SubmissionsPanel() {
     setLoading(true);
     setError("");
     try {
-      const password = sessionStorage.getItem("admin_password") || "";
+      // Pega senha de várias fontes (compat com sessões antigas)
+      let password = sessionStorage.getItem("admin_password") || "";
+      if (!password) {
+        // Fallback: pede senha agora
+        const entered = window.prompt("Senha do admin pra carregar envios:");
+        if (entered) {
+          password = entered;
+          try { sessionStorage.setItem("admin_password", entered); } catch {}
+        }
+      }
+
       const res = await fetch("/api/admin/submissions", {
         headers: { "x-admin-password": password },
       });
+
+      // Detecta resposta HTML (404 ou 500 sem JSON)
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        const text = await res.text();
+        if (res.status === 404) {
+          setError("Endpoint /api/admin/submissions não encontrado. Faça redeploy no Vercel.");
+        } else if (text.includes("<!DOCTYPE")) {
+          setError(`Servidor retornou HTML em vez de JSON (status ${res.status}). Provável: variável SUPABASE_SERVICE_ROLE_KEY faltando no Vercel ou build desatualizado.`);
+        } else {
+          setError(`Resposta inválida (${res.status}): ${text.slice(0, 100)}`);
+        }
+        return;
+      }
+
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Erro ao carregar");
+        if (res.status === 401) {
+          // Senha errada — limpa pra próxima tentar de novo
+          try { sessionStorage.removeItem("admin_password"); } catch {}
+          setError("Senha inválida. Clica em recarregar pra tentar de novo.");
+        } else {
+          setError(data.error || `Erro ${res.status}`);
+        }
       } else {
         setSubmissions(data.submissions || []);
         setStats(data.stats || null);
