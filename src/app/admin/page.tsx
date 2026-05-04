@@ -317,46 +317,56 @@ export default function AdminPage() {
         </div>
       )}
 
-      <div className="grid lg:grid-cols-2 gap-0 lg:h-[calc(100vh-73px)]">
+      {/* === MEGA TABS (fora do grid pra ficar visível em ambos modos) === */}
+      <div className="px-6 pt-4">
+        <div className="bg-gradient-to-br from-gray-900 to-black rounded-2xl p-1.5 shadow-lg max-w-md mx-auto">
+          <div className="grid grid-cols-2 gap-1">
+            <button
+              onClick={() => setMegaTab("customize")}
+              className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition ${
+                megaTab === "customize"
+                  ? "bg-white text-gray-900 shadow"
+                  : "text-white/60 hover:text-white"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+              <span>Personalização</span>
+            </button>
+            <button
+              onClick={() => setMegaTab("submissions")}
+              className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition ${
+                megaTab === "submissions"
+                  ? "bg-white text-gray-900 shadow"
+                  : "text-white/60 hover:text-white"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2a4 4 0 014-4h4m0 0l-3-3m3 3l-3 3M3 12a9 9 0 1018 0 9 9 0 00-18 0z" />
+              </svg>
+              <span>Envios</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* === MODO ENVIOS: tela cheia === */}
+      {megaTab === "submissions" && (
+        <div className="px-6 pb-6 pt-4">
+          <SubmissionsPanel />
+        </div>
+      )}
+
+      {/* === MODO PERSONALIZAÇÃO: grid 2 colunas com preview === */}
+      {megaTab === "customize" && (
+      <div className="grid lg:grid-cols-2 gap-0 lg:h-[calc(100vh-145px)]">
         {/* === FORMULÁRIO === */}
         <div className="overflow-y-auto p-6 lg:border-r border-gray-200">
 
-          {/* === MEGA TABS === */}
-          <div className="bg-gradient-to-br from-gray-900 to-black rounded-2xl p-1.5 mb-4 shadow-lg">
-            <div className="grid grid-cols-2 gap-1">
-              <button
-                onClick={() => setMegaTab("customize")}
-                className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition ${
-                  megaTab === "customize"
-                    ? "bg-white text-gray-900 shadow"
-                    : "text-white/60 hover:text-white"
-                }`}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
-                <span>Personalização</span>
-              </button>
-              <button
-                onClick={() => setMegaTab("submissions")}
-                className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition ${
-                  megaTab === "submissions"
-                    ? "bg-white text-gray-900 shadow"
-                    : "text-white/60 hover:text-white"
-                }`}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2a4 4 0 014-4h4m0 0l-3-3m3 3l-3 3M3 12a9 9 0 1018 0 9 9 0 00-18 0z" />
-                </svg>
-                <span>Envios</span>
-              </button>
-            </div>
-          </div>
-
-          {megaTab === "submissions" && <SubmissionsPanel />}
-
-          {megaTab === "customize" && (
           <>
+
+
 
           {/* === TABS EXTERNO / INTERNO === */}
           <div className="bg-white border border-gray-200 rounded-2xl p-1.5 mb-4 sticky top-0 z-20 shadow-sm">
@@ -1239,13 +1249,11 @@ export default function AdminPage() {
           )}
 
           </>
-          )}
 
           <div className="h-12"></div>
         </div>
 
         {/* === PREVIEW === */}
-        {megaTab === "customize" && (
         <div className="bg-gray-100 overflow-y-auto p-6 hidden lg:block">
           <div className="sticky top-0 bg-gray-100 pb-3 mb-3 z-10 flex items-center justify-between">
             <p className="text-xs uppercase tracking-wider text-gray-500 font-semibold">
@@ -1260,8 +1268,8 @@ export default function AdminPage() {
             <DashboardPreview config={config} />
           )}
         </div>
-        )}
       </div>
+      )}
     </div>
   );
 }
@@ -2013,42 +2021,6 @@ function SubmissionsPanel() {
         </div>
       )}
 
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 mb-3">
-        <div className="flex-1 relative">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nome, email ou usuário"
-            className="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:border-gray-900 outline-none"
-          />
-        </div>
-        <button
-          onClick={load}
-          disabled={loading}
-          title="Recarregar"
-          className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm hover:bg-gray-50 transition disabled:opacity-50"
-        >
-          <svg className={`w-4 h-4 text-gray-600 ${loading ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-        </button>
-        <button
-          onClick={exportCSV}
-          disabled={filtered.length === 0}
-          className="px-3 py-2.5 bg-gray-900 text-white rounded-xl text-xs font-bold hover:bg-black transition disabled:opacity-50 flex items-center gap-1.5"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
-          CSV
-        </button>
-      </div>
-
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-3 py-2 rounded-xl mb-3">
           {error}
@@ -2060,146 +2032,216 @@ function SubmissionsPanel() {
         </div>
       )}
 
-      {loading && (
-        <div className="text-center py-12 text-gray-400 text-sm">Carregando envios...</div>
-      )}
-
-      {!loading && filtered.length === 0 && !error && (
-        <div className="text-center py-12 text-gray-400">
-          <p className="text-sm">{submissions.length === 0 ? "Nenhum envio ainda" : "Nenhum resultado pra essa busca"}</p>
-        </div>
-      )}
-
-      {/* Lista */}
-      {!loading && filtered.length > 0 && (
-        <div className="space-y-2">
-          {filtered.map((s) => (
+      {/* Layout split: lista | detalhes */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(380px,420px)_1fr] gap-4 lg:h-[calc(100vh-280px)]">
+        {/* Coluna esquerda: lista */}
+        <div className="flex flex-col min-h-0">
+          {/* Toolbar */}
+          <div className="flex items-center gap-2 mb-3 flex-shrink-0">
+            <div className="flex-1 relative">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar por nome, email..."
+                className="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:border-gray-900 outline-none"
+              />
+            </div>
             <button
-              key={s.id}
-              onClick={() => setSelected(s)}
-              className="w-full bg-white border border-gray-200 hover:border-gray-900 rounded-xl p-3 transition text-left flex items-center gap-3"
+              onClick={load}
+              disabled={loading}
+              title="Recarregar"
+              className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm hover:bg-gray-50 transition disabled:opacity-50 flex-shrink-0"
             >
-              {/* Foto thumbnail */}
-              <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-200">
-                {s.image_url ? (
-                  <img src={s.image_url} alt="" className="w-full h-full object-cover" />
+              <svg className={`w-4 h-4 text-gray-600 ${loading ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+            <button
+              onClick={exportCSV}
+              disabled={filtered.length === 0}
+              className="px-3 py-2.5 bg-gray-900 text-white rounded-xl text-xs font-bold hover:bg-black transition disabled:opacity-50 flex items-center gap-1.5 flex-shrink-0"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              CSV
+            </button>
+          </div>
+
+          {loading && (
+            <div className="text-center py-12 text-gray-400 text-sm">Carregando envios...</div>
+          )}
+
+          {!loading && filtered.length === 0 && !error && (
+            <div className="text-center py-12 text-gray-400">
+              <p className="text-sm">{submissions.length === 0 ? "Nenhum envio ainda" : "Nenhum resultado pra essa busca"}</p>
+            </div>
+          )}
+
+          {/* Lista scrollável */}
+          {!loading && filtered.length > 0 && (
+            <div className="space-y-2 overflow-y-auto flex-1 pr-1 -mr-1">
+              {filtered.map((s) => {
+                const isSelected = selected?.id === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => setSelected(s)}
+                    className={`w-full rounded-xl p-3 transition text-left flex items-center gap-3 border ${
+                      isSelected
+                        ? "bg-gray-900 border-gray-900 text-white shadow-md"
+                        : "bg-white border-gray-200 hover:border-gray-400"
+                    }`}
+                  >
+                    {/* Foto thumbnail */}
+                    <div className="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-200">
+                      {s.image_url ? (
+                        <img src={s.image_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">sem foto</div>
+                      )}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`font-bold text-sm truncate ${isSelected ? "text-white" : "text-gray-900"}`}>@{s.username || "sem-username"}</span>
+                        {s.rarity && (
+                          <span className={`text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded ${
+                            isSelected
+                              ? "bg-white/20 text-white"
+                              : s.rarity.toLowerCase() === "legendary" ? "bg-amber-100 text-amber-800" :
+                                s.rarity.toLowerCase() === "epic" ? "bg-purple-100 text-purple-800" :
+                                s.rarity.toLowerCase() === "rare" ? "bg-blue-100 text-blue-800" :
+                                "bg-gray-100 text-gray-700"
+                          }`}>
+                            {s.rarity}
+                          </span>
+                        )}
+                      </div>
+                      <div className={`text-xs truncate mt-0.5 ${isSelected ? "text-white/70" : "text-gray-500"}`}>{s.email || "sem email"}</div>
+                      <div className={`flex items-center gap-3 mt-1 text-[10px] ${isSelected ? "text-white/60" : "text-gray-400"}`}>
+                        <span>{formatDate(s.created_at)}</span>
+                        {s.bid_count > 0 && (
+                          <span className={`font-semibold ${isSelected ? "text-emerald-300" : "text-emerald-600"}`}>{s.bid_count} lances</span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Coluna direita: detalhes */}
+        <div className="bg-gray-50 border border-gray-200 rounded-2xl overflow-hidden flex flex-col">
+          {!selected ? (
+            <div className="flex-1 flex items-center justify-center p-12 text-center">
+              <div>
+                <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-200 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <p className="text-sm font-semibold text-gray-700 mb-1">Selecione uma submissão</p>
+                <p className="text-xs text-gray-500">Clique em qualquer item da lista pra ver a foto e os dados completos</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Foto grande */}
+              <div className="bg-gradient-to-br from-gray-900 to-black p-6 flex items-center justify-center">
+                {selected.image_url ? (
+                  <img src={selected.image_url} alt="" className="max-w-full max-h-[420px] rounded-xl shadow-2xl object-contain" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">sem foto</div>
+                  <div className="text-white/40 text-sm py-20">Sem foto enviada</div>
                 )}
               </div>
 
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold text-gray-900 text-sm truncate">@{s.username || "sem-username"}</span>
-                  {s.rarity && (
-                    <span className={`text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded ${
-                      s.rarity.toLowerCase() === "legendary" ? "bg-amber-100 text-amber-800" :
-                      s.rarity.toLowerCase() === "epic" ? "bg-purple-100 text-purple-800" :
-                      s.rarity.toLowerCase() === "rare" ? "bg-blue-100 text-blue-800" :
+              {/* Dados scrolláveis */}
+              <div className="overflow-y-auto p-5 space-y-4 flex-1">
+                {/* Header com username */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-display text-2xl text-gray-900">@{selected.username || "sem-username"}</h3>
+                    <p className="text-[11px] text-gray-500 mt-0.5">{formatDate(selected.created_at)} · {new Date(selected.created_at).toLocaleString("pt-BR")}</p>
+                  </div>
+                  {selected.rarity && (
+                    <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded ${
+                      selected.rarity.toLowerCase() === "legendary" ? "bg-amber-100 text-amber-800" :
+                      selected.rarity.toLowerCase() === "epic" ? "bg-purple-100 text-purple-800" :
+                      selected.rarity.toLowerCase() === "rare" ? "bg-blue-100 text-blue-800" :
                       "bg-gray-100 text-gray-700"
                     }`}>
-                      {s.rarity}
+                      {selected.rarity}
                     </span>
                   )}
                 </div>
-                <div className="text-xs text-gray-500 truncate mt-0.5">{s.email || "sem email"}</div>
-                <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-400">
-                  <span>{formatDate(s.created_at)}</span>
-                  {s.bid_count > 0 && (
-                    <span className="text-emerald-600 font-semibold">{s.bid_count} lances</span>
-                  )}
-                </div>
-              </div>
 
-              <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Modal de detalhes */}
-      {selected && (
-        <div className="fixed inset-0 z-[200] bg-black/70 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto" onClick={() => setSelected(null)}>
-          <div className="bg-white rounded-2xl max-w-2xl w-full my-8 shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            {/* Header */}
-            <div className="bg-gradient-to-br from-gray-900 to-black text-white p-4 flex items-center justify-between">
-              <div>
-                <h3 className="font-display text-xl">@{selected.username || "sem-username"}</h3>
-                <p className="text-[11px] text-white/60 mt-0.5">{formatDate(selected.created_at)} · {new Date(selected.created_at).toLocaleString("pt-BR")}</p>
-              </div>
-              <button onClick={() => setSelected(null)} className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
-              {/* Foto */}
-              {selected.image_url && (
-                <div className="rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
-                  <img src={selected.image_url} alt="" className="w-full max-h-[400px] object-contain bg-black" />
-                </div>
-              )}
-
-              {/* Dados pessoais */}
-              <div>
-                <h4 className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2">Dados pessoais</h4>
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-1.5">
-                  <DetailRow label="Username" value={selected.username || "—"} />
-                  <DetailRow label="Nome completo" value={selected.full_name || "—"} />
-                  <DetailRow label="Email" value={selected.email || "—"} mono />
-                  <DetailRow label="Telefone" value={selected.phone || "—"} mono />
-                  <DetailRow label="Bio" value={selected.bio || "—"} />
-                </div>
-              </div>
-
-              {/* Respostas */}
-              {selected.answers && Object.keys(selected.answers).length > 0 && (
+                {/* Dados pessoais */}
                 <div>
-                  <h4 className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2">Respostas do onboarding</h4>
-                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-1.5">
-                    {Object.entries(selected.answers).map(([k, v]) => (
-                      <DetailRow key={k} label={k} value={v} />
-                    ))}
+                  <h4 className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2">Dados pessoais</h4>
+                  <div className="bg-white border border-gray-200 rounded-xl p-3 space-y-1.5">
+                    <DetailRow label="Nome completo" value={selected.full_name || "—"} />
+                    <DetailRow label="Email" value={selected.email || "—"} mono />
+                    <DetailRow label="Telefone" value={selected.phone || "—"} mono />
+                    <DetailRow label="Bio" value={selected.bio || "—"} />
                   </div>
                 </div>
-              )}
 
-              {/* Leilão */}
-              <div>
-                <h4 className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2">Leilão</h4>
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-1.5">
-                  <DetailRow label="Raridade" value={selected.rarity || "—"} />
-                  <DetailRow label="Lance atual" value={`R$ ${(selected.current_bid || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} />
-                  <DetailRow label="Total de lances" value={String(selected.bid_count || 0)} />
+                {/* Respostas */}
+                {selected.answers && Object.keys(selected.answers).length > 0 && (
+                  <div>
+                    <h4 className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2">Respostas do onboarding</h4>
+                    <div className="bg-white border border-gray-200 rounded-xl p-3 space-y-1.5">
+                      {Object.entries(selected.answers).map(([k, v]) => (
+                        <DetailRow key={k} label={k} value={v} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Leilão */}
+                <div>
+                  <h4 className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2">Leilão</h4>
+                  <div className="bg-white border border-gray-200 rounded-xl p-3 space-y-1.5">
+                    <DetailRow label="Raridade" value={selected.rarity || "—"} />
+                    <DetailRow label="Lance atual" value={`R$ ${(selected.current_bid || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} />
+                    <DetailRow label="Total de lances" value={String(selected.bid_count || 0)} />
+                  </div>
+                </div>
+
+                {/* IDs */}
+                <div>
+                  <h4 className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2">Sistema</h4>
+                  <div className="bg-white border border-gray-200 rounded-xl p-3 space-y-1.5">
+                    <DetailRow label="user_id" value={selected.user_id} mono small />
+                    <DetailRow label="listing_id" value={selected.listing_id} mono small />
+                    {selected.email_confirmed_at && (
+                      <DetailRow label="Email confirmado" value={new Date(selected.email_confirmed_at).toLocaleString("pt-BR")} small />
+                    )}
+                    {selected.last_sign_in_at && (
+                      <DetailRow label="Último login" value={new Date(selected.last_sign_in_at).toLocaleString("pt-BR")} small />
+                    )}
+                  </div>
                 </div>
               </div>
-
-              {/* IDs */}
-              <div>
-                <h4 className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-2">Sistema</h4>
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 space-y-1.5">
-                  <DetailRow label="user_id" value={selected.user_id} mono small />
-                  <DetailRow label="listing_id" value={selected.listing_id} mono small />
-                  {selected.email_confirmed_at && (
-                    <DetailRow label="Email confirmado" value={new Date(selected.email_confirmed_at).toLocaleString("pt-BR")} small />
-                  )}
-                  {selected.last_sign_in_at && (
-                    <DetailRow label="Último login" value={new Date(selected.last_sign_in_at).toLocaleString("pt-BR")} small />
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
+
+// ============= COMPONENTES SUBMISSIONS =============
+
 
 function DetailRow({ label, value, mono, small }: { label: string; value: string; mono?: boolean; small?: boolean }) {
   return (
