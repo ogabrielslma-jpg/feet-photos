@@ -755,6 +755,23 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         const data = await res.json();
         if (data.status === "paid") {
           clearInterval(interval);
+
+          // 🎯 Google Ads — Evento de conversão (pagamento PIX confirmado)
+          try {
+            const planAmount = PLANS_DATA[selectedPlanId]?.yearly || 0;
+            if (typeof window !== "undefined" && (window as any).gtag) {
+              (window as any).gtag("event", "conversion", {
+                send_to: "AW-17953773434/6S-OCOvN0KccEPqug_FC",
+                transaction_id: subscriptionId,
+                value: planAmount,
+                currency: "BRL",
+              });
+              console.log("[GoogleAds] Conversão disparada:", { subscriptionId, value: planAmount });
+            }
+          } catch (e) {
+            console.error("[GoogleAds] Erro ao disparar conversão:", e);
+          }
+
           setWithdrawStep("processing");
           setTimeout(() => {
             setWalletBalance(0);
