@@ -52,7 +52,13 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [phone, setPhone] = useState("");
   const [editingEmail, setEditingEmail] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Username availability
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -72,6 +78,38 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
+
+  // Verificação de disponibilidade do username (debounced 500ms)
+  useEffect(() => {
+    if (!username || username.length < 3) {
+      setUsernameStatus(username.length === 0 ? "idle" : "invalid");
+      return;
+    }
+
+    setUsernameStatus("checking");
+    const handler = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("username", username)
+          .maybeSingle();
+
+        if (error) {
+          console.error("[Username Check] erro:", error.message);
+          setUsernameStatus("idle");
+          return;
+        }
+
+        setUsernameStatus(data ? "taken" : "available");
+      } catch (e) {
+        console.error("[Username Check] exception:", e);
+        setUsernameStatus("idle");
+      }
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [username, supabase]);
 
   // Config visual de acordo com o viewport
   const viewport: ViewportConfig = isMobile ? config.mobile : config.desktop;
@@ -134,16 +172,47 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
       setError("A senha precisa ter pelo menos 6 caracteres.");
       return;
     }
+    if (username.length < 3) {
+      setError("O username precisa ter pelo menos 3 caracteres.");
+      return;
+    }
+    if (usernameStatus === "taken") {
+      setError("Esse username já está em uso. Escolha outro.");
+      return;
+    }
+    if (usernameStatus === "checking") {
+      setError("Aguarde a verificação do username terminar.");
+      return;
+    }
+    const phoneDigits = phone.replace(/\D/g, "");
+    if (phoneDigits.length < 10 || phoneDigits.length > 11) {
+      setError("Telefone inválido. Use DDD + número (10 ou 11 dígitos).");
+      return;
+    }
 
     setLoading(true);
     setError("");
 
     try {
+      // Re-verifica username antes de criar (race condition)
+      const { data: existing } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("username", username)
+        .maybeSingle();
+      if (existing) {
+        setError("Esse username acabou de ser pego. Escolha outro.");
+        setUsernameStatus("taken");
+        setLoading(false);
+        return;
+      }
+
       // 1. Cria conta no Supabase
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { username, first_name: firstName } },
+        phone: phoneDigits ? `+55${phoneDigits}` : undefined,
+        options: { data: { username, first_name: firstName, phone: phoneDigits } },
       });
 
       if (signUpError) throw signUpError;
@@ -489,24 +558,104 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
             )}
           </div>
 
-          <input type="text" required placeholder="Username (ex: pearlsoles_official)" value={username}
-            onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+          {/* Username com verificação */}
+          <div>
+            <div className="relative">
+              <input type="text" required minLength={3} placeholder="Username (ex: pearlsoles_official)" value={username}
+                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+                className={`w-full bg-ink-900/80 border rounded-2xl px-6 py-4 pr-12 text-bone-100 placeholder-ink-600 focus:outline-none transition text-base ${
+                  usernameStatus === "taken" ? "border-red-700 focus:border-red-600" :
+                  usernameStatus === "available" ? "border-moss-500 focus:border-moss-400" :
+                  "border-ink-700 focus:border-moss-700"
+                }`} />
+              <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                {usernameStatus === "checking" && (
+                  <div className="w-5 h-5 border-2 border-moss-700 border-t-moss-400 rounded-full animate-spin"></div>
+                )}
+                {usernameStatus === "available" && (
+                  <svg className="w-5 h-5 text-moss-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+                {usernameStatus === "taken" && (
+                  <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                )}
+              </div>
+            </div>
+            {usernameStatus === "checking" && (
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-500 mt-1.5 px-2">Verificando disponibilidade...</p>
+            )}
+            {usernameStatus === "available" && (
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-moss-400 mt-1.5 px-2">✓ Username disponível</p>
+            )}
+            {usernameStatus === "taken" && (
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-red-400 mt-1.5 px-2">✕ Esse username já está em uso</p>
+            )}
+            {usernameStatus === "invalid" && username.length > 0 && (
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-500 mt-1.5 px-2">Mínimo 3 caracteres</p>
+            )}
+          </div>
+
+          {/* Telefone */}
+          <input type="tel" required placeholder="Celular com DDD (ex: 11 98765-4321)" value={phone}
+            onChange={(e) => {
+              // Formata enquanto digita
+              const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+              let formatted = digits;
+              if (digits.length >= 2) formatted = `${digits.slice(0, 2)} ${digits.slice(2)}`;
+              if (digits.length >= 7) formatted = `${digits.slice(0, 2)} ${digits.slice(2, 7)}-${digits.slice(7)}`;
+              setPhone(formatted);
+            }}
             className="w-full bg-ink-900/80 border border-ink-700 focus:border-moss-700 rounded-2xl px-6 py-4 text-bone-100 placeholder-ink-600 focus:outline-none transition text-base" />
 
-          <input type="password" required minLength={6} placeholder="Senha (mín. 6 caracteres)" value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full bg-ink-900/80 border border-ink-700 focus:border-moss-700 rounded-2xl px-6 py-4 text-bone-100 placeholder-ink-600 focus:outline-none transition text-base" />
+          {/* Senha com olho */}
+          <div className="relative">
+            <input type={showPassword ? "text" : "password"} required minLength={6} placeholder="Senha (mín. 6 caracteres)" value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full bg-ink-900/80 border border-ink-700 focus:border-moss-700 rounded-2xl px-6 py-4 pr-12 text-bone-100 placeholder-ink-600 focus:outline-none transition text-base" />
+            <button type="button" onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-ink-500 hover:text-bone-100 transition p-1">
+              {showPassword ? (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              )}
+            </button>
+          </div>
 
-          <input type="password" required placeholder="Confirmar senha" value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full bg-ink-900/80 border border-ink-700 focus:border-moss-700 rounded-2xl px-6 py-4 text-bone-100 placeholder-ink-600 focus:outline-none transition text-base" />
+          {/* Confirmar senha com olho */}
+          <div className="relative">
+            <input type={showConfirmPassword ? "text" : "password"} required placeholder="Confirmar senha" value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full bg-ink-900/80 border border-ink-700 focus:border-moss-700 rounded-2xl px-6 py-4 pr-12 text-bone-100 placeholder-ink-600 focus:outline-none transition text-base" />
+            <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-ink-500 hover:text-bone-100 transition p-1">
+              {showConfirmPassword ? (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              )}
+            </button>
+          </div>
 
           {error && (
             <div className="bg-red-950/40 border border-red-900 text-red-300 px-4 py-3 text-sm rounded-2xl">{error}</div>
           )}
 
-          <button type="submit" disabled={loading}
-            className="w-full bg-moss-500 hover:bg-moss-400 disabled:bg-ink-700 text-ink-950 font-bold py-5 rounded-2xl transition uppercase tracking-wide">
+          <button type="submit" disabled={loading || usernameStatus === "taken" || usernameStatus === "checking"}
+            className="w-full bg-moss-500 hover:bg-moss-400 disabled:bg-ink-700 disabled:cursor-not-allowed text-ink-950 font-bold py-5 rounded-2xl transition uppercase tracking-wide">
             {loading ? "Criando conta..." : "Criar conta"}
           </button>
         </form>
