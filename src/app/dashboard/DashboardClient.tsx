@@ -73,7 +73,16 @@ type PastAuction = {
 };
 
 const PLATFORM_FEE = 0.10;
-const MIN_BID = 311.90;
+
+// Configuração dos lances: o primeiro lance começa baixo e cresce até o teto
+const FIRST_BID_MIN = 50;     // primeiro lance entre R$ 50 e R$ 200
+const FIRST_BID_MAX = 200;
+const MAX_BID_FLOOR = 311.90; // último lance entre R$ 311,90 e R$ 420
+const MAX_BID_CEIL = 420;
+const TOTAL_BIDS_MIN = 10;    // total de lances entre 10 e 17 por leilão
+const TOTAL_BIDS_MAX = 17;
+
+const MIN_BID = FIRST_BID_MIN; // mantém retrocompatibilidade
 
 const PLANS_DATA: Record<"starter" | "creator" | "super", { name: string; yearly: number; fee: number }> = {
   starter: { name: "Basic", yearly: 79, fee: 10 },
@@ -81,19 +90,62 @@ const PLANS_DATA: Record<"starter" | "creator" | "super", { name: string; yearly
   super: { name: "Top Creator", yearly: 169, fee: 4 },
 };
 
-// Lance máximo varia entre R$ 350 e R$ 420 — derivado do listing.id pra
-// cada foto ter um teto diferente (mas estável dentro do mesmo leilão)
-const MAX_BID_FLOOR = 350;
-const MAX_BID_CEIL = 420;
-
-function maxBidFor(listingId: string): number {
+// Hash determinístico do listing.id pra valores estáveis
+function hashListing(listingId: string): number {
   let hash = 0;
   for (let i = 0; i < listingId.length; i++) {
     hash = ((hash << 5) - hash + listingId.charCodeAt(i)) | 0;
   }
-  const range = MAX_BID_CEIL - MAX_BID_FLOOR;
-  const offset = (Math.abs(hash) % (range * 100)) / 100; // 0 a range com 2 decimais
-  return Math.round((MAX_BID_FLOOR + offset) * 100) / 100;
+  return Math.abs(hash);
+}
+
+// Configuração de leilão derivada do listing.id (mesma config sempre pra mesma foto)
+function auctionConfig(listingId: string): {
+  firstBid: number;        // valor do 1º lance (R$ 50-200)
+  finalBid: number;        // valor do último lance (R$ 311,90-420)
+  totalBids: number;       // quantos lances no total (10-17)
+} {
+  const h = hashListing(listingId);
+  // Usa diferentes "fatias" do hash pra cada valor (independência)
+  const firstBid = FIRST_BID_MIN + ((h % 15000) / 15000) * (FIRST_BID_MAX - FIRST_BID_MIN);
+  const finalBid = MAX_BID_FLOOR + (((h >> 8) % 10000) / 10000) * (MAX_BID_CEIL - MAX_BID_FLOOR);
+  const totalBids = TOTAL_BIDS_MIN + ((h >> 16) % (TOTAL_BIDS_MAX - TOTAL_BIDS_MIN + 1));
+  return {
+    firstBid: Math.round(firstBid * 100) / 100,
+    finalBid: Math.round(finalBid * 100) / 100,
+    totalBids,
+  };
+}
+
+// Calcula valor do bid #idx de #total — distribuição não-linear (curva natural)
+function bidValueAt(idx: number, total: number, firstBid: number, finalBid: number): number {
+  if (idx === 0) return firstBid;
+  if (idx >= total - 1) return finalBid;
+
+  const progress = idx / (total - 1); // 0 a 1
+  // Adiciona pequeno jitter pra parecer natural (±5% no progresso)
+  const jitter = (Math.random() - 0.5) * 0.08;
+  const adjustedProgress = Math.max(0.01, Math.min(0.99, progress + jitter));
+
+  // Curva levemente convexa (lances aceleram no fim) — exponencial suave
+  const curved = Math.pow(adjustedProgress, 0.85);
+  const value = firstBid + curved * (finalBid - firstBid);
+  return Math.round(value * 100) / 100;
+}
+
+// Embaralha array (Fisher-Yates) — usado pra ordem dos bidders
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Mantém compat: maxBidFor retorna o último lance pra qualquer chamada existente
+function maxBidFor(listingId: string): number {
+  return auctionConfig(listingId).finalBid;
 }
 
 const UPLOAD_COOLDOWN_HOURS = 2;
@@ -546,8 +598,9 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       }
 
       // 4. Reseta estado pro novo leilão
+      const initialBid = auctionConfig(String(newListing.id)).firstBid;
       setActiveListing(newListing);
-      setCurrentBidBRL(MIN_BID);
+      setCurrentBidBRL(initialBid);
       setBidHistory([]);
       setHasSold(false);
       setAuctionEnded(false);
@@ -741,22 +794,54 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     return `${h}h ${m.toString().padStart(2, "0")}min ${s.toString().padStart(2, "0")}s`;
   }
 
-  // ============ BIDS FAKE + NOTIFICAÇÕES (2min) ============
+  // ============ BIDS FAKE + NOTIFICAÇÕES (10-17 lances aleatórios por leilão) ============
   useEffect(() => {
     if (!stateLoaded) return;
     if (!activeListing || auctionEnded || hasSold) return;
     if (bidScheduledRef.current) return;
     bidScheduledRef.current = true;
+
+    const listingId = String(activeListing.id);
+    const cfg = auctionConfig(listingId);
+
+    // Embaralha bidders e seleciona N únicos pra esse leilão
+    const biddersList = dash.bidders && dash.bidders.length > 0 ? dash.bidders : [];
+    const shuffled = shuffle(biddersList).slice(0, cfg.totalBids);
+
+    console.log(`[Leilão] Listing ${listingId} → ${cfg.totalBids} lances, R$ ${cfg.firstBid} → R$ ${cfg.finalBid}`);
+
     let timeoutId: any;
-    const scheduleNextBid = (lastBid: number) => {
-      const delay = 1500 + Math.random() * 3000;
+    let currentIdx = 0;
+
+    // Calcula até onde já chegamos baseado no currentBidBRL salvo
+    // Se currentBidBRL > firstBid, significa que já houve lances antes (state restaurado)
+    if (currentBidBRL > cfg.firstBid) {
+      // Estima qual seria o índice atual com base no progresso
+      const progress = (currentBidBRL - cfg.firstBid) / (cfg.finalBid - cfg.firstBid);
+      currentIdx = Math.max(1, Math.floor(progress * cfg.totalBids));
+    }
+
+    const scheduleNextBid = () => {
+      // Se atingiu o total → para
+      if (currentIdx >= cfg.totalBids) {
+        bidScheduledRef.current = false;
+        return;
+      }
+
+      const delay = 1500 + Math.random() * 3500;
       timeoutId = setTimeout(() => {
         if (auctionEnded) return;
-        // Pega bidder do config (admin) — fallback pro hardcoded se config vazia
-        const biddersList = dash.bidders && dash.bidders.length > 0 ? dash.bidders : null;
+
+        const idx = currentIdx;
+        currentIdx++;
+
+        // Calcula o valor desse lance (curva natural com jitter)
+        const newBid = bidValueAt(idx, cfg.totalBids, cfg.firstBid, cfg.finalBid);
+
+        // Pega o bidder pré-embaralhado
         let bidderName: string, bidderAvatar: string, emirate: string, country: string, flag: string, currency: string, currencyRate: number;
-        if (biddersList) {
-          const b = biddersList[Math.floor(Math.random() * biddersList.length)];
+        if (shuffled[idx]) {
+          const b = shuffled[idx];
           bidderName = b.name;
           bidderAvatar = b.avatar_url || `https://i.pravatar.cc/150?u=${encodeURIComponent(b.name)}`;
           emirate = b.emirate;
@@ -765,6 +850,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
           currency = b.currency;
           currencyRate = b.currency_rate;
         } else {
+          // Fallback se admin tiver poucos bidders
           const bidder = randomBidder();
           bidderName = bidder.name;
           bidderAvatar = bidder.avatar;
@@ -774,10 +860,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
           currency = bidder.currency;
           currencyRate = bidder.currencyRate;
         }
-        const increment = randomBidIncrementBRL(lastBid);
-        const dynamicMax = activeListing ? maxBidFor(String(activeListing.id)) : MAX_BID_CEIL;
-        let newBid = Math.round((lastBid + increment) * 100) / 100;
-        if (newBid > dynamicMax) newBid = dynamicMax;
+
         const newBidObj: Bid = {
           id: `bid-${Date.now()}-${Math.random()}`,
           bidder_name: bidderName,
@@ -793,7 +876,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         setCurrentBidBRL(newBid);
         setBidHistory((h) => [newBidObj, ...h].slice(0, 30));
 
-        // Notificação dura 2 minutos
+        // Notificação 4.5s
         const notif: Notification = {
           id: newBidObj.id,
           bidder_name: bidderName,
@@ -805,12 +888,12 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
           setNotifications((n) => n.filter((x) => x.id !== notif.id));
         }, 4500);
 
-        if (newBid < dynamicMax) {
-          scheduleNextBid(newBid);
-        }
+        // Agenda próximo
+        scheduleNextBid();
       }, delay);
     };
-    scheduleNextBid(currentBidBRL);
+    scheduleNextBid();
+
     return () => {
       clearTimeout(timeoutId);
       bidScheduledRef.current = false;

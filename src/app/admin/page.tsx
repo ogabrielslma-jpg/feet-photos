@@ -6,6 +6,7 @@ import {
   saveLandingConfig,
   uploadLandingAsset,
   sanitizeRichHtml,
+  generateRandomBidder,
   DEFAULT_LANDING_CONFIG,
   type LandingConfig,
   type ViewportConfig,
@@ -1193,18 +1194,60 @@ export default function AdminPage() {
                         </div>
                       </div>
 
-                      {/* Avatar URL upload */}
-                      <ImageUploadField
-                        label="Foto do comprador"
-                        value={bidder.avatar_url}
-                        onChange={(url) => {
-                          const next = [...(dash.bidders || [])];
-                          next[idx] = { ...next[idx], avatar_url: url };
-                          updateDashboard({ bidders: next });
-                        }}
-                        bucket="landing-assets"
-                        path={`bidder-${bidder.id}-${Date.now()}.jpg`}
-                      />
+                      {/* URL da foto com preview */}
+                      <div>
+                        <label className="block text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">URL da foto</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="url"
+                            value={bidder.avatar_url}
+                            onChange={(e) => {
+                              const next = [...(dash.bidders || [])];
+                              next[idx] = { ...next[idx], avatar_url: e.target.value };
+                              updateDashboard({ bidders: next });
+                            }}
+                            placeholder="https://exemplo.com/foto.jpg"
+                            className="flex-1 text-[11px] bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 focus:border-gray-900 outline-none font-mono"
+                          />
+                          {bidder.avatar_url && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = [...(dash.bidders || [])];
+                                next[idx] = { ...next[idx], avatar_url: "" };
+                                updateDashboard({ bidders: next });
+                              }}
+                              className="px-2 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-[10px] font-bold transition flex-shrink-0"
+                              title="Limpar URL"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                        {bidder.avatar_url && (
+                          <div className="mt-2 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg p-2">
+                            <img
+                              src={bidder.avatar_url}
+                              alt="preview"
+                              className="w-12 h-12 rounded-full object-cover border border-gray-300"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                                const errEl = e.currentTarget.nextElementSibling as HTMLElement;
+                                if (errEl) errEl.style.display = "flex";
+                              }}
+                              onLoad={(e) => {
+                                e.currentTarget.style.display = "block";
+                                const errEl = e.currentTarget.nextElementSibling as HTMLElement;
+                                if (errEl) errEl.style.display = "none";
+                              }}
+                            />
+                            <div className="w-12 h-12 rounded-full bg-red-50 border border-red-200 items-center justify-center text-red-600 text-lg flex-shrink-0" style={{ display: "none" }}>
+                              ⚠
+                            </div>
+                            <span className="text-[10px] text-gray-600">Preview da foto</span>
+                          </div>
+                        )}
+                      </div>
 
                       {/* Botões */}
                       <div className="flex gap-1 pt-1">
@@ -1227,16 +1270,7 @@ export default function AdminPage() {
 
             <button
               onClick={() => {
-                const newBidder = {
-                  id: `bidder-${Date.now()}`,
-                  name: "Novo Comprador",
-                  emirate: "Cidade",
-                  country: "País",
-                  flag: "🇦🇪",
-                  currency: "USD",
-                  currency_rate: 0.18,
-                  avatar_url: "",
-                };
+                const newBidder = generateRandomBidder();
                 updateDashboard({ bidders: [...(dash.bidders || []), newBidder] });
               }}
               className="mt-3 w-full border-2 border-dashed border-gray-300 hover:border-gray-500 text-gray-500 hover:text-gray-900 py-3 rounded-xl text-sm font-semibold transition"

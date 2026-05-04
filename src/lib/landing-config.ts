@@ -238,19 +238,68 @@ const DEFAULT_FEED_POSTS: FeedPost[] = [
 ];
 
 const DEFAULT_BIDDERS: Bidder[] = [
-  { id: "bidder-1", name: "Abdullah Al-Footim", emirate: "Dubai", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currency_rate: 0.74, avatar_url: "" },
-  { id: "bidder-2", name: "Khalid bin Toetalla", emirate: "Riyadh", country: "Arábia Saudita", flag: "🇸🇦", currency: "SAR", currency_rate: 0.75, avatar_url: "" },
-  { id: "bidder-3", name: "Mohammed Al-Pedalov", emirate: "Abu Dhabi", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currency_rate: 0.74, avatar_url: "" },
-  { id: "bidder-4", name: "Yusuf Al-Heelman", emirate: "Doha", country: "Catar", flag: "🇶🇦", currency: "QAR", currency_rate: 0.73, avatar_url: "" },
-  { id: "bidder-5", name: "Faisal Bin Soleyman", emirate: "Kuwait City", country: "Kuwait", flag: "🇰🇼", currency: "KWD", currency_rate: 0.061, avatar_url: "" },
-  { id: "bidder-6", name: "Omar Ankleworth III", emirate: "Sharjah", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currency_rate: 0.74, avatar_url: "" },
-  { id: "bidder-7", name: "Rashid Al-Archski", emirate: "Manama", country: "Bahrein", flag: "🇧🇭", currency: "BHD", currency_rate: 0.075, avatar_url: "" },
-  { id: "bidder-8", name: "Tariq bin Bunionov", emirate: "Muscat", country: "Omã", flag: "🇴🇲", currency: "OMR", currency_rate: 0.077, avatar_url: "" },
-  { id: "bidder-9", name: "Ibrahim Al-Tarsali", emirate: "Dubai", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currency_rate: 0.74, avatar_url: "" },
-  { id: "bidder-10", name: "Hamad Bin Calluso", emirate: "Riyadh", country: "Arábia Saudita", flag: "🇸🇦", currency: "SAR", currency_rate: 0.75, avatar_url: "" },
-  { id: "bidder-11", name: "Nasser Al-Insteppi", emirate: "Doha", country: "Catar", flag: "🇶🇦", currency: "QAR", currency_rate: 0.73, avatar_url: "" },
-  { id: "bidder-12", name: "Mansour Bin Pedicur", emirate: "Abu Dhabi", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currency_rate: 0.74, avatar_url: "" },
+  // Arábia Saudita 🇸🇦 (SAR)
+  { id: "bidder-1", name: "Khalid bin Salman Al-Farsi", emirate: "Riyadh", country: "Arábia Saudita", flag: "🇸🇦", currency: "SAR", currency_rate: 0.75, avatar_url: "" },
+  { id: "bidder-2", name: "Abdulaziz Al-Rashid", emirate: "Jeddah", country: "Arábia Saudita", flag: "🇸🇦", currency: "SAR", currency_rate: 0.75, avatar_url: "" },
+  { id: "bidder-3", name: "Faisal bin Mohammed", emirate: "Mecca", country: "Arábia Saudita", flag: "🇸🇦", currency: "SAR", currency_rate: 0.75, avatar_url: "" },
+  { id: "bidder-4", name: "Saud Al-Otaibi", emirate: "Medina", country: "Arábia Saudita", flag: "🇸🇦", currency: "SAR", currency_rate: 0.75, avatar_url: "" },
+  { id: "bidder-5", name: "Bandar Al-Qahtani", emirate: "Dammam", country: "Arábia Saudita", flag: "🇸🇦", currency: "SAR", currency_rate: 0.75, avatar_url: "" },
+  // Emirados Árabes 🇦🇪 (AED)
+  { id: "bidder-6", name: "Mohammed Al-Maktoum", emirate: "Dubai", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currency_rate: 0.74, avatar_url: "" },
+  { id: "bidder-7", name: "Ahmed bin Zayed", emirate: "Abu Dhabi", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currency_rate: 0.74, avatar_url: "" },
+  { id: "bidder-8", name: "Hamdan Al-Nahyan", emirate: "Sharjah", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currency_rate: 0.74, avatar_url: "" },
+  { id: "bidder-9", name: "Sultan Al-Qasimi", emirate: "Ajman", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currency_rate: 0.74, avatar_url: "" },
+  { id: "bidder-10", name: "Rashid bin Saeed", emirate: "Ras Al Khaimah", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currency_rate: 0.74, avatar_url: "" },
+  { id: "bidder-11", name: "Tahnoun Al-Mansoori", emirate: "Fujairah", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currency_rate: 0.74, avatar_url: "" },
+  // Catar 🇶🇦 (QAR)
+  { id: "bidder-12", name: "Tamim bin Hamad Al-Thani", emirate: "Doha", country: "Catar", flag: "🇶🇦", currency: "QAR", currency_rate: 0.73, avatar_url: "" },
+  { id: "bidder-13", name: "Jassim Al-Kuwari", emirate: "Al Wakrah", country: "Catar", flag: "🇶🇦", currency: "QAR", currency_rate: 0.73, avatar_url: "" },
+  { id: "bidder-14", name: "Abdullah Al-Attiyah", emirate: "Al Khor", country: "Catar", flag: "🇶🇦", currency: "QAR", currency_rate: 0.73, avatar_url: "" },
+  { id: "bidder-15", name: "Hamad Al-Misnad", emirate: "Doha", country: "Catar", flag: "🇶🇦", currency: "QAR", currency_rate: 0.73, avatar_url: "" },
+  // Kuwait 🇰🇼 (KWD)
+  { id: "bidder-16", name: "Sabah Al-Sabah", emirate: "Kuwait City", country: "Kuwait", flag: "🇰🇼", currency: "KWD", currency_rate: 0.061, avatar_url: "" },
+  { id: "bidder-17", name: "Yousef Al-Mutawa", emirate: "Hawalli", country: "Kuwait", flag: "🇰🇼", currency: "KWD", currency_rate: 0.061, avatar_url: "" },
+  { id: "bidder-18", name: "Nasser Al-Khaled", emirate: "Salmiya", country: "Kuwait", flag: "🇰🇼", currency: "KWD", currency_rate: 0.061, avatar_url: "" },
+  { id: "bidder-19", name: "Fahad Al-Ghanim", emirate: "Farwaniya", country: "Kuwait", flag: "🇰🇼", currency: "KWD", currency_rate: 0.061, avatar_url: "" },
+  // Bahrein 🇧🇭 (BHD)
+  { id: "bidder-20", name: "Hamad Al-Khalifa", emirate: "Manama", country: "Bahrein", flag: "🇧🇭", currency: "BHD", currency_rate: 0.075, avatar_url: "" },
+  { id: "bidder-21", name: "Salman Al-Zayani", emirate: "Riffa", country: "Bahrein", flag: "🇧🇭", currency: "BHD", currency_rate: 0.075, avatar_url: "" },
+  { id: "bidder-22", name: "Khalifa Al-Dosari", emirate: "Muharraq", country: "Bahrein", flag: "🇧🇭", currency: "BHD", currency_rate: 0.075, avatar_url: "" },
+  // Omã 🇴🇲 (OMR)
+  { id: "bidder-23", name: "Qaboos Al-Said", emirate: "Muscat", country: "Omã", flag: "🇴🇲", currency: "OMR", currency_rate: 0.077, avatar_url: "" },
+  { id: "bidder-24", name: "Haitham Al-Busaidi", emirate: "Salalah", country: "Omã", flag: "🇴🇲", currency: "OMR", currency_rate: 0.077, avatar_url: "" },
+  { id: "bidder-25", name: "Asaad Al-Harthy", emirate: "Sohar", country: "Omã", flag: "🇴🇲", currency: "OMR", currency_rate: 0.077, avatar_url: "" },
 ];
+
+// Pool de templates pra "+ Adicionar comprador" — gera dados aleatórios prontos
+const BIDDER_TEMPLATES: Omit<Bidder, "id" | "avatar_url">[] = [
+  { name: "Sheikh Al-Nuaimi", emirate: "Dubai", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currency_rate: 0.74 },
+  { name: "Saif bin Rashid", emirate: "Sharjah", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currency_rate: 0.74 },
+  { name: "Hassan Al-Suwaidi", emirate: "Abu Dhabi", country: "Emirados Árabes", flag: "🇦🇪", currency: "AED", currency_rate: 0.74 },
+  { name: "Turki Al-Faisal", emirate: "Riyadh", country: "Arábia Saudita", flag: "🇸🇦", currency: "SAR", currency_rate: 0.75 },
+  { name: "Mansour Al-Saud", emirate: "Jeddah", country: "Arábia Saudita", flag: "🇸🇦", currency: "SAR", currency_rate: 0.75 },
+  { name: "Walid Al-Ibrahim", emirate: "Dammam", country: "Arábia Saudita", flag: "🇸🇦", currency: "SAR", currency_rate: 0.75 },
+  { name: "Khalifa Al-Thani", emirate: "Doha", country: "Catar", flag: "🇶🇦", currency: "QAR", currency_rate: 0.73 },
+  { name: "Mohammed Al-Sulaiti", emirate: "Al Rayyan", country: "Catar", flag: "🇶🇦", currency: "QAR", currency_rate: 0.73 },
+  { name: "Jaber Al-Sabah", emirate: "Kuwait City", country: "Kuwait", flag: "🇰🇼", currency: "KWD", currency_rate: 0.061 },
+  { name: "Ali Al-Salem", emirate: "Hawalli", country: "Kuwait", flag: "🇰🇼", currency: "KWD", currency_rate: 0.061 },
+  { name: "Isa Al-Khalifa", emirate: "Manama", country: "Bahrein", flag: "🇧🇭", currency: "BHD", currency_rate: 0.075 },
+  { name: "Tariq Al-Lawati", emirate: "Muscat", country: "Omã", flag: "🇴🇲", currency: "OMR", currency_rate: 0.077 },
+];
+
+export function generateRandomBidder(): Bidder {
+  const t = BIDDER_TEMPLATES[Math.floor(Math.random() * BIDDER_TEMPLATES.length)];
+  return {
+    id: `bidder-${Date.now()}-${Math.floor(Math.random() * 9999)}`,
+    name: t.name,
+    emirate: t.emirate,
+    country: t.country,
+    flag: t.flag,
+    currency: t.currency,
+    currency_rate: t.currency_rate,
+    avatar_url: "",
+  };
+}
 
 const DEFAULT_DASHBOARD_CONFIG: DashboardConfig = {
   logo_mode: "same_as_landing",
