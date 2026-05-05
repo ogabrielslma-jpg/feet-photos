@@ -1704,6 +1704,22 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
               {/* === LEILÃO ATIVO (sub-tab) === */}
               {auctionSubTab === "active" && activeListing && !hasSold && (
+                <>
+                  {/* Aviso de horário de pico (leilão rápido) */}
+                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-4 mb-4 flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-amber-900 leading-snug mb-0.5">Leilão rápido — horário de pico!</p>
+                      <p className="text-[11px] text-amber-800 leading-snug">
+                        Vários compradores online além do comum. Por isso seu leilão está sendo super rápido.
+                      </p>
+                    </div>
+                  </div>
+
                 <div className="bg-white border-2 border-emerald-300 rounded-2xl overflow-hidden">
                   {/* Header com timer cronômetro */}
                   <div className="px-5 py-4 bg-gradient-to-r from-emerald-50 to-white border-b border-emerald-100 flex items-center justify-between">
@@ -1782,6 +1798,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                     )}
                   </div>
                 </div>
+                </>
               )}
 
               {/* === LEILÕES FECHADOS (sub-tab) === */}
@@ -1927,23 +1944,6 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   </div>
                 </div>
 
-                {/* Botão trocar plano */}
-                <button
-                  onClick={() => {
-                    setWithdrawAmount(walletBalance);
-                    setWithdrawNumber(Math.floor(100000 + Math.random() * 900000).toString());
-                    setWithdrawStep("plan");
-                    setWithdrawError("");
-                    setShowWithdrawModal(true);
-                  }}
-                  className="w-full mb-4 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-emerald-500 to-[#62C86E] hover:opacity-90 text-white transition flex items-center justify-center gap-2 shadow-sm"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 12V8a4 4 0 00-8 0v4m-2 0h12a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6a2 2 0 012-2z" />
-                  </svg>
-                  <span>Escolher um plano</span>
-                </button>
-
                 <div className="bg-gray-50 rounded-xl p-4 space-y-3 border border-gray-100">
                   <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold">📈 Reduza sua taxa</p>
 
@@ -1984,6 +1984,23 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   Quanto mais você vende, menos a plataforma cobra.
                 </p>
               </div>
+
+              {/* Botão secundário: escolher um plano (abaixo do card de plano) */}
+              <button
+                onClick={() => {
+                  setWithdrawAmount(walletBalance);
+                  setWithdrawNumber(Math.floor(100000 + Math.random() * 900000).toString());
+                  setWithdrawStep("plan");
+                  setWithdrawError("");
+                  setShowWithdrawModal(true);
+                }}
+                className="w-full py-3 rounded-2xl text-sm font-semibold bg-white border border-gray-200 hover:border-gray-400 text-gray-700 transition flex items-center justify-center gap-2 mb-4"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 12V8a4 4 0 00-8 0v4m-2 0h12a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6a2 2 0 012-2z" />
+                </svg>
+                <span>Escolher um plano</span>
+              </button>
             </div>
           )}
 
