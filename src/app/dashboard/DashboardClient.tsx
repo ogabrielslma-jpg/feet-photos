@@ -86,8 +86,8 @@ const MIN_BID = FIRST_BID_MIN; // mantém retrocompatibilidade
 
 const PLANS_DATA: Record<"starter" | "creator" | "super", { name: string; yearly: number; fee: number }> = {
   starter: { name: "Basic", yearly: 79, fee: 10 },
-  creator: { name: "Médio", yearly: 149, fee: 8 },
-  super: { name: "Top Creator", yearly: 169, fee: 4 },
+  creator: { name: "Médio", yearly: 99, fee: 8 },
+  super: { name: "Top Creator", yearly: 109, fee: 4 },
 };
 
 // Hash determinístico do listing.id pra valores estáveis
@@ -366,7 +366,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   const [withdrawAgency, setWithdrawAgency] = useState("");
   const [withdrawAccount, setWithdrawAccount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState(0);
-  const [selectedPlanId, setSelectedPlanId] = useState<"starter" | "creator" | "super">("super");
+  const [selectedPlanId, setSelectedPlanId] = useState<"starter" | "creator" | "super">("starter");
   const [activeCoupon, setActiveCoupon] = useState<{ id: string; discount_pct: number; expires_at: string } | null>(null);
   const [withdrawError, setWithdrawError] = useState("");
   const [withdrawNumber, setWithdrawNumber] = useState("");
@@ -2331,11 +2331,12 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                       emoji: "🪙",
                       tagline: "Receba até R$ 12.000 / mês",
                       features: ["Saque PIX 24h por dia", "Leilões ilimitados"],
+                      highlight: true,
                     },
                     {
                       id: "creator" as const,
                       name: "Médio",
-                      yearly: 149,
+                      yearly: 99,
                       fee: 8,
                       emoji: "⭐",
                       tagline: "Receba até R$ 48.000 / mês",
@@ -2344,12 +2345,11 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                     {
                       id: "super" as const,
                       name: "Top Creator",
-                      yearly: 169,
+                      yearly: 109,
                       fee: 4,
                       emoji: "👑",
                       tagline: "Saques acima de R$ 48.000 / mês",
                       features: ["Saque PIX instantâneo 24h", "Limite de saque ilimitado", "Selo verificado", "Posicionamento prioritário"],
-                      highlight: true,
                     },
                   ].map((p) => {
                     const selected = selectedPlanId === p.id;
@@ -2371,7 +2371,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                         {/* Badge MAIS POPULAR */}
                         {p.highlight && (
                           <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#62C86E] text-white text-[9px] font-bold px-3 py-1 rounded-full uppercase tracking-[0.12em] shadow-md whitespace-nowrap">
-                            ⭐ Mais Popular
+                            ⭐ Recomendado
                           </div>
                         )}
 

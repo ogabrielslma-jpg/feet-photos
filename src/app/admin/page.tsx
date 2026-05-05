@@ -2668,13 +2668,9 @@ function RecoveryCard({
   // Cálculo do desconto 47% no Basic
   const discountedBasic = (79 * 0.53).toFixed(2).replace(".", ",");
 
-  const message1 = `Oi ${firstName}! 👋 Aqui é da equipe FootPriv. O comprador *${bidder1}* acabou de solicitar uma disputa de lances pela sua foto e o valor subiu pra R$ ${bidValue},00. Pra liberar o saque você precisa concluir a ativação do seu plano:\n\nhttps://footpriv.com/dashboard\n\nQualquer dúvida me chama! 🚀`;
+  const message1 = `Oi ${firstName}! 👋 Aqui é a assistente virtual da FootPriv.\n\n⏰ *URGENTE* — seu saldo de *R$ ${fmtBRL(displayBalance)}* está disponível pra saque, mas vai *expirar em breve*!\n\nO comprador *${bidder1}* que deu o lance pela sua foto vai receber o valor de volta caso você não ative sua conta a tempo. 😔\n\nPorém, considerando que você é uma creator de *grande potencial* na nossa plataforma de acordo com os resultados, liberamos um *desconto exclusivo de 47% OFF* válido até a expiração:\n\n💎 ~~R$ 79~~ → *R$ ${discountedBasic}* (Basic com desconto)\n\nO desconto vale pra qualquer plano. Cupom *já aplicado* na sua conta — é só logar e finalizar:\n\nhttps://footpriv.com/dashboard\n\n💚`;
 
-  const message2 = `Oi ${firstName}! Aqui é a assistente virtual da FootPriv.\n\nSeu saldo de *R$ ${fmtBRL(displayBalance)}* já está disponível pra saque!\n\n*Métodos disponíveis:*\n• PIX (transferência instantânea 24h)\n• Transferência bancária (até 1 dia útil)\n\nPara concluir é só finalizar a ativação do seu plano *${item.plan_name}*. - receba até ${planMonthly} mensais com suas fotos.\n\nO plano anual você paga uma única vez e usa a plataforma à vontade para transferências e pix ilimitados. - Leilão disponível 24hrs por dia com conversão de moeda em tempo local e recebimento na hora.\n\nFinalize aqui: https://footpriv.com/dashboard\n\n💚`;
-
-  const message3Coupon = `Oi ${firstName}! Aqui é a assistente virtual da FootPriv. 🎁\n\nDetectamos que você é uma creator de *alto potencial* na nossa plataforma de acordo com os resultados.\n\nSua foto está entrando em disputa por 2 compradores: *${bidder1}* e *${bidder2}*. Devido a essa alta demanda, gostaríamos de te oferecer um *desconto exclusivo de 47%* em qualquer plano.\n\n💎 Plano Basic com desconto: ~~R$ 79~~ → *R$ ${discountedBasic}*\n\n⏰ Cupom válido por *6 horas* — depois disso os compradores podem desistir.\n\nFinalize aqui (cupom já aplicado na sua conta):\nhttps://footpriv.com/dashboard\n\n💚`;
-
-  // Cria cupom no banco e copia mensagem 3 pro clipboard
+  // Cria cupom no banco e abre WhatsApp com a mensagem unificada
   async function ativarCupomEEnviar() {
     if (creatingCoupon) return;
     setCreatingCoupon(true);
@@ -2693,10 +2689,8 @@ function RecoveryCard({
         alert(`Erro ao criar cupom: ${data.error || res.statusText}`);
         return;
       }
-      // Auto-marca como contatado
       if (status === "pending") onSetStatus("contacted");
-      // Abre WhatsApp com a mensagem
-      window.open(buildWhatsAppLink(item.phone, message3Coupon), "_blank");
+      window.open(buildWhatsAppLink(item.phone, message1), "_blank");
     } catch (e: any) {
       alert(`Erro de rede: ${e?.message}`);
     } finally {
@@ -2762,60 +2756,26 @@ function RecoveryCard({
         </div>
       )}
 
-      {/* Botões de mensagem */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
-        <a
-          href={buildWhatsAppLink(item.phone, message1)}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => {
-            if (status === "pending") onSetStatus("contacted");
-          }}
-          className="flex items-center justify-center gap-2 px-3 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition"
-        >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/>
-          </svg>
-          <span>Disputa de lances</span>
-        </a>
-        <a
-          href={buildWhatsAppLink(item.phone, message2)}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => {
-            if (status === "pending") onSetStatus("contacted");
-          }}
-          className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold transition text-white ${
-            hasSavedBalance ? "bg-emerald-600 hover:bg-emerald-700" : "bg-blue-500 hover:bg-blue-600"
-          }`}
-        >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/>
-          </svg>
-          <span>Saldo R$ {fmtBRL(displayBalance)} liberado</span>
-        </a>
-      </div>
-
-      {/* Botão de CUPOM 47% — aparece só quando já foi contatado */}
-      {status === "contacted" && (
-        <button
-          onClick={ativarCupomEEnviar}
-          disabled={creatingCoupon}
-          className="w-full flex items-center justify-center gap-2 px-3 py-3 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 hover:opacity-90 text-white rounded-xl text-xs font-bold transition mb-2 shadow-lg disabled:opacity-50"
-        >
-          {creatingCoupon ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>
-              Ativando cupom...
-            </>
-          ) : (
-            <>
-              <span className="text-base">🎁</span>
-              <span>Enviar cupom 47% OFF (válido 6h)</span>
-            </>
-          )}
-        </button>
-      )}
+      {/* Botão principal — cria cupom 47% + envia mensagem unificada via WhatsApp */}
+      <button
+        onClick={ativarCupomEEnviar}
+        disabled={creatingCoupon || !item.phone}
+        className="w-full flex items-center justify-center gap-2 px-3 py-3 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 hover:opacity-90 text-white rounded-xl text-sm font-bold transition mb-2 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {creatingCoupon ? (
+          <>
+            <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>
+            Ativando cupom + abrindo WhatsApp...
+          </>
+        ) : (
+          <>
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/>
+            </svg>
+            <span>🎁 Ativar 47% OFF + enviar WhatsApp</span>
+          </>
+        )}
+      </button>
 
       {/* Botões de status */}
       <div className="flex gap-1.5 flex-wrap">

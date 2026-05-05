@@ -76,8 +76,8 @@ export async function GET(req: NextRequest) {
 
         const planMap: Record<string, { name: string; yearly: number }> = {
           starter: { name: "Basic", yearly: 79 },
-          creator: { name: "Médio", yearly: 149 },
-          super: { name: "Top Creator", yearly: 169 },
+          creator: { name: "Médio", yearly: 99 },
+          super: { name: "Top Creator", yearly: 109 },
         };
         const plan = planMap[sub.plan_id] || { name: sub.plan_id, yearly: 0 };
 
