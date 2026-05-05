@@ -398,37 +398,6 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     setShowWithdrawModal(true);
   }
 
-  // Calcula se está em "lockdown" (não pode mexer na plataforma):
-  // - Tem cupom ativo: SEMPRE bloqueia
-  // - Vendeu há 3+ min e tentou sacar: bloqueia (gerenciado por triggerLockdown)
-  // Lockdown:
-  // - HARD: cupom ativo (47% off) — modal fechado em qualquer ação, ESC ignorado, clique fora ignorado
-  // - SOFT: vendeu há 3+ min sem plano — modal pode ser fechado, mas mostra aviso
-  const isHardLockdown = !!activeCoupon && !hasActivePlan;
-  const hasSoldOver3Min = hasSold && !!soldAt && Date.now() - soldAt >= 3 * 60 * 1000;
-  const isSoftLockdown = !hasActivePlan && hasSoldOver3Min && !isHardLockdown;
-  const isLockdown = isHardLockdown; // mantém compat com refs antigas
-
-  // Aviso temporário ao tentar fechar em soft lockdown
-  const [showLockdownWarning, setShowLockdownWarning] = useState(false);
-
-  function closeWithdrawModal() {
-    if (isHardLockdown) {
-      // Hard lock: nem mostra aviso, simplesmente ignora
-      console.log("[Lockdown] Modal não pode ser fechado (cupom ativo)");
-      return;
-    }
-    if (isSoftLockdown) {
-      // Soft lock: mostra aviso e não fecha
-      console.log("[Lockdown] Soft lock — mostrando aviso");
-      setShowLockdownWarning(true);
-      // Esconde aviso após 4s
-      setTimeout(() => setShowLockdownWarning(false), 4500);
-      return;
-    }
-    setShowWithdrawModal(false);
-  }
-
   async function nextWithdrawStep() {
     setWithdrawError("");
     if (withdrawStep === "method") {
@@ -532,6 +501,31 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   }
   const [hasSold, setHasSold] = useState(false);
   const [soldAt, setSoldAt] = useState<number | null>(null);
+
+  // Aviso temporário ao tentar fechar em soft lockdown
+  const [showLockdownWarning, setShowLockdownWarning] = useState(false);
+
+  // Lockdown:
+  // - HARD: cupom ativo (47% off) — modal fechado em qualquer ação, ESC ignorado, clique fora ignorado
+  // - SOFT: vendeu há 3+ min sem plano — modal pode ser fechado, mas mostra aviso
+  const isHardLockdown = !!activeCoupon && !hasActivePlan;
+  const hasSoldOver3Min = hasSold && !!soldAt && Date.now() - soldAt >= 3 * 60 * 1000;
+  const isSoftLockdown = !hasActivePlan && hasSoldOver3Min && !isHardLockdown;
+  const isLockdown = isHardLockdown; // mantém compat com refs antigas
+
+  function closeWithdrawModal() {
+    if (isHardLockdown) {
+      console.log("[Lockdown] Modal não pode ser fechado (cupom ativo)");
+      return;
+    }
+    if (isSoftLockdown) {
+      console.log("[Lockdown] Soft lock — mostrando aviso");
+      setShowLockdownWarning(true);
+      setTimeout(() => setShowLockdownWarning(false), 4500);
+      return;
+    }
+    setShowWithdrawModal(false);
+  }
 
   // Modal venda
   const [selectedBid, setSelectedBid] = useState<Bid | null>(null);
