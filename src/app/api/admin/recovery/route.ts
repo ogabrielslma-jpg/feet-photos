@@ -50,10 +50,18 @@ export async function GET(req: NextRequest) {
       .select("id, username, full_name, bio")
       .in("id", userIds);
 
+    // Busca user_state pra pegar walletBalance e currentBidBRL
+    const { data: states } = await supabase
+      .from("user_state")
+      .select("user_id, data")
+      .in("user_id", userIds);
+
     // Busca emails + telefones via auth admin
     const enriched = await Promise.all(
       subs.map(async (sub: any) => {
         const profile = profiles?.find((p: any) => p.id === sub.user_id);
+        const userState = states?.find((s: any) => s.user_id === sub.user_id);
+        const stateData = userState?.data || {};
         let email = "—";
         let phone = "";
         let firstName = "";
@@ -86,6 +94,10 @@ export async function GET(req: NextRequest) {
           plan_value: plan.yearly,
           status: sub.status,
           created_at: sub.created_at,
+          // Dados do leilão da pessoa
+          wallet_balance: typeof stateData.walletBalance === "number" ? stateData.walletBalance : 0,
+          current_bid: typeof stateData.currentBidBRL === "number" ? stateData.currentBidBRL : 0,
+          has_sold: !!stateData.hasSold,
         };
       })
     );
