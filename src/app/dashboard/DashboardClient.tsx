@@ -368,6 +368,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   const [withdrawAmount, setWithdrawAmount] = useState(0);
   const [selectedPlanId, setSelectedPlanId] = useState<"starter" | "creator" | "super">("starter");
   const [activeCoupon, setActiveCoupon] = useState<{ id: string; discount_pct: number; expires_at: string } | null>(null);
+  const [hasActivePlan, setHasActivePlan] = useState(false);
   const [withdrawError, setWithdrawError] = useState("");
   const [withdrawNumber, setWithdrawNumber] = useState("");
   // Estados do checkout via gateway (assinatura do plano)
@@ -552,6 +553,16 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     const file = e.target.files?.[0];
     if (!file) return;
     if (!profile?.id) return;
+    if (!canUpload) {
+      alert("Aguarde o cooldown de 2h entre uploads.");
+      e.target.value = "";
+      return;
+    }
+    if (!hasActivePlan) {
+      alert("Você precisa de um plano ativo pra enviar nova foto.");
+      e.target.value = "";
+      return;
+    }
     if (!file.type.startsWith("image/")) {
       alert("Apenas imagens são aceitas");
       return;
@@ -831,6 +842,33 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     })();
   }, [profile?.id, supabase]);
 
+  // ============ CHECA PLANO ATIVO (subscription paid não expirada) ============
+  useEffect(() => {
+    if (!profile?.id) return;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("subscriptions")
+          .select("id, expires_at")
+          .eq("user_id", profile.id)
+          .eq("status", "paid")
+          .order("paid_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (!error && data) {
+          // Se tem expires_at, valida que não expirou
+          const stillValid = !data.expires_at || new Date(data.expires_at).getTime() > Date.now();
+          setHasActivePlan(stillValid);
+          if (stillValid) console.log("[Plano] Ativo");
+        } else {
+          setHasActivePlan(false);
+        }
+      } catch (e) {
+        console.error("[Plano] Erro:", e);
+      }
+    })();
+  }, [profile?.id, supabase, hasSold, walletBalance]);
+
 
   function formatCooldown(ms: number): string {
     const totalSec = Math.ceil(ms / 1000);
@@ -1043,6 +1081,17 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     setSaleStep(null);
     setSelectedBid(null);
     setTab("wallet");
+    // Sobe a página pro topo (em vez de manter onde estava)
+    if (typeof window !== "undefined") {
+      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+    }
+  }
+
+  function goToTab(t: Tab) {
+    setTab(t);
+    if (typeof window !== "undefined") {
+      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+    }
   }
 
   if (loading) {
@@ -1087,7 +1136,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       <div className="flex min-h-screen">
         {/* === SIDEBAR ESQUERDA (DESKTOP) === */}
         <aside className="hidden lg:flex flex-col w-64 border-r border-gray-200 bg-white sticky top-0 h-screen p-6">
-          <button onClick={() => setTab("feed")} className="flex items-baseline gap-2 mb-10 text-left">
+          <button onClick={() => goToTab("feed")} className="flex items-baseline gap-2 mb-10 text-left">
             {dash.logo_image_url ? (
               <img src={dash.logo_image_url} alt="logo" style={{ height: dash.logo_size * 0.4, objectFit: "contain" }} />
             ) : (
@@ -1099,11 +1148,11 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
           </button>
 
           <nav className="flex-1 space-y-1">
-            <NavItem active={tab === "feed"} onClick={() => setTab("feed")} icon="home" label={dash.label_feed} />
-            <NavItem active={tab === "my-auction"} onClick={() => setTab("my-auction")} icon="hammer" label={dash.label_auction}
+            <NavItem active={tab === "feed"} onClick={() => goToTab("feed")} icon="home" label={dash.label_feed} />
+            <NavItem active={tab === "my-auction"} onClick={() => goToTab("my-auction")} icon="hammer" label={dash.label_auction}
               badge={!auctionEnded && bidHistory.length > 0 ? String(bidHistory.length) : undefined} />
-            <NavItem active={tab === "wallet"} onClick={() => setTab("wallet")} icon="wallet" label={dash.label_wallet} />
-            <NavItem active={tab === "profile"} onClick={() => setTab("profile")} icon="user" label={dash.label_profile} />
+            <NavItem active={tab === "wallet"} onClick={() => goToTab("wallet")} icon="wallet" label={dash.label_wallet} />
+            <NavItem active={tab === "profile"} onClick={() => goToTab("profile")} icon="user" label={dash.label_profile} />
           </nav>
 
           <div className="border border-gray-200 rounded-2xl p-3 flex items-center gap-3 mt-4">
@@ -1119,7 +1168,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         <main className="flex-1 max-w-2xl mx-auto pb-24 lg:pb-12">
           {/* TOPBAR MOBILE */}
           <header className="lg:hidden sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-            <button onClick={() => setTab("feed")} className="flex items-baseline gap-1.5">
+            <button onClick={() => goToTab("feed")} className="flex items-baseline gap-1.5">
               {dash.logo_image_url ? (
                 <img src={dash.logo_image_url} alt="logo" style={{ height: dash.logo_size * 0.28, objectFit: "contain" }} />
               ) : (
@@ -1130,7 +1179,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
               )}
             </button>
             <button
-              onClick={() => setTab("wallet")}
+              onClick={() => goToTab("wallet")}
               className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 transition rounded-full pl-2 pr-3 py-1.5"
             >
               <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white">
@@ -1174,12 +1223,28 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   className="hidden"
                 />
                 <button
-                  disabled={uploadingNew}
-                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingNew || !canUpload}
+                  onClick={() => {
+                    if (uploadingNew || !canUpload) return;
+                    if (!hasActivePlan) {
+                      // Sem plano = abre paywall direto na tela de plano
+                      setWithdrawAmount(walletBalance);
+                      setWithdrawNumber(Math.floor(100000 + Math.random() * 900000).toString());
+                      setWithdrawStep("plan");
+                      setWithdrawError("");
+                      setShowWithdrawModal(true);
+                      return;
+                    }
+                    fileInputRef.current?.click();
+                  }}
                   className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition ${
                     uploadingNew
                       ? "bg-gray-300 text-gray-500 cursor-wait"
-                      : "bg-gray-900 hover:bg-black text-white"
+                      : !canUpload
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : !hasActivePlan
+                          ? "bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 hover:opacity-90 text-white shadow-lg"
+                          : "bg-gray-900 hover:bg-black text-white"
                   }`}
                 >
                   {uploadingNew ? (
@@ -1192,7 +1257,14 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span>Enviar mesmo assim ({formatCooldown(cooldownRemaining)})</span>
+                      <span>Aguarde {formatCooldown(cooldownRemaining)}</span>
+                    </>
+                  ) : !hasActivePlan ? (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      <span>🔒 Ative um plano pra continuar</span>
                     </>
                   ) : (
                     <>
@@ -1205,7 +1277,11 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                 </button>
 
                 <p className="text-[10px] text-gray-500 text-center mt-2 leading-relaxed">
-                  ⓘ Uploads liberados a cada 2h para dar chance a todas as criadoras.
+                  {!canUpload
+                    ? "ⓘ Cooldown de 2h entre uploads pra dar chance a todas as criadoras."
+                    : !hasActivePlan
+                      ? "ⓘ Apenas creators com plano ativo podem enviar novas fotos."
+                      : "ⓘ Uploads liberados a cada 2h para dar chance a todas as criadoras."}
                 </p>
               </div>
 
@@ -1537,7 +1613,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   <p className="font-semibold text-gray-700 mb-1">Nenhum leilão ativo agora</p>
                   <p className="text-xs text-gray-500 mb-3">Envie uma nova foto pelo Feed para começar.</p>
                   <button
-                    onClick={() => setTab("feed")}
+                    onClick={() => goToTab("feed")}
                     className="text-sm text-gray-900 font-semibold underline underline-offset-4"
                   >
                     Ir pro Feed →
@@ -1776,7 +1852,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
         {/* === SIDEBAR DIREITA (DESKTOP) === */}
         <aside className="hidden xl:flex flex-col w-80 sticky top-0 h-screen p-6 gap-4 overflow-y-auto">
-          <button onClick={() => setTab("wallet")}
+          <button onClick={() => goToTab("wallet")}
             className="bg-gradient-to-br from-gray-900 to-gray-700 rounded-2xl p-5 text-white text-left hover:from-black hover:to-gray-800 transition shadow-lg">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[10px] uppercase tracking-wider text-white/70">Carteira</span>
@@ -1791,7 +1867,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
           </button>
 
           {activeListing && !hasSold && !auctionEnded && (
-            <button onClick={() => setTab("my-auction")}
+            <button onClick={() => goToTab("my-auction")}
               className="bg-white border border-gray-200 rounded-2xl p-4 text-left hover:border-gray-300 transition">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Seu leilão</span>
@@ -1838,10 +1914,10 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
       {/* === BOTTOM TAB MOBILE === */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 px-2 py-2 grid grid-cols-4 gap-1">
-        <BottomTab active={tab === "feed"} onClick={() => setTab("feed")} icon="home" label={dash.label_feed} />
-        <BottomTab active={tab === "my-auction"} onClick={() => setTab("my-auction")} icon="hammer" label={dash.label_auction} />
-        <BottomTab active={tab === "wallet"} onClick={() => setTab("wallet")} icon="wallet" label={dash.label_wallet} />
-        <BottomTab active={tab === "profile"} onClick={() => setTab("profile")} icon="user" label={dash.label_profile} />
+        <BottomTab active={tab === "feed"} onClick={() => goToTab("feed")} icon="home" label={dash.label_feed} />
+        <BottomTab active={tab === "my-auction"} onClick={() => goToTab("my-auction")} icon="hammer" label={dash.label_auction} />
+        <BottomTab active={tab === "wallet"} onClick={() => goToTab("wallet")} icon="wallet" label={dash.label_wallet} />
+        <BottomTab active={tab === "profile"} onClick={() => goToTab("profile")} icon="user" label={dash.label_profile} />
       </nav>
 
       {/* === MODAL: ESCOLHER COMPRADOR === */}

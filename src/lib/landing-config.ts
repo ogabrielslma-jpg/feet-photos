@@ -237,7 +237,7 @@ const DEFAULT_FEED_POSTS: FeedPost[] = [
   },
 ];
 
-const DEFAULT_BIDDERS: Bidder[] = [
+export const DEFAULT_BIDDERS: Bidder[] = [
   // Arábia Saudita 🇸🇦 (SAR)
   { id: "bidder-1", name: "Khalid bin Salman Al-Farsi", emirate: "Riyadh", country: "Arábia Saudita", flag: "🇸🇦", currency: "SAR", currency_rate: 0.75, avatar_url: "" },
   { id: "bidder-2", name: "Abdulaziz Al-Rashid", emirate: "Jeddah", country: "Arábia Saudita", flag: "🇸🇦", currency: "SAR", currency_rate: 0.75, avatar_url: "" },
