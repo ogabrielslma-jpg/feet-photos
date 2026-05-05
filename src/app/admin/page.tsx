@@ -2651,9 +2651,17 @@ function RecoveryCard({
       ? item.current_bid * 0.9 // simula líquido (90% do lance — taxa 10%)
       : 250 + Math.random() * 170; // fallback aleatório R$ 250-420
 
+  // Mapeia "receba até XXX mensais" por plano
+  const planMonthlyMap: Record<string, string> = {
+    Basic: "R$ 12.000",
+    Médio: "R$ 48.000",
+    "Top Creator": "valores acima de R$ 48.000",
+  };
+  const planMonthly = planMonthlyMap[item.plan_name] || "valores altíssimos";
+
   const message1 = `Oi ${firstName}! 👋 Aqui é da equipe FootPriv. O comprador *${bidderName}* acabou de solicitar uma disputa de lances pela sua foto e o valor subiu pra R$ ${bidValue},00. Pra liberar o saque você precisa concluir a ativação do seu plano:\n\nhttps://footpriv.com/dashboard\n\nQualquer dúvida me chama! 🚀`;
 
-  const message2 = `Oi ${firstName}! 👋 Aqui é da equipe FootPriv.\n\nSeu saldo de *R$ ${fmtBRL(displayBalance)}* já está disponível pra saque! 💰\n\n💸 *Métodos disponíveis:*\n• PIX (transferência instantânea 24h)\n• Transferência bancária (até 1 dia útil)\n\nPra concluir é só finalizar a ativação do seu plano *${item.plan_name}* (R$ ${item.plan_value}/ano):\n\nhttps://footpriv.com/dashboard\n\nÉ pagamento único anual via PIX. Qualquer dúvida me chama! 🚀`;
+  const message2 = `Oi ${firstName}! Aqui é a assistente virtual da FootPriv.\n\nSeu saldo de *R$ ${fmtBRL(displayBalance)}* já está disponível pra saque! - conta: @${item.username || "sua conta"}\n\n*Métodos disponíveis:*\n• PIX (transferência instantânea 24h)\n• Transferência bancária (até 1 dia útil)\n\nPara concluir é só finalizar a ativação do seu plano *${item.plan_name}*. - receba até ${planMonthly} mensais com suas fotos.\n\nO plano anual você paga uma única vez e usa a plataforma à vontade para transferências e pix ilimitados. - Leilão disponível 24hrs por dia com conversão de moeda em tempo local e recebimento na hora.\n\nFinalize aqui: https://footpriv.com/dashboard\n\n💚`;
 
   const statusBadge = {
     pending: { label: "Não contatado", color: "bg-amber-100 text-amber-800", dot: "bg-amber-500" },
