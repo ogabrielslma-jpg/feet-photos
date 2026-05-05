@@ -985,6 +985,8 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   useEffect(() => {
     if (!stateLoaded) return;
     if (!activeListing || auctionEnded || hasSold) return;
+    // Não roda enquanto a usuária ainda não confirmou a foto (modal aberto)
+    if (showConfirmPhotoModal) return;
     if (bidScheduledRef.current) return;
     bidScheduledRef.current = true;
 
@@ -1096,7 +1098,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       clearTimeout(timeoutId);
       bidScheduledRef.current = false;
     };
-  }, [stateLoaded, activeListing?.id, auctionEnded, hasSold]);
+  }, [stateLoaded, activeListing?.id, auctionEnded, hasSold, showConfirmPhotoModal]);
 
   async function logout() {
     await supabase.auth.signOut();
