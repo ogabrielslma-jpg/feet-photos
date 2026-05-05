@@ -2269,6 +2269,21 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         </div>
       )}
 
+      {/* === TOAST DE AVISO DE LOCKDOWN (fixo no topo da tela, visível em qualquer dispositivo) === */}
+      {showLockdownWarning && (
+        <div className="fixed top-4 left-4 right-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:max-w-md z-[200] animate-fade-in pointer-events-none">
+          <div className="bg-red-600 text-white px-4 py-3.5 rounded-2xl shadow-2xl flex items-start gap-2.5 border-2 border-red-700">
+            <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm font-medium leading-snug">
+              <strong className="block mb-0.5">Conta bloqueada</strong>
+              <span className="text-[12px] text-red-50">Só é possível voltar ao painel após selecionar um plano e concluir a ativação.</span>
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* === MODAL DE SAQUE === */}
       {showWithdrawModal && (
         <div
@@ -2289,19 +2304,6 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
           }}
         >
           <div className="bg-white rounded-3xl max-w-lg w-full my-3 sm:my-8 shadow-2xl relative max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-4rem)] flex flex-col" onClick={(e) => e.stopPropagation()}>
-            {/* Toast flutuante de aviso de lockdown */}
-            {showLockdownWarning && (
-              <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-10 -translate-y-full mb-2 w-[90%] max-w-md">
-                <div className="bg-red-600 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-start gap-2 animate-fade-in">
-                  <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <p className="text-xs font-medium leading-snug">
-                    <strong>Só é possível voltar ao painel</strong> após selecionar um plano e concluir a ativação.
-                  </p>
-                </div>
-              </div>
-            )}
             {/* Header sticky */}
             <div className="flex items-center justify-between p-5 sm:p-6 pb-3 border-b border-gray-100 bg-white rounded-t-3xl flex-shrink-0">
               <div className="flex items-center gap-2 min-w-0">
