@@ -85,8 +85,8 @@ const TOTAL_BIDS_MAX = 17;
 const MIN_BID = FIRST_BID_MIN; // mantém retrocompatibilidade
 
 const PLANS_DATA: Record<"starter" | "creator" | "super", { name: string; yearly: number; fee: number }> = {
-  starter: { name: "Basic", yearly: 79, fee: 10 },
-  creator: { name: "Médio", yearly: 99, fee: 8 },
+  starter: { name: "Creator", yearly: 79, fee: 10 },
+  creator: { name: "Creator Advanced", yearly: 99, fee: 8 },
   super: { name: "Top Creator", yearly: 109, fee: 4 },
 };
 
@@ -401,12 +401,29 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   // Calcula se está em "lockdown" (não pode mexer na plataforma):
   // - Tem cupom ativo: SEMPRE bloqueia
   // - Vendeu há 3+ min e tentou sacar: bloqueia (gerenciado por triggerLockdown)
-  const isLockdown = !!activeCoupon && !hasActivePlan;
+  // Lockdown:
+  // - HARD: cupom ativo (47% off) — modal fechado em qualquer ação, ESC ignorado, clique fora ignorado
+  // - SOFT: vendeu há 3+ min sem plano — modal pode ser fechado, mas mostra aviso
+  const isHardLockdown = !!activeCoupon && !hasActivePlan;
+  const hasSoldOver3Min = hasSold && !!soldAt && Date.now() - soldAt >= 3 * 60 * 1000;
+  const isSoftLockdown = !hasActivePlan && hasSoldOver3Min && !isHardLockdown;
+  const isLockdown = isHardLockdown; // mantém compat com refs antigas
+
+  // Aviso temporário ao tentar fechar em soft lockdown
+  const [showLockdownWarning, setShowLockdownWarning] = useState(false);
 
   function closeWithdrawModal() {
-    if (isLockdown) {
-      // Bloqueado: não pode fechar enquanto cupom ativo
-      console.log("[Lockdown] Modal não pode ser fechado");
+    if (isHardLockdown) {
+      // Hard lock: nem mostra aviso, simplesmente ignora
+      console.log("[Lockdown] Modal não pode ser fechado (cupom ativo)");
+      return;
+    }
+    if (isSoftLockdown) {
+      // Soft lock: mostra aviso e não fecha
+      console.log("[Lockdown] Soft lock — mostrando aviso");
+      setShowLockdownWarning(true);
+      // Esconde aviso após 4s
+      setTimeout(() => setShowLockdownWarning(false), 4500);
       return;
     }
     setShowWithdrawModal(false);
@@ -2197,19 +2214,38 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         <div
           className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto"
           onClick={(e) => {
-            // Bloqueia clique no backdrop em lockdown
-            if (isLockdown) return;
-            // Permite fechar clicando fora se não tá em lockdown e step não é processing/success
+            // Hard lockdown: clique no backdrop totalmente ignorado
+            if (isHardLockdown) return;
+            // Soft lockdown: clique no backdrop dispara aviso
+            if (isSoftLockdown && e.target === e.currentTarget) {
+              setShowLockdownWarning(true);
+              setTimeout(() => setShowLockdownWarning(false), 4500);
+              return;
+            }
+            // Sem lockdown: fecha clicando fora (se step permite)
             if (e.target === e.currentTarget && withdrawStep !== "processing" && withdrawStep !== "success") {
               closeWithdrawModal();
             }
           }}
         >
           <div className="bg-white rounded-3xl max-w-lg w-full my-3 sm:my-8 shadow-2xl relative max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-4rem)] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Toast flutuante de aviso de lockdown */}
+            {showLockdownWarning && (
+              <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-10 -translate-y-full mb-2 w-[90%] max-w-md">
+                <div className="bg-red-600 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-start gap-2 animate-fade-in">
+                  <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-xs font-medium leading-snug">
+                    <strong>Só é possível voltar ao painel</strong> após selecionar um plano e concluir a ativação.
+                  </p>
+                </div>
+              </div>
+            )}
             {/* Header sticky */}
             <div className="flex items-center justify-between p-5 sm:p-6 pb-3 border-b border-gray-100 bg-white rounded-t-3xl flex-shrink-0">
               <div className="flex items-center gap-2 min-w-0">
-                {(withdrawStep === "details" || withdrawStep === "confirm" || withdrawStep === "plan" || withdrawStep === "pix") && !isLockdown && (
+                {(withdrawStep === "details" || withdrawStep === "confirm" || withdrawStep === "plan" || withdrawStep === "pix") && !isHardLockdown && !isSoftLockdown && (
                   <button onClick={backWithdrawStep} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition flex-shrink-0">
                     <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -2226,14 +2262,18 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   {withdrawStep === "success" && "Saque solicitado!"}
                 </h2>
               </div>
-              {withdrawStep !== "processing" && withdrawStep !== "success" && !isLockdown && (
+              {/* X de fechar:
+                  - some em hard lockdown (cupom)
+                  - aparece em soft lockdown (3 min) e mostra aviso ao clicar
+                  - aparece normal sem lockdown */}
+              {withdrawStep !== "processing" && withdrawStep !== "success" && !isHardLockdown && (
                 <button onClick={closeWithdrawModal} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition">
                   <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               )}
-              {isLockdown && (
+              {isHardLockdown && (
                 <div className="px-2.5 py-1 rounded-full bg-red-100 border border-red-300 flex items-center gap-1.5">
                   <svg className="w-3 h-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -2539,8 +2579,8 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   </p>
                 </div>
 
-                {/* Aviso URGENTE em lockdown */}
-                {isLockdown && (
+                {/* Aviso URGENTE em lockdown (hard ou soft) */}
+                {(isHardLockdown || isSoftLockdown) && (
                   <div className="mb-4 px-4 py-3 rounded-2xl bg-red-50 border-2 border-red-300 flex items-start gap-3">
                     <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -2548,7 +2588,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-sm text-red-800 mb-0.5">Conta bloqueada até finalizar</p>
                       <p className="text-[11px] text-red-700 leading-snug">
-                        Sua conta tem um saldo pendente. Finalize a ativação do plano com o cupom abaixo pra liberar saque e voltar a usar a plataforma.
+                        Você só consegue voltar ao painel após selecionar um plano e concluir a ativação.
                       </p>
                     </div>
                   </div>
@@ -2582,17 +2622,17 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   {[
                     {
                       id: "starter" as const,
-                      name: "Basic",
+                      name: "Creator",
                       yearly: 79,
                       fee: 10,
                       emoji: "🪙",
                       tagline: "Receba até R$ 12.000 / mês",
                       features: ["Saque PIX 24h por dia", "Leilões ilimitados"],
-                      highlight: true,
+                      recommended: true,
                     },
                     {
                       id: "creator" as const,
-                      name: "Médio",
+                      name: "Creator Advanced",
                       yearly: 99,
                       fee: 8,
                       emoji: "⭐",
@@ -2618,24 +2658,38 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                         key={p.id}
                         onClick={() => setSelectedPlanId(p.id)}
                         className={`relative w-full text-left rounded-2xl p-4 transition-all border-2 ${
-                          p.highlight
-                            ? "border-[#62C86E] bg-gradient-to-b from-[#62C86E]/5 to-transparent"
-                            : selected
-                              ? "border-gray-900 bg-white"
-                              : "border-gray-200 bg-white hover:border-gray-400"
+                          selected
+                            ? "border-[#62C86E] bg-gradient-to-b from-[#62C86E]/8 to-[#62C86E]/2 shadow-[0_0_0_4px_rgba(98,200,110,0.12)]"
+                            : "border-gray-200 bg-white hover:border-gray-400"
                         }`}
                       >
-                        {/* Badge MAIS POPULAR */}
-                        {p.highlight && (
-                          <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#62C86E] text-white text-[9px] font-bold px-3 py-1 rounded-full uppercase tracking-[0.12em] shadow-md whitespace-nowrap">
-                            ⭐ Recomendado
+                        {/* Badge "⭐ RECOMENDADO" — fixo no canto superior direito do Creator */}
+                        {p.recommended && (
+                          <div className="absolute -top-2.5 right-3 bg-[#62C86E] text-white text-[9px] font-bold px-2.5 py-1 rounded-full uppercase tracking-[0.12em] shadow-md whitespace-nowrap flex items-center gap-1">
+                            <span>⭐</span>
+                            <span>Recomendado</span>
                           </div>
                         )}
 
-                        <div className={`flex items-center gap-3 ${p.highlight ? "mt-1" : ""}`}>
+                        {/* Indicador de seleção (radio) no canto superior esquerdo */}
+                        <div className="absolute top-3 left-3">
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                            selected
+                              ? "border-[#62C86E] bg-[#62C86E]"
+                              : "border-gray-300 bg-white"
+                          }`}>
+                            {selected && (
+                              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 pl-7">
                           {/* Avatar circular */}
                           <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl flex-shrink-0 ${
-                            p.highlight ? "bg-[#62C86E]/15" : "bg-gray-50"
+                            selected ? "bg-[#62C86E]/15" : "bg-gray-50"
                           }`}>
                             {p.emoji}
                           </div>

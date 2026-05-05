@@ -19,7 +19,7 @@ type Plan = {
 const PLANS: Plan[] = [
   {
     id: "starter",
-    name: "Basic",
+    name: "Creator",
     emoji: "🪙",
     yearly: 79,
     fee_pct: 10,
@@ -35,7 +35,7 @@ const PLANS: Plan[] = [
   },
   {
     id: "creator",
-    name: "Médio",
+    name: "Creator Advanced",
     emoji: "⭐",
     yearly: 99,
     fee_pct: 8,

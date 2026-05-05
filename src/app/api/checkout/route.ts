@@ -3,8 +3,8 @@ import { createClient } from "@/lib/supabase-server";
 
 // Mapa de planos
 const PLANS = {
-  starter: { name: "Basic", amount_cents: 7900, fee_pct: 10 },
-  creator: { name: "Médio", amount_cents: 9900, fee_pct: 8 },
+  starter: { name: "Creator", amount_cents: 7900, fee_pct: 10 },
+  creator: { name: "Creator Advanced", amount_cents: 9900, fee_pct: 8 },
   super: { name: "Top Creator", amount_cents: 10900, fee_pct: 4 },
 } as const;
 
