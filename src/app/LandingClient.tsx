@@ -5,16 +5,15 @@ import { createClient } from "@/lib/supabase-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { generateListingTitle, RARITIES, PLACEHOLDER_IMAGES } from "@/lib/fake-data";
-import { DEFAULT_LANDING_CONFIG, DEFAULT_BIDDERS, type LandingConfig, type ViewportConfig, sanitizeRichHtml } from "@/lib/landing-config";
+import { DEFAULT_LANDING_CONFIG, type LandingConfig, type ViewportConfig, sanitizeRichHtml } from "@/lib/landing-config";
 import LandingBanner from "@/components/SimulationBanner";
 
 type Step =
-  | "intro"       // nome + email (sem foto)
+  | "upload"      // foto + nome + email (volta ao original)
+  | "submitted"   // "foto enviada"
   | "q1" | "q2" | "q3" | "q4" | "q5"  // 5 perguntas
-  | "upload"      // foto definitiva (não pode trocar depois)
-  | "submitted"   // "foto enviada" — aviso que vai pro leilão
   | "birthdate"
-  | "credentials" // senha + username (lances rolando)
+  | "credentials" // senha + username
   | "done";       // redireciona pro login
 
 const FAQS = [
@@ -33,7 +32,7 @@ const FAQS = [
 ];
 
 export default function Home({ initialConfig }: { initialConfig: LandingConfig }) {
-  const [step, setStep] = useState<Step>("intro");
+  const [step, setStep] = useState<Step>("upload");
 
   // Tela 1
   const [file, setFile] = useState<File | null>(null);
@@ -68,10 +67,6 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
   const [config] = useState<LandingConfig>(initialConfig);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Toasts de lances ao vivo (simulação durante onboarding)
-  type ToastBid = { id: string; name: string; flag: string; amount: number };
-  const [bidToasts, setBidToasts] = useState<ToastBid[]>([]);
-
   const router = useRouter();
   const supabase = createClient();
 
@@ -83,44 +78,6 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
-
-  // Lances ao vivo durante onboarding (a partir de q3)
-  useEffect(() => {
-    // Só roda durante: q3, q4, q5, upload, submitted, birthdate, credentials
-    const showStages: Step[] = ["q3", "q4", "q5", "upload", "submitted", "birthdate", "credentials"];
-    if (!showStages.includes(step)) return;
-
-    // Lances mais rápidos no credentials (leilão "finalizando"), mais lentos antes
-    const isFinishing = step === "credentials";
-    const intervalMs = isFinishing ? 1100 : 4000;
-    const removeAfterMs = isFinishing ? 2400 : 4500;
-
-    // Pool de bidders + lances vão crescendo
-    const bidders = (config.dashboard?.bidders && config.dashboard.bidders.length > 0)
-      ? config.dashboard.bidders
-      : DEFAULT_BIDDERS;
-
-    let lastValue = isFinishing ? 280 + Math.random() * 60 : 80 + Math.random() * 40;
-
-    const timer = setInterval(() => {
-      const bidder = bidders[Math.floor(Math.random() * bidders.length)];
-      const inc = 5 + Math.random() * 25;
-      lastValue = Math.min(420, lastValue + inc);
-      const id = `toast-${Date.now()}-${Math.random()}`;
-      const t: ToastBid = {
-        id,
-        name: bidder.name.split(" ").slice(0, 2).join(" "),
-        flag: bidder.flag,
-        amount: Math.round(lastValue * 100) / 100,
-      };
-      setBidToasts((prev) => [t, ...prev].slice(0, 4));
-      setTimeout(() => {
-        setBidToasts((prev) => prev.filter((x) => x.id !== id));
-      }, removeAfterMs);
-    }, intervalMs);
-
-    return () => clearInterval(timer);
-  }, [step, config.dashboard?.bidders]);
 
   // Verificação de disponibilidade do username (debounced 500ms)
   useEffect(() => {
@@ -171,30 +128,23 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
     setPreview(URL.createObjectURL(f));
   }
 
-  // Submit da tela intro: nome + email (sem foto ainda)
-  function handleSubmitIntro(e: React.FormEvent) {
+  // Submit da tela 1: foto + nome + email
+  function handleSubmitInitial(e: React.FormEvent) {
     e.preventDefault();
-    if (!firstName || !email) return;
-    setStep("q1");
+    if (!file || !firstName || !email) return;
+    setStep("submitted");
+    // Auto-avança pra primeira pergunta após 2.5s
+    setTimeout(() => setStep("q1"), 2500);
   }
 
-  // Avança pra próxima pergunta ou pra upload (após q5)
+  // Avança pra próxima pergunta ou pra birthdate (volta ao fluxo original)
   function answerQuestion(questionId: string, value: string) {
     setAnswers((a) => ({ ...a, [questionId]: value }));
-    const order: Step[] = ["q1", "q2", "q3", "q4", "q5", "upload"];
+    const order: Step[] = ["q1", "q2", "q3", "q4", "q5", "birthdate"];
     const idx = order.indexOf(step as Step);
     if (idx >= 0 && idx < order.length - 1) {
       setStep(order[idx + 1]);
     }
-  }
-
-  // Submit da tela de upload (foto definitiva, sem volta)
-  function handleSubmitPhoto(e: React.FormEvent) {
-    e.preventDefault();
-    if (!file) return;
-    setStep("submitted");
-    // Auto-avança pra birthdate após 2.5s
-    setTimeout(() => setStep("birthdate"), 2500);
   }
 
   function handleBirthdate(e: React.FormEvent) {
@@ -332,8 +282,8 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
 
   // Container e Progress estão definidos como componentes externos no final do arquivo
 
-  // ============ TELA: INTRO (nome + email — SEM foto) ============
-  if (step === "intro") {
+  // ============ TELA 1: UPLOAD + NOME + EMAIL ============
+  if (step === "upload") {
     const alignText =
       viewport.logo_align === "left" ? "text-left" :
       viewport.logo_align === "right" ? "text-right" :
@@ -379,7 +329,31 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
             }}
           />
 
-          <form onSubmit={handleSubmitIntro} className="space-y-3">
+          <form onSubmit={handleSubmitInitial} className="space-y-3">
+            <label className="block cursor-pointer group">
+              <div className={`bg-ink-900/80 backdrop-blur-sm border-2 border-dashed rounded-2xl px-6 py-8 text-center transition ${preview ? "border-moss-700" : "border-ink-700 hover:border-ink-600"}`}>
+                {preview ? (
+                  <div className="flex items-center gap-4">
+                    <img src={preview} alt="" className="w-14 h-14 object-cover rounded-lg" />
+                    <div className="flex-1 text-left min-w-0">
+                      <div className="text-xs text-moss-400 font-mono uppercase tracking-wider mb-1">✓ Foto carregada</div>
+                      <div className="text-xs text-bone-100/60 truncate">{file?.name}</div>
+                    </div>
+                    <span onClick={(e) => { e.preventDefault(); setFile(null); setPreview(null); }}
+                      className="text-xs text-ink-600 hover:text-bone-100 cursor-pointer">Trocar</span>
+                  </div>
+                ) : (
+                  <>
+                    <svg className="w-7 h-7 mx-auto mb-3 text-bone-100/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    <div className="text-bone-100/90 text-base">Escolher arquivo</div>
+                  </>
+                )}
+              </div>
+              <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+            </label>
+
             <input type="text" required placeholder="Seu primeiro nome" value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               className="w-full bg-ink-900/80 border border-ink-700 focus:border-moss-700 rounded-2xl px-6 py-4 text-bone-100 placeholder-ink-600 focus:outline-none transition text-base" />
@@ -388,10 +362,10 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-ink-900/80 border border-ink-700 focus:border-moss-700 rounded-2xl px-6 py-4 text-bone-100 placeholder-ink-600 focus:outline-none transition text-base" />
 
-            <button type="submit" disabled={!firstName || !email}
+            <button type="submit" disabled={!file || !firstName || !email}
               className="w-full bg-moss-500 hover:bg-moss-400 disabled:bg-ink-700 disabled:cursor-not-allowed text-ink-950 disabled:text-ink-600 py-5 rounded-2xl transition tracking-wide uppercase"
               style={{
-                backgroundColor: firstName && email ? config.color_primary : undefined,
+                backgroundColor: file && firstName && email ? config.color_primary : undefined,
                 fontSize: `${config.cta_size}px`,
                 fontWeight: config.cta_weight,
               }}>
@@ -440,66 +414,10 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
     );
   }
 
-  // ============ TELA: UPLOAD (depois das 5 perguntas, foto definitiva) ============
-  if (step === "upload") {
-    return (
-      <Wrapper config={config} viewport={viewport} toasts={bidToasts}>
-        <Progress current={6} total={9} />
-        <h2 className="font-display text-3xl text-bone-100 mb-2 text-center">Última etapa antes do leilão</h2>
-        <p className="text-bone-100/70 text-center mb-3">Envie a foto que vai pro leilão. Os compradores estão online aguardando!</p>
-
-        {/* Aviso definitivo */}
-        <div className="mb-6 bg-amber-950/40 border border-amber-700 rounded-2xl px-4 py-3 flex items-start gap-3">
-          <svg className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <div className="text-sm text-amber-100/90 leading-snug">
-            <strong className="text-amber-200">Atenção:</strong> a foto enviada <strong>não pode ser trocada depois</strong>. Verifique antes de continuar.
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmitPhoto} className="space-y-3">
-          <label className="block cursor-pointer group">
-            <div className={`bg-ink-900/80 backdrop-blur-sm border-2 border-dashed rounded-2xl px-6 py-8 text-center transition ${preview ? "border-moss-700" : "border-ink-700 hover:border-ink-600"}`}>
-              {preview ? (
-                <div className="flex items-center gap-4">
-                  <img src={preview} alt="" className="w-14 h-14 object-cover rounded-lg" />
-                  <div className="flex-1 text-left min-w-0">
-                    <div className="text-xs text-moss-400 font-mono uppercase tracking-wider mb-1">✓ Foto carregada</div>
-                    <div className="text-xs text-bone-100/60 truncate">{file?.name}</div>
-                  </div>
-                  <span onClick={(e) => { e.preventDefault(); setFile(null); setPreview(null); }}
-                    className="text-xs text-ink-600 hover:text-bone-100 cursor-pointer">Trocar</span>
-                </div>
-              ) : (
-                <>
-                  <svg className="w-7 h-7 mx-auto mb-3 text-bone-100/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                  </svg>
-                  <div className="text-bone-100/90 text-base">Escolher foto do pé</div>
-                  <div className="text-xs text-bone-100/50 mt-1">JPG, PNG, WEBP (até 10MB)</div>
-                </>
-              )}
-            </div>
-            <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-          </label>
-
-          <button type="submit" disabled={!file}
-            className="w-full bg-moss-500 hover:bg-moss-400 disabled:bg-ink-700 disabled:cursor-not-allowed text-ink-950 disabled:text-ink-600 font-bold py-5 rounded-2xl transition uppercase tracking-wide"
-            style={{
-              backgroundColor: file ? config.color_primary : undefined,
-            }}>
-            Confirmar e enviar
-          </button>
-        </form>
-      </Wrapper>
-    );
-  }
-
   // ============ TELA 2: SUBMITTED (loading) ============
   if (step === "submitted") {
     return (
-      <Wrapper config={config} viewport={viewport} toasts={bidToasts}>
+      <Wrapper config={config} viewport={viewport}>
         <div className="text-center">
           <div className="w-20 h-20 mx-auto mb-8 relative">
             <div className="absolute inset-0 border-4 border-moss-700/30 rounded-full"></div>
@@ -525,8 +443,8 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
     const q = config.questions[questionIndex] || config.questions[0];
     if (!q) return null;
     return (
-      <Wrapper config={config} viewport={viewport} toasts={bidToasts}>
-        <Progress current={questionIndex + 2} total={9} />
+      <Wrapper config={config} viewport={viewport}>
+        <Progress current={questionIndex + 1} total={7} />
         <p className="text-center font-mono text-[10px] uppercase tracking-[0.3em] text-moss-500 mb-3">
           Pergunta {questionIndex + 1} de {config.questions.length}
         </p>
@@ -566,8 +484,8 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
   // ============ TELA: BIRTHDATE ============
   if (step === "birthdate") {
     return (
-      <Wrapper config={config} viewport={viewport} toasts={bidToasts}>
-        <Progress current={8} total={9} />
+      <Wrapper config={config} viewport={viewport}>
+        <Progress current={6} total={7} />
         <p className="text-center font-mono text-[10px] uppercase tracking-[0.3em] text-moss-500 mb-3">
           Quase lá
         </p>
@@ -607,8 +525,8 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
   // ============ TELA: CREDENTIALS (username + senha) ============
   if (step === "credentials") {
     return (
-      <Wrapper config={config} viewport={viewport} toasts={bidToasts}>
-        <Progress current={9} total={9} />
+      <Wrapper config={config} viewport={viewport}>
+        <Progress current={7} total={7} />
         <p className="text-center font-mono text-[10px] uppercase tracking-[0.3em] text-moss-500 mb-3">
           Última etapa
         </p>
@@ -748,7 +666,7 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
   // ============ TELA: DONE (redirecting) ============
   if (step === "done") {
     return (
-      <Wrapper config={config} viewport={viewport} toasts={bidToasts}>
+      <Wrapper config={config} viewport={viewport}>
         <div className="text-center">
           <div className="w-20 h-20 mx-auto mb-8 bg-moss-500 rounded-full flex items-center justify-center">
             <svg className="w-10 h-10 text-ink-950" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
@@ -777,14 +695,12 @@ function Wrapper({
   config = DEFAULT_LANDING_CONFIG,
   viewport = DEFAULT_LANDING_CONFIG.desktop,
   banner,
-  toasts,
 }: {
   children: React.ReactNode;
   showLoginLink?: boolean;
   config?: LandingConfig;
   viewport?: ViewportConfig;
   banner?: React.ReactNode;
-  toasts?: Array<{ id: string; name: string; flag: string; amount: number }>;
 }) {
   const hasImage = !!config.background_image_url;
   const gradientBg = `radial-gradient(ellipse at top, ${config.color_bg_from} 0%, ${config.color_bg_via} 60%, ${config.color_bg_to} 100%)`;
@@ -844,27 +760,6 @@ function Wrapper({
         <div className="relative z-10 w-full max-w-md mx-auto pt-8">
           {children}
         </div>
-
-        {/* Overlay de lances ao vivo */}
-        {toasts && toasts.length > 0 && (
-          <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none w-[calc(100%-2rem)] max-w-[300px]">
-            {toasts.map((t) => (
-              <div
-                key={t.id}
-                className="bg-ink-900/95 backdrop-blur-md border border-moss-700 rounded-2xl px-4 py-3 shadow-2xl animate-fade-in flex items-center gap-3"
-              >
-                <div className="text-2xl flex-shrink-0">{t.flag}</div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-moss-400">Novo lance</div>
-                  <div className="text-bone-100 text-xs font-bold truncate">{t.name}</div>
-                </div>
-                <div className="text-bone-100 font-display text-sm tabular-nums flex-shrink-0">
-                  R$ {t.amount.toFixed(2).replace(".", ",")}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </section>
     </>
   );
