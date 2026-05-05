@@ -64,6 +64,19 @@ export async function POST(req: NextRequest) {
       })
       .eq("id", sub.id);
 
+    // Se virou paid, marca eventual cupom ativo do user como usado
+    if (newStatus === "paid") {
+      try {
+        await supabase
+          .from("coupons")
+          .update({ status: "used", used_at: new Date().toISOString() })
+          .eq("user_id", sub.user_id)
+          .eq("status", "active");
+      } catch (e) {
+        console.warn("[Webhook] Falhou ao marcar cupom usado:", e);
+      }
+    }
+
     return NextResponse.json({ success: true });
   } catch (e: any) {
     console.error("[Webhook] Erro:", e);

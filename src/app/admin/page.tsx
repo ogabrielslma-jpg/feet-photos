@@ -2639,6 +2639,7 @@ function RecoveryCard({
   const firstName = item.first_name || item.username || "amiga";
   const bidderName = randomBidderName();
   const bidValue = randomBidValue();
+  const [creatingCoupon, setCreatingCoupon] = useState(false);
 
   // Saldo formatado em BRL
   const fmtBRL = (v: number) => v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -2659,9 +2660,49 @@ function RecoveryCard({
   };
   const planMonthly = planMonthlyMap[item.plan_name] || "valores altíssimos";
 
-  const message1 = `Oi ${firstName}! 👋 Aqui é da equipe FootPriv. O comprador *${bidderName}* acabou de solicitar uma disputa de lances pela sua foto e o valor subiu pra R$ ${bidValue},00. Pra liberar o saque você precisa concluir a ativação do seu plano:\n\nhttps://footpriv.com/dashboard\n\nQualquer dúvida me chama! 🚀`;
+  // 2 nomes árabes pra mensagem do cupom
+  const bidder1 = bidderName;
+  let bidder2 = randomBidderName();
+  while (bidder2 === bidder1) bidder2 = randomBidderName();
 
-  const message2 = `Oi ${firstName}! Aqui é a assistente virtual da FootPriv.\n\nSeu saldo de *R$ ${fmtBRL(displayBalance)}* já está disponível pra saque! - conta: @${item.username || "sua conta"}\n\n*Métodos disponíveis:*\n• PIX (transferência instantânea 24h)\n• Transferência bancária (até 1 dia útil)\n\nPara concluir é só finalizar a ativação do seu plano *${item.plan_name}*. - receba até ${planMonthly} mensais com suas fotos.\n\nO plano anual você paga uma única vez e usa a plataforma à vontade para transferências e pix ilimitados. - Leilão disponível 24hrs por dia com conversão de moeda em tempo local e recebimento na hora.\n\nFinalize aqui: https://footpriv.com/dashboard\n\n💚`;
+  // Cálculo do desconto 47% no Basic
+  const discountedBasic = (79 * 0.53).toFixed(2).replace(".", ",");
+
+  const message1 = `Oi ${firstName}! 👋 Aqui é da equipe FootPriv. O comprador *${bidder1}* acabou de solicitar uma disputa de lances pela sua foto e o valor subiu pra R$ ${bidValue},00. Pra liberar o saque você precisa concluir a ativação do seu plano:\n\nhttps://footpriv.com/dashboard\n\nQualquer dúvida me chama! 🚀`;
+
+  const message2 = `Oi ${firstName}! Aqui é a assistente virtual da FootPriv.\n\nSeu saldo de *R$ ${fmtBRL(displayBalance)}* já está disponível pra saque!\n\n*Métodos disponíveis:*\n• PIX (transferência instantânea 24h)\n• Transferência bancária (até 1 dia útil)\n\nPara concluir é só finalizar a ativação do seu plano *${item.plan_name}*. - receba até ${planMonthly} mensais com suas fotos.\n\nO plano anual você paga uma única vez e usa a plataforma à vontade para transferências e pix ilimitados. - Leilão disponível 24hrs por dia com conversão de moeda em tempo local e recebimento na hora.\n\nFinalize aqui: https://footpriv.com/dashboard\n\n💚`;
+
+  const message3Coupon = `Oi ${firstName}! Aqui é a assistente virtual da FootPriv. 🎁\n\nDetectamos que você é uma creator de *alto potencial* na nossa plataforma de acordo com os resultados.\n\nSua foto está entrando em disputa por 2 compradores: *${bidder1}* e *${bidder2}*. Devido a essa alta demanda, gostaríamos de te oferecer um *desconto exclusivo de 47%* em qualquer plano.\n\n💎 Plano Basic com desconto: ~~R$ 79~~ → *R$ ${discountedBasic}*\n\n⏰ Cupom válido por *6 horas* — depois disso os compradores podem desistir.\n\nFinalize aqui (cupom já aplicado na sua conta):\nhttps://footpriv.com/dashboard\n\n💚`;
+
+  // Cria cupom no banco e copia mensagem 3 pro clipboard
+  async function ativarCupomEEnviar() {
+    if (creatingCoupon) return;
+    setCreatingCoupon(true);
+    try {
+      const password = sessionStorage.getItem("admin_password") || "";
+      const res = await fetch("/api/admin/coupon", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-password": password,
+        },
+        body: JSON.stringify({ user_id: item.user_id, discount_pct: 47 }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(`Erro ao criar cupom: ${data.error || res.statusText}`);
+        return;
+      }
+      // Auto-marca como contatado
+      if (status === "pending") onSetStatus("contacted");
+      // Abre WhatsApp com a mensagem
+      window.open(buildWhatsAppLink(item.phone, message3Coupon), "_blank");
+    } catch (e: any) {
+      alert(`Erro de rede: ${e?.message}`);
+    } finally {
+      setCreatingCoupon(false);
+    }
+  }
 
   const statusBadge = {
     pending: { label: "Não contatado", color: "bg-amber-100 text-amber-800", dot: "bg-amber-500" },
@@ -2754,6 +2795,27 @@ function RecoveryCard({
           <span>Saldo R$ {fmtBRL(displayBalance)} liberado</span>
         </a>
       </div>
+
+      {/* Botão de CUPOM 47% — aparece só quando já foi contatado */}
+      {status === "contacted" && (
+        <button
+          onClick={ativarCupomEEnviar}
+          disabled={creatingCoupon}
+          className="w-full flex items-center justify-center gap-2 px-3 py-3 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 hover:opacity-90 text-white rounded-xl text-xs font-bold transition mb-2 shadow-lg disabled:opacity-50"
+        >
+          {creatingCoupon ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>
+              Ativando cupom...
+            </>
+          ) : (
+            <>
+              <span className="text-base">🎁</span>
+              <span>Enviar cupom 47% OFF (válido 6h)</span>
+            </>
+          )}
+        </button>
+      )}
 
       {/* Botões de status */}
       <div className="flex gap-1.5 flex-wrap">

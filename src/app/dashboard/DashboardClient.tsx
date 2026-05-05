@@ -367,6 +367,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   const [withdrawAccount, setWithdrawAccount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState(0);
   const [selectedPlanId, setSelectedPlanId] = useState<"starter" | "creator" | "super">("super");
+  const [activeCoupon, setActiveCoupon] = useState<{ id: string; discount_pct: number; expires_at: string } | null>(null);
   const [withdrawError, setWithdrawError] = useState("");
   const [withdrawNumber, setWithdrawNumber] = useState("");
   // Estados do checkout via gateway (assinatura do plano)
@@ -445,6 +446,8 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
             customer_doc: withdrawDoc,
             customer_doc_type: withdrawDocType,
             customer_phone: "",
+            coupon_id: activeCoupon?.id || null,
+            coupon_discount_pct: activeCoupon?.discount_pct || 0,
           }),
         });
         const data = await res.json();
@@ -801,6 +804,32 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     }, 800);
     return () => clearTimeout(t);
   }, [stateLoaded, profile?.id, walletBalance, hasSold, auctionEnded, currentBidBRL, bidHistory, pastAuctions, lastUploadAt]);
+
+  // ============ BUSCA CUPOM ATIVO ============
+  useEffect(() => {
+    if (!profile?.id) return;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("coupons")
+          .select("id, discount_pct, expires_at")
+          .eq("user_id", profile.id)
+          .eq("status", "active")
+          .gt("expires_at", new Date().toISOString())
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (!error && data) {
+          console.log("[Cupom] Ativo:", data);
+          setActiveCoupon(data);
+          // Pré-seleciona Basic já que o cupom diz "47% no Basic"
+          setSelectedPlanId("starter");
+        }
+      } catch (e) {
+        console.error("[Cupom] Erro ao buscar:", e);
+      }
+    })();
+  }, [profile?.id, supabase]);
 
 
   function formatCooldown(ms: number): string {
@@ -2268,6 +2297,29 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   </p>
                 </div>
 
+                {/* Banner CUPOM ATIVO */}
+                {activeCoupon && (() => {
+                  const expiresIn = new Date(activeCoupon.expires_at).getTime() - Date.now();
+                  const hours = Math.floor(expiresIn / (1000 * 60 * 60));
+                  const minutes = Math.floor((expiresIn % (1000 * 60 * 60)) / (1000 * 60));
+                  return (
+                    <div className="mb-5 -mx-1 p-4 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white shadow-xl">
+                      <div className="flex items-start gap-3">
+                        <div className="text-2xl flex-shrink-0">🎁</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm mb-0.5 leading-tight">{activeCoupon.discount_pct}% OFF EXCLUSIVO</p>
+                          <p className="text-[11px] text-white/90 leading-snug">
+                            Detectamos que você é uma <strong>creator de alto potencial</strong>. Cupom aplicado em todos os planos!
+                          </p>
+                          <p className="text-[10px] text-white/75 mt-1.5 font-mono">
+                            ⏰ Expira em {hours > 0 ? `${hours}h ` : ""}{minutes}min
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Cards empilhados */}
                 <div className="space-y-3 mb-5">
                   {[
@@ -2301,6 +2353,9 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                     },
                   ].map((p) => {
                     const selected = selectedPlanId === p.id;
+                    const discountedPrice = activeCoupon
+                      ? +(p.yearly * (1 - activeCoupon.discount_pct / 100)).toFixed(2)
+                      : p.yearly;
                     return (
                       <button
                         key={p.id}
@@ -2334,18 +2389,37 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                             <div className="text-[11px] text-gray-600 mt-0.5">{p.tagline}</div>
                           </div>
 
-                          {/* Preço à direita */}
+                          {/* Preço à direita (com desconto se tiver cupom) */}
                           <div className="text-right flex-shrink-0">
-                            <div className="flex items-baseline justify-end gap-0.5">
-                              <span className="text-[10px] text-gray-500">R$</span>
-                              <span className="font-display text-2xl text-gray-900 tabular-nums leading-none">{p.yearly}</span>
-                              <span className="text-[10px] text-gray-500">/ano</span>
-                            </div>
-                            <div className={`text-[10px] font-bold tabular-nums mt-1 ${
-                              p.fee <= 4 ? "text-[#62C86E]" : "text-gray-700"
-                            }`}>
-                              + {p.fee}% taxa
-                            </div>
+                            {activeCoupon ? (
+                              <>
+                                <div className="text-[10px] text-gray-400 line-through tabular-nums">
+                                  R$ {p.yearly}
+                                </div>
+                                <div className="flex items-baseline justify-end gap-0.5">
+                                  <span className="text-[10px] text-pink-600 font-bold">R$</span>
+                                  <span className="font-display text-2xl text-pink-600 tabular-nums leading-none font-bold">
+                                    {discountedPrice.toFixed(2).replace(".", ",")}
+                                  </span>
+                                </div>
+                                <div className="text-[9px] text-pink-600 font-bold mt-0.5">
+                                  -{activeCoupon.discount_pct}% OFF
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="flex items-baseline justify-end gap-0.5">
+                                  <span className="text-[10px] text-gray-500">R$</span>
+                                  <span className="font-display text-2xl text-gray-900 tabular-nums leading-none">{p.yearly}</span>
+                                  <span className="text-[10px] text-gray-500">/ano</span>
+                                </div>
+                                <div className={`text-[10px] font-bold tabular-nums mt-1 ${
+                                  p.fee <= 4 ? "text-[#62C86E]" : "text-gray-700"
+                                }`}>
+                                  + {p.fee}% taxa
+                                </div>
+                              </>
+                            )}
                           </div>
 
                           {/* Check selected */}

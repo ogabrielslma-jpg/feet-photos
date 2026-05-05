@@ -13,7 +13,7 @@ type PlanId = keyof typeof PLANS;
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { plan_id, customer_name, customer_email, customer_doc, customer_doc_type, customer_phone } = body;
+    const { plan_id, customer_name, customer_email, customer_doc, customer_doc_type, customer_phone, coupon_id, coupon_discount_pct } = body;
 
     // Valida plano
     if (!plan_id || !(plan_id in PLANS)) {
@@ -31,6 +31,28 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+    }
+
+    // Aplica desconto do cupom se fornecido E se o cupom for válido pra esse user
+    let amountCents = plan.amount_cents;
+    let appliedCouponId: string | null = null;
+    if (coupon_id && coupon_discount_pct && coupon_discount_pct > 0 && coupon_discount_pct <= 80) {
+      // Valida que o cupom existe, pertence ao user e está ativo
+      const { data: coupon } = await supabase
+        .from("coupons")
+        .select("id, discount_pct, status, expires_at")
+        .eq("id", coupon_id)
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .gt("expires_at", new Date().toISOString())
+        .maybeSingle();
+      if (coupon) {
+        amountCents = Math.round(plan.amount_cents * (1 - coupon.discount_pct / 100));
+        appliedCouponId = coupon.id;
+        console.log(`[Checkout] Cupom ${coupon.id} aplicado: ${plan.amount_cents} → ${amountCents} (-${coupon.discount_pct}%)`);
+      } else {
+        console.warn(`[Checkout] Cupom ${coupon_id} inválido ou expirado`);
+      }
     }
 
     // Lê credenciais do gateway das variáveis de ambiente
@@ -60,7 +82,7 @@ export async function POST(req: NextRequest) {
         .insert({
           user_id: user.id,
           plan_id,
-          amount_cents: plan.amount_cents,
+          amount_cents: amountCents,
           fee_pct: plan.fee_pct,
           status: "pending",
           gateway_sale_id: mockSaleId,
@@ -81,7 +103,7 @@ export async function POST(req: NextRequest) {
         sale_id: mockSaleId,
         qr_code_base64: sub.pix_qr_code,
         pix_key: sub.pix_key,
-        amount: plan.amount_cents,
+        amount: amountCents,
         plan_name: plan.name,
       });
     }
@@ -93,7 +115,7 @@ export async function POST(req: NextRequest) {
 
     // Chama ImperiumPay
     const gatewayPayload = {
-      amount: plan.amount_cents,
+      amount: amountCents,
       paymentMethod: "PIX",
       customer: {
         name: customer_name,
@@ -107,7 +129,7 @@ export async function POST(req: NextRequest) {
       items: [
         {
           title: `FootPriv — Plano ${plan.name} Anual`,
-          unitPrice: plan.amount_cents,
+          unitPrice: amountCents,
           quantity: 1,
           tangible: false,
         },
@@ -148,7 +170,7 @@ export async function POST(req: NextRequest) {
       .insert({
         user_id: user.id,
         plan_id,
-        amount_cents: plan.amount_cents,
+        amount_cents: amountCents,
         fee_pct: plan.fee_pct,
         status: "pending",
         gateway_sale_id: String(sale.id),
@@ -170,7 +192,7 @@ export async function POST(req: NextRequest) {
       sale_id: sale.id,
       qr_code_base64: sale.payment?.pix?.qrCodeBase64,
       pix_key: sale.payment?.pix?.key,
-      amount: plan.amount_cents,
+      amount: amountCents,
       plan_name: plan.name,
     });
   } catch (e: any) {
