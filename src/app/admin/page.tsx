@@ -19,7 +19,7 @@ const SESSION_KEY = "ff_admin_authed";
 
 type Viewport = "desktop" | "mobile";
 type Area = "external" | "internal";
-type MegaTab = "customize" | "submissions";
+type MegaTab = "customize" | "submissions" | "recovery";
 
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
@@ -320,11 +320,11 @@ export default function AdminPage() {
 
       {/* === MEGA TABS (fora do grid pra ficar visível em ambos modos) === */}
       <div className="px-6 pt-4">
-        <div className="bg-gradient-to-br from-gray-900 to-black rounded-2xl p-1.5 shadow-lg max-w-md mx-auto">
-          <div className="grid grid-cols-2 gap-1">
+        <div className="bg-gradient-to-br from-gray-900 to-black rounded-2xl p-1.5 shadow-lg max-w-2xl mx-auto">
+          <div className="grid grid-cols-3 gap-1">
             <button
               onClick={() => setMegaTab("customize")}
-              className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition ${
+              className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs sm:text-sm font-bold transition ${
                 megaTab === "customize"
                   ? "bg-white text-gray-900 shadow"
                   : "text-white/60 hover:text-white"
@@ -337,7 +337,7 @@ export default function AdminPage() {
             </button>
             <button
               onClick={() => setMegaTab("submissions")}
-              className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition ${
+              className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs sm:text-sm font-bold transition ${
                 megaTab === "submissions"
                   ? "bg-white text-gray-900 shadow"
                   : "text-white/60 hover:text-white"
@@ -348,9 +348,29 @@ export default function AdminPage() {
               </svg>
               <span>Envios</span>
             </button>
+            <button
+              onClick={() => setMegaTab("recovery")}
+              className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs sm:text-sm font-bold transition ${
+                megaTab === "recovery"
+                  ? "bg-white text-gray-900 shadow"
+                  : "text-white/60 hover:text-white"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+              </svg>
+              <span>Recuperação</span>
+            </button>
           </div>
         </div>
       </div>
+
+      {/* === MODO RECUPERAÇÃO === */}
+      {megaTab === "recovery" && (
+        <div className="px-6 pb-6 pt-4">
+          <RecoveryPanel />
+        </div>
+      )}
 
       {/* === MODO ENVIOS: tela cheia === */}
       {megaTab === "submissions" && (
@@ -2323,6 +2343,408 @@ function DetailRow({ label, value, mono, small }: { label: string; value: string
       <span className={`text-right break-all ${mono ? "font-mono" : ""} ${small ? "text-[10px] text-gray-600" : "text-sm text-gray-900"}`}>
         {value}
       </span>
+    </div>
+  );
+}
+
+// ============= PAINEL DE RECUPERAÇÃO =============
+
+type RecoveryItem = {
+  id: string;
+  user_id: string;
+  username: string;
+  full_name: string;
+  first_name: string;
+  email: string;
+  phone: string;
+  plan_id: string;
+  plan_name: string;
+  plan_value: number;
+  status: string;
+  created_at: string;
+};
+
+type ContactStatus = "pending" | "contacted" | "converted" | "lost";
+
+const RECOVERY_LS_KEY = "ff_recovery_status_v1";
+
+// 25 nomes árabes pra usar nas mensagens (mesmos do bidder default)
+const RECOVERY_BIDDER_NAMES = [
+  "Khalid bin Salman", "Abdulaziz Al-Rashid", "Faisal bin Mohammed", "Saud Al-Otaibi",
+  "Bandar Al-Qahtani", "Mohammed Al-Maktoum", "Ahmed bin Zayed", "Hamdan Al-Nahyan",
+  "Sultan Al-Qasimi", "Rashid bin Saeed", "Tahnoun Al-Mansoori", "Tamim bin Hamad",
+  "Jassim Al-Kuwari", "Abdullah Al-Attiyah", "Hamad Al-Misnad", "Sabah Al-Sabah",
+  "Yousef Al-Mutawa", "Nasser Al-Khaled", "Fahad Al-Ghanim", "Hamad Al-Khalifa",
+  "Salman Al-Zayani", "Khalifa Al-Dosari", "Qaboos Al-Said", "Haitham Al-Busaidi",
+  "Asaad Al-Harthy",
+];
+
+function randomBidderName(): string {
+  return RECOVERY_BIDDER_NAMES[Math.floor(Math.random() * RECOVERY_BIDDER_NAMES.length)];
+}
+
+function randomBidValue(): number {
+  // R$ 350-420
+  return Math.floor(350 + Math.random() * 70);
+}
+
+function loadStatusMap(): Record<string, ContactStatus> {
+  try {
+    const raw = localStorage.getItem(RECOVERY_LS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function saveStatusMap(map: Record<string, ContactStatus>) {
+  try { localStorage.setItem(RECOVERY_LS_KEY, JSON.stringify(map)); } catch {}
+}
+
+function timeSince(date: string): string {
+  const ms = Date.now() - new Date(date).getTime();
+  const min = Math.floor(ms / 60000);
+  if (min < 60) return `${min}min atrás`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `${h}h atrás`;
+  const d = Math.floor(h / 24);
+  return `${d}d atrás`;
+}
+
+function buildWhatsAppLink(phone: string, message: string): string {
+  // Limpa o telefone (só dígitos) e adiciona +55 se não tiver
+  let digits = phone.replace(/\D/g, "");
+  if (digits.length === 10 || digits.length === 11) {
+    digits = "55" + digits;
+  }
+  const encoded = encodeURIComponent(message);
+  return `https://wa.me/${digits}?text=${encoded}`;
+}
+
+function RecoveryPanel() {
+  const [items, setItems] = useState<RecoveryItem[]>([]);
+  const [stats, setStats] = useState({ total: 0, last24h: 0, last72h: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [filter, setFilter] = useState<"all" | "pending" | "contacted" | "converted">("pending");
+  const [statusMap, setStatusMap] = useState<Record<string, ContactStatus>>({});
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    setStatusMap(loadStatusMap());
+  }, []);
+
+  async function load() {
+    setLoading(true);
+    setError("");
+    try {
+      let password = sessionStorage.getItem("admin_password") || "";
+      if (!password) {
+        const entered = window.prompt("Senha do admin pra carregar recuperação:");
+        if (entered) {
+          password = entered;
+          try { sessionStorage.setItem("admin_password", entered); } catch {}
+        }
+      }
+      const res = await fetch("/api/admin/recovery", {
+        headers: { "x-admin-password": password },
+      });
+      const ctype = res.headers.get("content-type") || "";
+      if (!ctype.includes("application/json")) {
+        if (res.status === 404) {
+          setError("Endpoint /api/admin/recovery não encontrado. Faça redeploy no Vercel.");
+        } else {
+          setError(`Resposta inválida (status ${res.status}). Provável env var SUPABASE_SERVICE_ROLE_KEY faltando.`);
+        }
+        return;
+      }
+      const data = await res.json();
+      if (!res.ok) {
+        if (res.status === 401) {
+          try { sessionStorage.removeItem("admin_password"); } catch {}
+          setError("Senha inválida. Recarregue pra tentar de novo.");
+        } else {
+          setError(data.error || `Erro ${res.status}`);
+        }
+      } else {
+        setItems(data.pending || []);
+        setStats(data.stats || { total: 0, last24h: 0, last72h: 0 });
+      }
+    } catch (e: any) {
+      setError(e?.message || "Erro de rede");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  function setStatus(id: string, status: ContactStatus) {
+    const next = { ...statusMap, [id]: status };
+    setStatusMap(next);
+    saveStatusMap(next);
+  }
+
+  const filtered = items.filter((it) => {
+    const s = statusMap[it.id] || "pending";
+    if (filter === "pending" && s !== "pending") return false;
+    if (filter === "contacted" && s !== "contacted") return false;
+    if (filter === "converted" && s !== "converted") return false;
+    if (filter !== "all" && s === "lost") return false;
+
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      return (
+        (it.username || "").toLowerCase().includes(q) ||
+        (it.email || "").toLowerCase().includes(q) ||
+        (it.phone || "").includes(q) ||
+        (it.full_name || "").toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
+
+  const counts = {
+    pending: items.filter((i) => (statusMap[i.id] || "pending") === "pending").length,
+    contacted: items.filter((i) => statusMap[i.id] === "contacted").length,
+    converted: items.filter((i) => statusMap[i.id] === "converted").length,
+  };
+
+  return (
+    <div>
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+        <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-3 text-white">
+          <div className="text-[9px] uppercase tracking-wider text-white/80 font-bold">PIX pendentes</div>
+          <div className="font-display text-2xl tabular-nums">{stats.total}</div>
+          <div className="text-[10px] text-white/80">últimos 3 dias</div>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-xl p-3">
+          <div className="text-[9px] uppercase tracking-wider text-gray-500 font-bold">24h</div>
+          <div className="font-display text-2xl text-gray-900 tabular-nums">{stats.last24h}</div>
+          <div className="text-[10px] text-gray-500">mais quentes 🔥</div>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-xl p-3">
+          <div className="text-[9px] uppercase tracking-wider text-gray-500 font-bold">72h</div>
+          <div className="font-display text-2xl text-gray-900 tabular-nums">{stats.last72h}</div>
+          <div className="text-[10px] text-gray-500">3 dias</div>
+        </div>
+        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-3 text-white">
+          <div className="text-[9px] uppercase tracking-wider text-white/80 font-bold">Convertidos</div>
+          <div className="font-display text-2xl tabular-nums">{counts.converted}</div>
+          <div className="text-[10px] text-white/80">já compraram</div>
+        </div>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-3 py-2 rounded-xl mb-3">
+          {error}
+        </div>
+      )}
+
+      {/* Toolbar */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-3 mb-3">
+        <div className="flex flex-col md:flex-row gap-2">
+          <input
+            type="text"
+            placeholder="Buscar por nome, email, telefone..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:border-gray-900 outline-none"
+          />
+          <button
+            onClick={load}
+            disabled={loading}
+            title="Recarregar"
+            className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm hover:bg-gray-50 transition disabled:opacity-50 flex-shrink-0"
+          >
+            <svg className={`w-4 h-4 text-gray-600 ${loading ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex gap-1.5 mt-2 flex-wrap">
+          {([
+            { id: "pending" as const, label: "Não contatados", count: counts.pending, color: "bg-amber-100 text-amber-800" },
+            { id: "contacted" as const, label: "Contatados", count: counts.contacted, color: "bg-blue-100 text-blue-800" },
+            { id: "converted" as const, label: "Convertidos", count: counts.converted, color: "bg-emerald-100 text-emerald-800" },
+            { id: "all" as const, label: "Todos", count: items.length, color: "bg-gray-100 text-gray-700" },
+          ]).map((f) => (
+            <button
+              key={f.id}
+              onClick={() => setFilter(f.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                filter === f.id
+                  ? "bg-gray-900 text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              <span>{f.label}</span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                filter === f.id ? "bg-white/20" : f.color
+              }`}>{f.count}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Lista */}
+      {loading && (
+        <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center">
+          <div className="w-8 h-8 mx-auto mb-3 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin"></div>
+          <p className="text-sm text-gray-500">Carregando...</p>
+        </div>
+      )}
+
+      {!loading && filtered.length === 0 && !error && (
+        <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center">
+          <p className="text-4xl mb-2">🎯</p>
+          <p className="text-sm text-gray-500">
+            {filter === "pending" && counts.pending === 0
+              ? "Nenhum lead pra recuperar agora — tudo em dia!"
+              : "Nenhum resultado pra esse filtro"}
+          </p>
+        </div>
+      )}
+
+      {!loading && filtered.length > 0 && (
+        <div className="space-y-2">
+          {filtered.map((it) => (
+            <RecoveryCard
+              key={it.id}
+              item={it}
+              status={statusMap[it.id] || "pending"}
+              onSetStatus={(s) => setStatus(it.id, s)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RecoveryCard({
+  item,
+  status,
+  onSetStatus,
+}: {
+  item: RecoveryItem;
+  status: ContactStatus;
+  onSetStatus: (s: ContactStatus) => void;
+}) {
+  const firstName = item.first_name || item.username || "amiga";
+  const bidderName = randomBidderName();
+  const bidValue = randomBidValue();
+
+  const message1 = `Oi ${firstName}! 👋 Aqui é da equipe FootPriv. O comprador *${bidderName}* acabou de solicitar uma disputa de lances pela sua foto e o valor subiu pra R$ ${bidValue},00. Pra liberar o saque você precisa concluir a ativação do seu plano:\n\nhttps://footpriv.com/dashboard\n\nQualquer dúvida me chama! 🚀`;
+
+  const message2 = `Oi ${firstName}! 👋 Aqui é da equipe FootPriv. Seu saldo já está liberado pra saque! 💰 Pra concluir a transferência, é só finalizar a ativação do seu plano *${item.plan_name}* (R$ ${item.plan_value}/ano):\n\nhttps://footpriv.com/dashboard\n\nÉ pagamento único anual via PIX e libera tudo. Qualquer dúvida me chama!`;
+
+  const statusBadge = {
+    pending: { label: "Não contatado", color: "bg-amber-100 text-amber-800", dot: "bg-amber-500" },
+    contacted: { label: "Contatado", color: "bg-blue-100 text-blue-800", dot: "bg-blue-500" },
+    converted: { label: "Convertido ✓", color: "bg-emerald-100 text-emerald-800", dot: "bg-emerald-500" },
+    lost: { label: "Perdido", color: "bg-gray-100 text-gray-600", dot: "bg-gray-400" },
+  }[status];
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-2xl p-4 hover:border-gray-400 transition">
+      <div className="flex items-start gap-3 mb-3">
+        {/* Avatar com inicial */}
+        <div className="w-11 h-11 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center font-bold text-base flex-shrink-0">
+          {(firstName || "?").charAt(0).toUpperCase()}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-0.5">
+            <p className="font-bold text-gray-900 truncate">@{item.username || "sem-username"}</p>
+            <span className={`text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${statusBadge.color}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${statusBadge.dot}`}></span>
+              {statusBadge.label}
+            </span>
+          </div>
+          <p className="text-[11px] text-gray-500 truncate">{item.email}</p>
+          {item.phone && (
+            <p className="text-[11px] text-gray-700 font-mono">📱 {item.phone}</p>
+          )}
+          <div className="flex items-center gap-3 mt-1.5 text-[10px] text-gray-500">
+            <span>{timeSince(item.created_at)}</span>
+            <span className="text-gray-700 font-bold">
+              Plano {item.plan_name} · R$ {item.plan_value}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Botões de mensagem */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+        <a
+          href={buildWhatsAppLink(item.phone, message1)}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => {
+            // Auto-marca como contatado ao clicar
+            if (status === "pending") onSetStatus("contacted");
+          }}
+          className="flex items-center justify-center gap-2 px-3 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition"
+        >
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/>
+          </svg>
+          <span>Disputa de lances</span>
+        </a>
+        <a
+          href={buildWhatsAppLink(item.phone, message2)}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => {
+            if (status === "pending") onSetStatus("contacted");
+          }}
+          className="flex items-center justify-center gap-2 px-3 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-xs font-bold transition"
+        >
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/>
+          </svg>
+          <span>Saldo liberado</span>
+        </a>
+      </div>
+
+      {/* Botões de status */}
+      <div className="flex gap-1.5 flex-wrap">
+        <button
+          onClick={() => onSetStatus("contacted")}
+          disabled={status === "contacted"}
+          className={`flex-1 px-2 py-1.5 rounded-lg text-[10px] font-bold transition ${
+            status === "contacted"
+              ? "bg-blue-500 text-white cursor-default"
+              : "bg-blue-50 text-blue-700 hover:bg-blue-100"
+          }`}
+        >
+          {status === "contacted" ? "✓ Contatado" : "🏷 Marcar contatado"}
+        </button>
+        <button
+          onClick={() => onSetStatus("converted")}
+          disabled={status === "converted"}
+          className={`flex-1 px-2 py-1.5 rounded-lg text-[10px] font-bold transition ${
+            status === "converted"
+              ? "bg-emerald-500 text-white cursor-default"
+              : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+          }`}
+        >
+          {status === "converted" ? "✓ Convertido" : "✅ Converteu"}
+        </button>
+        <button
+          onClick={() => {
+            if (confirm("Marcar como perdido? Vai sumir da lista padrão.")) {
+              onSetStatus("lost");
+            }
+          }}
+          className="px-2 py-1.5 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-lg text-[10px] font-bold transition"
+        >
+          ❌ Perdido
+        </button>
+      </div>
     </div>
   );
 }
