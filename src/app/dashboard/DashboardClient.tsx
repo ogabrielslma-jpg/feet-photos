@@ -769,6 +769,43 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     setFeedSales(sales);
   }
 
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  function loadMoreFeedSales() {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    // Simula carregamento de rede (pra parecer real)
+    setTimeout(() => {
+      const basePosts = dash.feed_posts;
+      if (!basePosts || basePosts.length === 0) {
+        setLoadingMore(false);
+        return;
+      }
+      // Embaralha pra parecer que vieram novos
+      const shuffled = [...basePosts].sort(() => Math.random() - 0.5);
+      const moreOffset = feedSales.length;
+      const newSales: FeedSale[] = shuffled.map((p, i) => {
+        const hoursAgo = Math.floor((moreOffset + i) / 4) + 1;
+        const minsExtra = Math.floor(Math.random() * 59);
+        return {
+          id: `${p.id}-load-${Date.now()}-${i}`,
+          seller_username: p.seller_name,
+          seller_avatar: p.seller_avatar_url || `https://i.pravatar.cc/200?u=${p.seller_name}`,
+          buyer_name: p.buyer_name,
+          buyer_emirate: p.buyer_emirate,
+          buyer_flag: p.buyer_flag,
+          amount_brl: Math.round((p.amount_brl + (Math.random() - 0.5) * 80) * 100) / 100,
+          image_url: p.image_url || PLACEHOLDER_IMAGES[(moreOffset + i) % PLACEHOLDER_IMAGES.length],
+          rarity: p.rarity,
+          time_ago: `há ${hoursAgo}h ${minsExtra}min`,
+          bids_count: p.bids_count + Math.floor(Math.random() * 5),
+        };
+      });
+      setFeedSales((prev) => [...prev, ...newSales]);
+      setLoadingMore(false);
+    }, 800);
+  }
+
   // ============ TIMER COUNTDOWN ============
   useEffect(() => {
     if (!stateLoaded) return; // espera load completar
@@ -1031,11 +1068,16 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       currentIdx = Math.max(1, Math.floor(progress * cfg.totalBids));
     }
 
-    // Timing fixo: 3s inicial + 12s pra distribuir todos os lances = 15s total
+    // Timing: 3s inicial + 16s pra distribuir os lances = 19s total
+    // Garantimos delay mínimo de 900ms entre lances (não amontoar)
     const INITIAL_DELAY_MS = 3000;
-    const AUCTION_DURATION_MS = 12000;
+    const AUCTION_DURATION_MS = 16000;
+    const MIN_DELAY_BETWEEN_BIDS_MS = 900;
     const remainingBids = cfg.totalBids - currentIdx;
-    const intervalPerBid = AUCTION_DURATION_MS / Math.max(remainingBids, 1);
+    const intervalPerBid = Math.max(
+      MIN_DELAY_BETWEEN_BIDS_MS,
+      AUCTION_DURATION_MS / Math.max(remainingBids, 1)
+    );
 
     const scheduleNextBid = (isFirst: boolean) => {
       // Se atingiu o total → para
@@ -1044,10 +1086,11 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         return;
       }
 
-      // Primeiro lance: espera 3s. Demais: ~intervalPerBid com pequeno jitter
+      // Primeiro lance: 3s. Demais: ~intervalPerBid com jitter forte (±40%)
+      // Variação dá sensação humana — alguns 1s, outros 2s+
       const baseDelay = isFirst && !isResumed ? INITIAL_DELAY_MS : intervalPerBid;
-      const jitter = (Math.random() - 0.5) * 0.3 * baseDelay; // ±15%
-      const delay = Math.max(150, baseDelay + jitter);
+      const jitter = (Math.random() - 0.5) * 0.8 * baseDelay; // ±40%
+      const delay = Math.max(MIN_DELAY_BETWEEN_BIDS_MS, baseDelay + jitter);
 
       timeoutId = setTimeout(() => {
         if (auctionEnded) return;
@@ -1567,6 +1610,29 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                     </div>
                   );
                 })}
+
+                {/* Carregar mais (infinito) */}
+                <div className="px-4 lg:px-0 pt-2 pb-8">
+                  <button
+                    onClick={loadMoreFeedSales}
+                    disabled={loadingMore}
+                    className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-sm transition bg-white border border-gray-200 hover:border-gray-400 text-gray-700 disabled:opacity-50 disabled:cursor-wait"
+                  >
+                    {loadingMore ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-700 rounded-full animate-spin"></div>
+                        <span>Carregando mais vendas...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                        </svg>
+                        <span>Carregar mais vendas</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -2621,7 +2687,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                       fee: 10,
                       emoji: "🪙",
                       tagline: "Receba até R$ 12.000 / mês",
-                      features: ["Saque PIX 24h por dia", "Leilões ilimitados"],
+                      features: ["Saque PIX instantâneo 24h", "Leilões ilimitados"],
                       recommended: true,
                     },
                     {
@@ -2631,7 +2697,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                       fee: 8,
                       emoji: "⭐",
                       tagline: "Receba até R$ 48.000 / mês",
-                      features: ["Saque PIX 24h por dia", "Leilões ilimitados", "Suporte prioritário"],
+                      features: ["Saque PIX instantâneo 24h", "Leilões ilimitados", "Suporte prioritário"],
                     },
                     {
                       id: "super" as const,
@@ -2840,6 +2906,33 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   <div className="w-3 h-3 border-2 border-gray-300 border-t-emerald-500 rounded-full animate-spin"></div>
                   <span>Aguardando pagamento...</span>
                 </div>
+
+                {/* Aviso destacado sobre o saque que será liberado */}
+                {withdrawMethod === "pix" && withdrawPixKey && (
+                  <div className="bg-gradient-to-br from-emerald-50 to-[#62C86E]/10 border-2 border-[#62C86E]/40 rounded-2xl p-4 mb-3">
+                    <div className="flex items-start gap-2 mb-2">
+                      <svg className="w-5 h-5 text-[#62C86E] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                      <p className="text-xs text-emerald-900 font-bold leading-snug">
+                        Ao concluir o pagamento do plano, retorne nessa tela e confirme seu saque PIX:
+                      </p>
+                    </div>
+                    <div className="bg-white border border-emerald-200 rounded-xl p-3 space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Valor do saque</span>
+                        <span className="text-sm font-display text-gray-900 tabular-nums font-bold">R$ {fmtBRL(withdrawAmount)}</span>
+                      </div>
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold flex-shrink-0">Chave PIX</span>
+                        <span className="text-[11px] font-mono text-gray-900 text-right break-all">{withdrawPixKey}</span>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-emerald-800 mt-2 leading-snug">
+                      💚 <strong>O pagamento será instantâneo</strong> assim que você ativar o plano.
+                    </p>
+                  </div>
+                )}
 
                 {isDemoMode && (
                   <button onClick={nextWithdrawStep}

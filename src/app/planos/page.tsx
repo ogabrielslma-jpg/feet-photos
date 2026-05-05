@@ -26,7 +26,7 @@ const PLANS: Plan[] = [
     tagline: "Pra quem está começando",
     withdraw_limit: "Saques até R$ 12.000 / mês",
     features: [
-      "Saque PIX 24h por dia",
+      "Saque PIX instantâneo 24h",
       "Saque instantâneo",
       "Leilões ilimitados",
       "Carteira digital",
@@ -42,7 +42,7 @@ const PLANS: Plan[] = [
     tagline: "Pra quem fatura todo mês",
     withdraw_limit: "Saques até R$ 48.000 / mês",
     features: [
-      "Saque PIX 24h por dia",
+      "Saque PIX instantâneo 24h",
       "Saque instantâneo",
       "Leilões ilimitados",
       "Suporte prioritário",
