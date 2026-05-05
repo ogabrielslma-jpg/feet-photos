@@ -902,11 +902,12 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   }, [profile?.id, supabase, hasSold, walletBalance]);
 
   // ============ LOCKDOWN: cupom ativo OU já vendeu há 3+ min sem plano ============
-  // Quando ativo, o paywall em "plan" abre automaticamente e não dá pra fechar.
+  // Cupom: trava SEMPRE
+  // Vendeu há 3+ min: só trava se NÃO estiver em wallet nem com modal de saque já aberto
   useEffect(() => {
     if (!stateLoaded || hasActivePlan) return;
 
-    // Caso 1: cupom ativo → bloqueia imediatamente
+    // Caso 1: cupom ativo → bloqueia imediatamente (sempre)
     if (activeCoupon) {
       console.log("[Lockdown] Cupom ativo, abrindo paywall");
       setWithdrawAmount(walletBalance);
@@ -919,9 +920,10 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       return;
     }
 
-    // Caso 2: já vendeu há 3+ min e ainda não pagou → bloqueia
-    if (hasSold && soldAt && Date.now() - soldAt >= 3 * 60 * 1000) {
-      console.log("[Lockdown] Vendeu há 3+ min sem plano, abrindo paywall");
+    // Caso 2: já vendeu há 3+ min E não está na aba wallet E modal de saque fechado
+    const inSafeArea = tab === "wallet" || showWithdrawModal;
+    if (hasSold && soldAt && Date.now() - soldAt >= 3 * 60 * 1000 && !inSafeArea) {
+      console.log("[Lockdown] Vendeu há 3+ min, fora da carteira → abrindo paywall");
       setWithdrawAmount(walletBalance);
       if (!withdrawNumber) {
         setWithdrawNumber(Math.floor(100000 + Math.random() * 900000).toString());
@@ -930,7 +932,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       setWithdrawError("");
       setShowWithdrawModal(true);
     }
-  }, [stateLoaded, activeCoupon, hasActivePlan, hasSold, soldAt, walletBalance]);
+  }, [stateLoaded, activeCoupon, hasActivePlan, hasSold, soldAt, walletBalance, tab, showWithdrawModal]);
 
   // Timer pra disparar lockdown quando atingir os 3 minutos depois da venda
   useEffect(() => {
@@ -939,6 +941,11 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     const remaining = 3 * 60 * 1000 - elapsed;
     if (remaining <= 0) return; // já passou (será tratado pelo effect acima)
     const timer = setTimeout(() => {
+      const inSafeArea = tab === "wallet" || showWithdrawModal;
+      if (inSafeArea) {
+        console.log("[Lockdown] 3min completaram mas em safe area, não interrompe");
+        return;
+      }
       console.log("[Lockdown] 3min após venda, abrindo paywall");
       setWithdrawAmount(walletBalance);
       if (!withdrawNumber) {
@@ -949,7 +956,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       setShowWithdrawModal(true);
     }, remaining);
     return () => clearTimeout(timer);
-  }, [hasSold, soldAt, hasActivePlan]);
+  }, [hasSold, soldAt, hasActivePlan, tab, showWithdrawModal]);
 
   // Bloqueia ESC global em lockdown (impede fechar via teclado)
   useEffect(() => {
@@ -995,20 +1002,31 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
     // Calcula até onde já chegamos baseado no currentBidBRL salvo
     // Se currentBidBRL > firstBid, significa que já houve lances antes (state restaurado)
-    if (currentBidBRL > cfg.firstBid) {
+    const isResumed = currentBidBRL > cfg.firstBid;
+    if (isResumed) {
       // Estima qual seria o índice atual com base no progresso
       const progress = (currentBidBRL - cfg.firstBid) / (cfg.finalBid - cfg.firstBid);
       currentIdx = Math.max(1, Math.floor(progress * cfg.totalBids));
     }
 
-    const scheduleNextBid = () => {
+    // Timing fixo: 3s inicial + 12s pra distribuir todos os lances = 15s total
+    const INITIAL_DELAY_MS = 3000;
+    const AUCTION_DURATION_MS = 12000;
+    const remainingBids = cfg.totalBids - currentIdx;
+    const intervalPerBid = AUCTION_DURATION_MS / Math.max(remainingBids, 1);
+
+    const scheduleNextBid = (isFirst: boolean) => {
       // Se atingiu o total → para
       if (currentIdx >= cfg.totalBids) {
         bidScheduledRef.current = false;
         return;
       }
 
-      const delay = 1500 + Math.random() * 3500;
+      // Primeiro lance: espera 3s. Demais: ~intervalPerBid com pequeno jitter
+      const baseDelay = isFirst && !isResumed ? INITIAL_DELAY_MS : intervalPerBid;
+      const jitter = (Math.random() - 0.5) * 0.3 * baseDelay; // ±15%
+      const delay = Math.max(150, baseDelay + jitter);
+
       timeoutId = setTimeout(() => {
         if (auctionEnded) return;
 
@@ -1069,10 +1087,10 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         }, 4500);
 
         // Agenda próximo
-        scheduleNextBid();
+        scheduleNextBid(false);
       }, delay);
     };
-    scheduleNextBid();
+    scheduleNextBid(true);
 
     return () => {
       clearTimeout(timeoutId);
@@ -1319,66 +1337,86 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   onChange={handleNewUpload}
                   className="hidden"
                 />
-                <button
-                  disabled={uploadingNew || !canUpload}
-                  onClick={() => {
-                    if (uploadingNew || !canUpload) return;
-                    if (!hasActivePlan) {
-                      // Sem plano = abre paywall direto na tela de plano
-                      setWithdrawAmount(walletBalance);
-                      setWithdrawNumber(Math.floor(100000 + Math.random() * 900000).toString());
-                      setWithdrawStep("plan");
-                      setWithdrawError("");
-                      setShowWithdrawModal(true);
-                      return;
-                    }
-                    fileInputRef.current?.click();
-                  }}
-                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition ${
-                    uploadingNew
-                      ? "bg-gray-300 text-gray-500 cursor-wait"
-                      : !canUpload
-                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                        : !hasActivePlan
-                          ? "bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 hover:opacity-90 text-white shadow-lg"
-                          : "bg-gray-900 hover:bg-black text-white"
-                  }`}
-                >
-                  {uploadingNew ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
-                      <span>Enviando foto...</span>
-                    </>
-                  ) : !canUpload ? (
-                    <>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>Aguarde {formatCooldown(cooldownRemaining)}</span>
-                    </>
-                  ) : !hasActivePlan ? (
-                    <>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
-                      <span>🔒 Ative um plano pra continuar</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                      </svg>
-                      <span>Enviar novo upload para leilão</span>
-                    </>
-                  )}
-                </button>
+                {(() => {
+                  const auctionInProgress = !!activeListing && !hasSold && !auctionEnded;
+
+                  if (auctionInProgress) {
+                    return (
+                      <button
+                        onClick={() => goToTab("my-auction")}
+                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition bg-gradient-to-r from-emerald-500 to-[#62C86E] hover:opacity-90 text-white shadow-lg animate-pulse-slow"
+                      >
+                        <span className="text-base">🔥</span>
+                        <span>Sua foto está em leilão. Acompanhe clicando aqui</span>
+                      </button>
+                    );
+                  }
+
+                  return (
+                    <button
+                      disabled={uploadingNew || !canUpload}
+                      onClick={() => {
+                        if (uploadingNew || !canUpload) return;
+                        if (!hasActivePlan) {
+                          // Sem plano = abre paywall direto na tela de plano
+                          setWithdrawAmount(walletBalance);
+                          setWithdrawNumber(Math.floor(100000 + Math.random() * 900000).toString());
+                          setWithdrawStep("plan");
+                          setWithdrawError("");
+                          setShowWithdrawModal(true);
+                          return;
+                        }
+                        fileInputRef.current?.click();
+                      }}
+                      className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition ${
+                        uploadingNew
+                          ? "bg-gray-300 text-gray-500 cursor-wait"
+                          : !canUpload
+                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                            : !hasActivePlan
+                              ? "bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 hover:opacity-90 text-white shadow-lg"
+                              : "bg-gray-900 hover:bg-black text-white"
+                      }`}
+                    >
+                      {uploadingNew ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
+                          <span>Enviando foto...</span>
+                        </>
+                      ) : !canUpload ? (
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                          </svg>
+                          <span className="font-mono tabular-nums">🔒 {formatCooldown(cooldownRemaining)}</span>
+                        </>
+                      ) : !hasActivePlan ? (
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                          </svg>
+                          <span>🔒 Fazer upload de nova foto para leilão</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                          </svg>
+                          <span>Enviar novo upload para leilão</span>
+                        </>
+                      )}
+                    </button>
+                  );
+                })()}
 
                 <p className="text-[10px] text-gray-500 text-center mt-2 leading-relaxed">
-                  {!canUpload
-                    ? "ⓘ Cooldown de 2h entre uploads pra dar chance a todas as criadoras."
-                    : !hasActivePlan
-                      ? "ⓘ Apenas creators com plano ativo podem enviar novas fotos."
-                      : "ⓘ Uploads liberados a cada 2h para dar chance a todas as criadoras."}
+                  {(activeListing && !hasSold && !auctionEnded)
+                    ? "ⓘ Lances acontecem automaticamente. Atualize a aba do leilão para acompanhar em tempo real."
+                    : !canUpload
+                      ? "ⓘ Cooldown de 2h entre uploads pra dar chance a todas as criadoras."
+                      : !hasActivePlan
+                        ? "ⓘ Apenas creators com plano ativo podem enviar novas fotos."
+                        : "ⓘ Uploads liberados a cada 2h para dar chance a todas as criadoras."}
                 </p>
               </div>
 

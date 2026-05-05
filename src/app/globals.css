@@ -86,3 +86,12 @@ html, body {
   font-style: italic;
   font-weight: 400;
 }
+
+/* Pulse slow para botão de leilão em andamento */
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.92; transform: scale(1.01); }
+}
+.animate-pulse-slow {
+  animation: pulse-slow 2s ease-in-out infinite;
+}
