@@ -572,15 +572,22 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     const file = e.target.files?.[0];
     if (!file) return;
     if (!profile?.id) return;
-    if (!canUpload) {
-      alert("Aguarde o cooldown de 2h entre uploads.");
-      e.target.value = "";
-      return;
-    }
-    if (!hasActivePlan) {
-      alert("Você precisa de um plano ativo pra enviar nova foto.");
-      e.target.value = "";
-      return;
+
+    // Se está no modal inicial de confirmação, pula validações de cooldown/plano
+    // (ela ainda nem confirmou a primeira foto — essa é uma "troca" da foto que ela acabou de subir)
+    const isInitialConfirmation = showConfirmPhotoModal;
+
+    if (!isInitialConfirmation) {
+      if (!canUpload) {
+        alert("Aguarde o cooldown de 2h entre uploads.");
+        e.target.value = "";
+        return;
+      }
+      if (!hasActivePlan) {
+        alert("Você precisa de um plano ativo pra enviar nova foto.");
+        e.target.value = "";
+        return;
+      }
     }
     if (!file.type.startsWith("image/")) {
       alert("Apenas imagens são aceitas");
@@ -641,10 +648,12 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       setSelectedBid(null);
       setSaleStep(null);
       setTimeLeft(30 + Math.floor(Math.random() * 16));
-      setLastUploadAt(Date.now());
+      // Só conta cooldown e mostra alert se NÃO for troca inicial
+      if (!isInitialConfirmation) {
+        setLastUploadAt(Date.now());
+        alert("✓ Foto enviada! Novo leilão começou.");
+      }
       bidScheduledRef.current = false; // libera lances pra rodar de novo
-
-      alert("✓ Foto enviada! Novo leilão começou.");
     } catch (err: any) {
       console.error("[Upload] Falhou:", err);
       alert(`Erro no upload: ${err?.message || "tente novamente"}`);
@@ -2162,17 +2171,19 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => {
-                  setShowConfirmPhotoModal(false);
+                  // NÃO fecha o modal — só abre o file picker pra trocar
+                  // O modal continua aberto até ela clicar em "Confirmar e leiloar"
                   fileInputRef.current?.click();
                 }}
                 disabled={uploadingNew}
                 className="bg-white border-2 border-gray-200 hover:border-gray-900 text-gray-900 font-bold py-3 rounded-xl transition text-sm disabled:opacity-50"
               >
-                Trocar foto
+                {uploadingNew ? "Enviando..." : "Trocar foto"}
               </button>
               <button
                 onClick={() => setShowConfirmPhotoModal(false)}
-                className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition text-sm shadow-md"
+                disabled={uploadingNew}
+                className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition text-sm shadow-md disabled:opacity-50"
               >
                 Confirmar e leiloar
               </button>
