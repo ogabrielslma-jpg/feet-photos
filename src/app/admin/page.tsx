@@ -2668,7 +2668,7 @@ function RecoveryCard({
   // Cálculo do desconto 47% no Basic
   const discountedBasic = (79 * 0.53).toFixed(2).replace(".", ",");
 
-  const message1 = `Oi ${firstName}! 👋 Aqui é a assistente virtual da FootPriv.\n\n⏰ *URGENTE* — seu saldo de *R$ ${fmtBRL(displayBalance)}* está disponível pra saque, mas vai *expirar em breve*!\n\nO comprador *${bidder1}* que deu o lance pela sua foto vai receber o valor de volta caso você não ative sua conta a tempo. 😔\n\nPorém, considerando que você é uma creator de *grande potencial* na nossa plataforma de acordo com os resultados, liberamos um *desconto exclusivo de 47% OFF* válido até a expiração:\n\n💎 ~~R$ 79~~ → *R$ ${discountedBasic}* (Creator com desconto)\n\nO desconto vale pra qualquer plano. Cupom *já aplicado* na sua conta — é só logar e finalizar:\n\nhttps://footpriv.com/dashboard\n\n💚`;
+  const message1 = `Oi ${firstName}, aqui é a assistente virtual da FootPriv.\n\n*URGENTE* — seu saldo de *R$ ${fmtBRL(displayBalance)}* está disponível pra saque, mas vai *expirar em breve*.\n\nO comprador *${bidder1}* que deu o lance pela sua foto vai receber o valor de volta caso você não ative sua conta a tempo.\n\nPorém, considerando que você é uma creator de *grande potencial* na nossa plataforma de acordo com os resultados, liberamos um *desconto exclusivo de 47% OFF* válido até a expiração:\n\n~~R$ 79~~ → *R$ ${discountedBasic}* (Creator com desconto)\n\nO desconto vale pra qualquer plano. Cupom *já aplicado* na sua conta — é só logar e finalizar:\n\nhttps://footpriv.com/dashboard`;
 
   // Cria cupom no banco e abre WhatsApp com a mensagem unificada
   async function ativarCupomEEnviar() {
