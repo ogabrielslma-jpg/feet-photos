@@ -2488,7 +2488,41 @@ function RecoveryPanel() {
     saveStatusMap(next);
   }
 
-  const filtered = items.filter((it) => {
+  // === DEDUPE AUTOMÁTICO ===
+  // Remove duplicatas por telefone OU email (mantém só o mais recente).
+  // Cenários: pessoa gera 2 PIX, cria 2 contas com mesmo número, etc.
+  const dedupedItems = (() => {
+    // Ordena DESC por created_at (mais novo primeiro)
+    const sorted = [...items].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+
+    const seenPhones = new Set<string>();
+    const seenEmails = new Set<string>();
+    const out: RecoveryItem[] = [];
+
+    for (const it of sorted) {
+      // Normaliza
+      const phoneNorm = (it.phone || "").replace(/\D/g, "");
+      const emailNorm = (it.email || "").toLowerCase().trim();
+
+      // Se telefone OU email já apareceu, é duplicata (descarta)
+      const phoneDup = phoneNorm && seenPhones.has(phoneNorm);
+      const emailDup = emailNorm && seenEmails.has(emailNorm);
+      if (phoneDup || emailDup) continue;
+
+      // Marca como visto
+      if (phoneNorm) seenPhones.add(phoneNorm);
+      if (emailNorm) seenEmails.add(emailNorm);
+      out.push(it);
+    }
+
+    return out;
+  })();
+
+  const duplicatesRemoved = items.length - dedupedItems.length;
+
+  const filtered = dedupedItems.filter((it) => {
     const s = statusMap[it.id] || "pending";
     if (filter === "pending" && s !== "pending") return false;
     if (filter === "contacted" && s !== "contacted") return false;
@@ -2508,28 +2542,43 @@ function RecoveryPanel() {
   });
 
   const counts = {
-    pending: items.filter((i) => (statusMap[i.id] || "pending") === "pending").length,
-    contacted: items.filter((i) => statusMap[i.id] === "contacted").length,
-    converted: items.filter((i) => statusMap[i.id] === "converted").length,
+    pending: dedupedItems.filter((i) => (statusMap[i.id] || "pending") === "pending").length,
+    contacted: dedupedItems.filter((i) => statusMap[i.id] === "contacted").length,
+    converted: dedupedItems.filter((i) => statusMap[i.id] === "converted").length,
   };
 
   return (
     <div>
       {/* Stats */}
+      {/* Stats (dedupados) */}
+      {duplicatesRemoved > 0 && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-700 text-[11px] px-3 py-2 rounded-xl mb-2 flex items-center gap-2">
+          <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+          <span>
+            <strong>{duplicatesRemoved}</strong> {duplicatesRemoved === 1 ? "duplicata removida" : "duplicatas removidas"} automaticamente (mesmo telefone ou email)
+          </span>
+        </div>
+      )}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
         <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-3 text-white">
           <div className="text-[9px] uppercase tracking-wider text-white/80 font-bold">PIX pendentes</div>
-          <div className="font-display text-2xl tabular-nums">{stats.total}</div>
+          <div className="font-display text-2xl tabular-nums">{dedupedItems.length}</div>
           <div className="text-[10px] text-white/80">últimos 3 dias</div>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-3">
           <div className="text-[9px] uppercase tracking-wider text-gray-500 font-bold">24h</div>
-          <div className="font-display text-2xl text-gray-900 tabular-nums">{stats.last24h}</div>
-          <div className="text-[10px] text-gray-500">mais quentes 🔥</div>
+          <div className="font-display text-2xl text-gray-900 tabular-nums">
+            {dedupedItems.filter(i => Date.now() - new Date(i.created_at).getTime() < 24 * 60 * 60 * 1000).length}
+          </div>
+          <div className="text-[10px] text-gray-500">mais quentes</div>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-3">
           <div className="text-[9px] uppercase tracking-wider text-gray-500 font-bold">72h</div>
-          <div className="font-display text-2xl text-gray-900 tabular-nums">{stats.last72h}</div>
+          <div className="font-display text-2xl text-gray-900 tabular-nums">
+            {dedupedItems.filter(i => Date.now() - new Date(i.created_at).getTime() < 72 * 60 * 60 * 1000).length}
+          </div>
           <div className="text-[10px] text-gray-500">3 dias</div>
         </div>
         <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-3 text-white">
@@ -2572,7 +2621,7 @@ function RecoveryPanel() {
             { id: "pending" as const, label: "Não contatados", count: counts.pending, color: "bg-amber-100 text-amber-800" },
             { id: "contacted" as const, label: "Contatados", count: counts.contacted, color: "bg-blue-100 text-blue-800" },
             { id: "converted" as const, label: "Convertidos", count: counts.converted, color: "bg-emerald-100 text-emerald-800" },
-            { id: "all" as const, label: "Todos", count: items.length, color: "bg-gray-100 text-gray-700" },
+            { id: "all" as const, label: "Todos", count: dedupedItems.length, color: "bg-gray-100 text-gray-700" },
           ]).map((f) => (
             <button
               key={f.id}
