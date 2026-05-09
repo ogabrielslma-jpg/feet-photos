@@ -19,7 +19,7 @@ const SESSION_KEY = "ff_admin_authed";
 
 type Viewport = "desktop" | "mobile";
 type Area = "external" | "internal";
-type MegaTab = "customize" | "submissions" | "recovery";
+type MegaTab = "customize" | "submissions" | "recovery" | "support";
 
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
@@ -361,9 +361,29 @@ export default function AdminPage() {
               </svg>
               <span>Recuperação</span>
             </button>
+            <button
+              onClick={() => setMegaTab("support")}
+              className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs sm:text-sm font-bold transition ${
+                megaTab === "support"
+                  ? "bg-white text-gray-900 shadow"
+                  : "text-white/60 hover:text-white"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <span>Suporte</span>
+            </button>
           </div>
         </div>
       </div>
+
+      {/* === MODO SUPORTE === */}
+      {megaTab === "support" && (
+        <div className="px-6 pb-6 pt-4">
+          <SupportPanel />
+        </div>
+      )}
 
       {/* === MODO RECUPERAÇÃO === */}
       {megaTab === "recovery" && (
@@ -743,6 +763,155 @@ export default function AdminPage() {
                 </Field>
               </>
             )}
+          </Section>
+
+          {/* === SUPORTE (chat flutuante) === */}
+          <Section title="Chat de Suporte (paywall)" icon="💬">
+            <p className="text-[11px] text-gray-500 mb-3">
+              Perguntas frequentes que aparecem no chat de suporte flutuante quando a usuária está na tela de selecionar plano ou pagar PIX. Tickets enviados pelo formulário aparecem na aba "Suporte".
+            </p>
+
+            <div className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-2 mt-3">
+              📂 Dúvidas gerais
+            </div>
+            {(config.support_faq?.general || []).map((faq, i) => (
+              <div key={`gen-${i}`} className="bg-white border border-gray-200 rounded-xl p-3 mb-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Geral {i + 1}</span>
+                  <button
+                    onClick={() => {
+                      setConfig((c) => ({
+                        ...c,
+                        support_faq: {
+                          general: (c.support_faq?.general || []).filter((_, j) => j !== i),
+                          payment: c.support_faq?.payment || [],
+                        },
+                      }));
+                    }}
+                    className="text-xs text-red-600 hover:text-red-800 transition"
+                  >
+                    Remover
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={faq.q}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setConfig((c) => ({
+                      ...c,
+                      support_faq: {
+                        general: (c.support_faq?.general || []).map((f, j) => (j === i ? { ...f, q: v } : f)),
+                        payment: c.support_faq?.payment || [],
+                      },
+                    }));
+                  }}
+                  placeholder="Pergunta"
+                  className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors mb-2"
+                />
+                <textarea
+                  value={faq.a}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setConfig((c) => ({
+                      ...c,
+                      support_faq: {
+                        general: (c.support_faq?.general || []).map((f, j) => (j === i ? { ...f, a: v } : f)),
+                        payment: c.support_faq?.payment || [],
+                      },
+                    }));
+                  }}
+                  rows={3}
+                  placeholder="Resposta"
+                  className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors resize-none"
+                />
+              </div>
+            ))}
+            <button
+              onClick={() => {
+                setConfig((c) => ({
+                  ...c,
+                  support_faq: {
+                    general: [...(c.support_faq?.general || []), { q: "Nova pergunta", a: "Nova resposta" }],
+                    payment: c.support_faq?.payment || [],
+                  },
+                }));
+              }}
+              className="w-full border-2 border-dashed border-gray-300 hover:border-gray-500 text-gray-500 hover:text-gray-900 py-2.5 rounded-xl text-sm font-semibold transition mb-4"
+            >
+              + Adicionar pergunta geral
+            </button>
+
+            <div className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-2 mt-3">
+              💳 Dúvidas sobre pagamento
+            </div>
+            {(config.support_faq?.payment || []).map((faq, i) => (
+              <div key={`pay-${i}`} className="bg-white border border-gray-200 rounded-xl p-3 mb-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Pagamento {i + 1}</span>
+                  <button
+                    onClick={() => {
+                      setConfig((c) => ({
+                        ...c,
+                        support_faq: {
+                          general: c.support_faq?.general || [],
+                          payment: (c.support_faq?.payment || []).filter((_, j) => j !== i),
+                        },
+                      }));
+                    }}
+                    className="text-xs text-red-600 hover:text-red-800 transition"
+                  >
+                    Remover
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={faq.q}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setConfig((c) => ({
+                      ...c,
+                      support_faq: {
+                        general: c.support_faq?.general || [],
+                        payment: (c.support_faq?.payment || []).map((f, j) => (j === i ? { ...f, q: v } : f)),
+                      },
+                    }));
+                  }}
+                  placeholder="Pergunta"
+                  className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors mb-2"
+                />
+                <textarea
+                  value={faq.a}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setConfig((c) => ({
+                      ...c,
+                      support_faq: {
+                        general: c.support_faq?.general || [],
+                        payment: (c.support_faq?.payment || []).map((f, j) => (j === i ? { ...f, a: v } : f)),
+                      },
+                    }));
+                  }}
+                  rows={3}
+                  placeholder="Resposta"
+                  className="w-full bg-white border border-gray-200 focus:border-gray-900 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors resize-none"
+                />
+              </div>
+            ))}
+            <button
+              onClick={() => {
+                setConfig((c) => ({
+                  ...c,
+                  support_faq: {
+                    general: c.support_faq?.general || [],
+                    payment: [...(c.support_faq?.payment || []), { q: "Nova pergunta", a: "Nova resposta" }],
+                  },
+                }));
+              }}
+              className="w-full border-2 border-dashed border-gray-300 hover:border-gray-500 text-gray-500 hover:text-gray-900 py-2.5 rounded-xl text-sm font-semibold transition"
+            >
+              + Adicionar pergunta de pagamento
+            </button>
           </Section>
 
           {/* === FAQ === */}
@@ -2860,6 +3029,377 @@ function RecoveryCard({
         >
           ❌ Perdido
         </button>
+      </div>
+    </div>
+  );
+}
+
+// ============ SUPPORT PANEL — Tickets recebidos do chat ============
+type SupportTicket = {
+  id: string;
+  user_id: string | null;
+  category: "general" | "payment";
+  subject: string | null;
+  message: string;
+  email: string;
+  phone: string;
+  attachment_url: string | null;
+  status: "new" | "replied" | "closed";
+  created_at: string;
+  replied_at: string | null;
+};
+
+function SupportPanel() {
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [filter, setFilter] = useState<"new" | "replied" | "closed" | "all">("new");
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<SupportTicket | null>(null);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+
+  const supabase = createClient();
+
+  async function load() {
+    setLoading(true);
+    setError("");
+    try {
+      const { data, error: err } = await supabase
+        .from("support_tickets")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (err) {
+        setError(err.message || "Erro ao carregar tickets");
+        setLoading(false);
+        return;
+      }
+      setTickets((data || []) as SupportTicket[]);
+      setLoading(false);
+    } catch (e: any) {
+      setError(e?.message || "Erro inesperado");
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function getSignedUrl(path: string) {
+    try {
+      const { data, error: err } = await supabase.storage
+        .from("support-attachments")
+        .createSignedUrl(path, 60 * 60); // 1h
+      if (err || !data?.signedUrl) {
+        console.error("[Support] signed URL erro:", err);
+        return null;
+      }
+      return data.signedUrl;
+    } catch (e) {
+      console.error("[Support] signed URL erro:", e);
+      return null;
+    }
+  }
+
+  useEffect(() => {
+    if (selected?.attachment_url) {
+      getSignedUrl(selected.attachment_url).then(setSignedUrl);
+    } else {
+      setSignedUrl(null);
+    }
+  }, [selected?.id]);
+
+  async function setStatus(id: string, status: "new" | "replied" | "closed") {
+    try {
+      const patch: any = { status };
+      if (status === "replied") patch.replied_at = new Date().toISOString();
+      const { error: err } = await supabase.from("support_tickets").update(patch).eq("id", id);
+      if (err) {
+        alert("Erro ao atualizar: " + err.message);
+        return;
+      }
+      setTickets((ts) => ts.map((t) => (t.id === id ? { ...t, status, ...(status === "replied" ? { replied_at: patch.replied_at } : {}) } : t)));
+      if (selected?.id === id) setSelected((s) => (s ? { ...s, status } as SupportTicket : null));
+    } catch (e: any) {
+      alert("Erro: " + (e?.message || "desconhecido"));
+    }
+  }
+
+  function whatsappLink(t: SupportTicket) {
+    const digits = (t.phone || "").replace(/\D/g, "");
+    const msg = encodeURIComponent(
+      `Oi! Aqui é da equipe FootPriv. Recebi sua mensagem sobre "${t.subject || t.message.slice(0, 30)}". Vou te ajudar.`
+    );
+    return `https://wa.me/${digits}?text=${msg}`;
+  }
+
+  const filtered = tickets.filter((t) => {
+    if (filter !== "all" && t.status !== filter) return false;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      return (
+        (t.email || "").toLowerCase().includes(q) ||
+        (t.phone || "").includes(q) ||
+        (t.message || "").toLowerCase().includes(q) ||
+        (t.subject || "").toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
+
+  const counts = {
+    new: tickets.filter((t) => t.status === "new").length,
+    replied: tickets.filter((t) => t.status === "replied").length,
+    closed: tickets.filter((t) => t.status === "closed").length,
+  };
+
+  return (
+    <div>
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+        <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-3 text-white">
+          <div className="text-[9px] uppercase tracking-wider text-white/80 font-bold">Novos</div>
+          <div className="font-display text-2xl tabular-nums">{counts.new}</div>
+          <div className="text-[10px] text-white/80">aguardando</div>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-xl p-3">
+          <div className="text-[9px] uppercase tracking-wider text-gray-500 font-bold">Respondidos</div>
+          <div className="font-display text-2xl text-gray-900 tabular-nums">{counts.replied}</div>
+          <div className="text-[10px] text-gray-500">já contactados</div>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-xl p-3">
+          <div className="text-[9px] uppercase tracking-wider text-gray-500 font-bold">Fechados</div>
+          <div className="font-display text-2xl text-gray-900 tabular-nums">{counts.closed}</div>
+          <div className="text-[10px] text-gray-500">resolvidos</div>
+        </div>
+        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-3 text-white">
+          <div className="text-[9px] uppercase tracking-wider text-white/80 font-bold">Total</div>
+          <div className="font-display text-2xl tabular-nums">{tickets.length}</div>
+          <div className="text-[10px] text-white/80">todos os tempos</div>
+        </div>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-3 py-2 rounded-xl mb-3">
+          {error}
+        </div>
+      )}
+
+      {/* Toolbar */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-3 mb-3">
+        <div className="flex flex-col md:flex-row gap-2 mb-2">
+          <input
+            type="text"
+            placeholder="Buscar por email, telefone, mensagem..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 bg-gray-50 border border-gray-200 focus:border-gray-900 rounded-xl px-3 py-2 text-sm text-gray-900 outline-none transition"
+          />
+          <button
+            onClick={load}
+            className="bg-gray-900 hover:bg-black text-white text-sm font-semibold px-4 py-2 rounded-xl transition flex items-center justify-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>Atualizar</span>
+          </button>
+        </div>
+        <div className="flex gap-1.5 flex-wrap">
+          {[
+            { id: "new" as const, label: "Novos", count: counts.new, color: "bg-amber-100 text-amber-700" },
+            { id: "replied" as const, label: "Respondidos", count: counts.replied, color: "bg-blue-100 text-blue-700" },
+            { id: "closed" as const, label: "Fechados", count: counts.closed, color: "bg-gray-100 text-gray-700" },
+            { id: "all" as const, label: "Todos", count: tickets.length, color: "bg-gray-100 text-gray-700" },
+          ].map((f) => (
+            <button
+              key={f.id}
+              onClick={() => setFilter(f.id)}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition ${
+                filter === f.id ? "bg-gray-900 text-white" : f.color
+              }`}
+            >
+              {f.label} ({f.count})
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Lista de tickets */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {/* Lista */}
+        <div className="space-y-2">
+          {loading ? (
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 text-center text-sm text-gray-500">
+              Carregando...
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 text-center text-sm text-gray-500">
+              Nenhum ticket {filter !== "all" ? `"${filter}"` : ""} encontrado.
+            </div>
+          ) : (
+            filtered.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setSelected(t)}
+                className={`w-full text-left bg-white border rounded-2xl p-3 transition ${
+                  selected?.id === t.id ? "border-emerald-500 ring-2 ring-emerald-100" : "border-gray-200 hover:border-gray-400"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-gray-900 truncate">{t.subject || "Sem assunto"}</p>
+                    <p className="text-xs text-gray-600 truncate">{t.email}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <span
+                      className={`text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full ${
+                        t.status === "new"
+                          ? "bg-amber-100 text-amber-800"
+                          : t.status === "replied"
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-gray-100 text-gray-700"
+                      }`}
+                    >
+                      {t.status}
+                    </span>
+                    <span
+                      className={`text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full ${
+                        t.category === "payment" ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"
+                      }`}
+                    >
+                      {t.category === "payment" ? "💳 Pagamento" : "💬 Geral"}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-700 line-clamp-2 leading-snug mb-1">{t.message}</p>
+                <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                  <span>{new Date(t.created_at).toLocaleString("pt-BR")}</span>
+                  {t.attachment_url && <span className="text-emerald-600 font-semibold">📎 com anexo</span>}
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+
+        {/* Detalhe do selecionado */}
+        <div>
+          {selected ? (
+            <div className="bg-white border border-gray-200 rounded-2xl p-4 sticky top-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-display text-lg text-gray-900">Ticket</h3>
+                <button onClick={() => setSelected(null)} className="text-xs text-gray-500 hover:text-gray-900">
+                  Fechar
+                </button>
+              </div>
+
+              <div className="space-y-3 mb-4">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1">Assunto</p>
+                  <p className="text-sm text-gray-900 font-semibold">{selected.subject || "Sem assunto"}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1">Mensagem</p>
+                  <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{selected.message}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1">Email</p>
+                    <p className="text-xs text-gray-900 break-all">{selected.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1">Telefone</p>
+                    <p className="text-xs text-gray-900">{selected.phone}</p>
+                  </div>
+                </div>
+
+                {selected.attachment_url && (
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1">Anexo</p>
+                    {signedUrl ? (
+                      selected.attachment_url.toLowerCase().endsWith(".pdf") ? (
+                        <a
+                          href={signedUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-700 hover:bg-gray-100 transition"
+                        >
+                          📄 Abrir PDF do comprovante
+                        </a>
+                      ) : (
+                        <a href={signedUrl} target="_blank" rel="noopener noreferrer">
+                          <img
+                            src={signedUrl}
+                            alt="comprovante"
+                            className="w-full rounded-xl border border-gray-200 max-h-80 object-contain bg-gray-50"
+                          />
+                        </a>
+                      )
+                    ) : (
+                      <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-500">
+                        Carregando anexo...
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1">Recebido em</p>
+                  <p className="text-xs text-gray-700">{new Date(selected.created_at).toLocaleString("pt-BR")}</p>
+                </div>
+              </div>
+
+              {/* Ações */}
+              <div className="space-y-2 pt-3 border-t border-gray-100">
+                <a
+                  href={whatsappLink(selected)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => {
+                    if (selected.status === "new") setStatus(selected.id, "replied");
+                  }}
+                  className="w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1da851] text-white font-bold py-2.5 rounded-xl text-sm transition"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.711.307 1.265.49 1.697.626.713.226 1.362.194 1.875.118.572-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z" />
+                  </svg>
+                  <span>Responder no WhatsApp</span>
+                </a>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setStatus(selected.id, "replied")}
+                    disabled={selected.status === "replied"}
+                    className="bg-blue-100 hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed text-blue-800 font-semibold py-2 rounded-xl text-xs transition"
+                  >
+                    Marcar respondido
+                  </button>
+                  <button
+                    onClick={() => setStatus(selected.id, "closed")}
+                    disabled={selected.status === "closed"}
+                    className="bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 font-semibold py-2 rounded-xl text-xs transition"
+                  >
+                    Fechar ticket
+                  </button>
+                </div>
+                {selected.status !== "new" && (
+                  <button
+                    onClick={() => setStatus(selected.id, "new")}
+                    className="w-full bg-amber-100 hover:bg-amber-200 text-amber-800 font-semibold py-2 rounded-xl text-xs transition"
+                  >
+                    Reabrir ticket
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="bg-gray-50 border border-dashed border-gray-300 rounded-2xl p-8 text-center text-sm text-gray-500">
+              Selecione um ticket à esquerda pra ver detalhes
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

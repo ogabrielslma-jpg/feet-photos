@@ -142,6 +142,12 @@ export type LandingConfig = {
 
   faqs: { q: string; a: string }[];
 
+  // Suporte (FAQ no chat de pagamento)
+  support_faq?: {
+    general: { q: string; a: string }[];
+    payment: { q: string; a: string }[];
+  };
+
   // Config do dashboard (pós-login)
   dashboard: DashboardConfig;
 };
@@ -430,6 +436,24 @@ export const DEFAULT_LANDING_CONFIG: LandingConfig = {
     { q: "Como eu vou receber o pagamento?", a: "Dentro da plataforma você cadastra uma conta bancária e uma chave pix. Os pagamentos caem na conta dentro de 15 minutos após a venda." },
     { q: "Regras da plataforma. Leia com atenção!", a: "Os compradores querem exclusividade. Você vai receber uma vez por uma foto vendida." },
   ],
+
+  support_faq: {
+    general: [
+      { q: "Posso sacar antes de ativar um plano?", a: "Não. Para liberar o saque do seu saldo é necessário ter um plano ativo na plataforma. Após a ativação, o saque é processado via PIX em até 24h." },
+      { q: "Como funciona o leilão?", a: "Sua foto fica disponível em leilão exclusivo por aproximadamente 30 segundos. Compradores verificados dão lances e o maior leva. Você recebe o valor descontada a taxa do plano." },
+      { q: "Por que meu saque ficou bloqueado?", a: "Após selecionar um lance, você tem 2 minutos e 15 segundos para escolher e ativar um plano. Caso esse tempo expire, a plataforma exige a ativação para liberar a navegação." },
+      { q: "Quanto tempo dura o cupom de desconto?", a: "O cupom de 47% OFF tem duração de 6 horas a partir do envio. Após a expiração, os planos voltam ao valor normal. Não enviamos cupons repetidos." },
+      { q: "O plano renova automaticamente?", a: "Não. Todos os planos são anuais e cobrados uma única vez. Após 12 meses você pode optar por renovar ou continuar usando a plataforma com a taxa padrão." },
+      { q: "Posso usar a plataforma sem pagar nada?", a: "Sim. Você pode usar a plataforma e participar dos leilões. O plano só é necessário no momento de sacar o saldo acumulado pra sua conta bancária." },
+    ],
+    payment: [
+      { q: "Fiz o pagamento mas a tela não atualizou", a: "Anexe o comprovante de pagamento abaixo, junto com seu telefone e email. Nossa equipe valida em até 30 minutos durante horário comercial e libera seu acesso." },
+      { q: "O QR Code do PIX não funciona", a: "Anexe um print da tela junto com seu telefone e email. Vamos gerar um novo QR Code e enviar pra você por WhatsApp." },
+      { q: "Recebi cobrança duplicada", a: "Anexe o comprovante das duas cobranças. Vamos estornar uma delas em até 2 dias úteis e enviar confirmação por email." },
+      { q: "Posso pagar com cartão de crédito?", a: "Atualmente trabalhamos exclusivamente com PIX para garantir aprovação instantânea. Em breve adicionaremos cartão de crédito como opção." },
+      { q: "Como cancelar uma compra?", a: "Caso o pagamento ainda não tenha sido processado, basta não pagar o PIX e ele expira em 1 hora. Se já foi pago e quer estornar, anexe o comprovante e descreva o motivo." },
+    ],
+  },
 
   dashboard: DEFAULT_DASHBOARD_CONFIG,
 };

@@ -15,6 +15,7 @@ import {
   type Sheik,
 } from "@/lib/fake-data";
 import type { LandingConfig, FeedPost } from "@/lib/landing-config";
+import { SupportChat } from "@/components/SupportChat";
 
 type Tab = "feed" | "my-auction" | "wallet" | "profile";
 
@@ -2335,6 +2336,23 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
             </p>
           </div>
         </div>
+      )}
+
+      {/* === SUPORTE FLUTUANTE — apenas em plan/pix === */}
+      {showWithdrawModal && (withdrawStep === "plan" || withdrawStep === "pix") && (
+        <SupportChat
+          userId={profile?.id}
+          defaultEmail={profile?.email}
+          defaultPhone={(profile as any)?.phone}
+          faq={config.support_faq || {
+            general: [
+              { q: "Posso sacar antes de ativar um plano?", a: "Não. Para liberar saque é necessário plano ativo." },
+            ],
+            payment: [
+              { q: "Fiz o pagamento mas a tela não atualizou", a: "Anexe o comprovante abaixo e nossa equipe vai retornar." },
+            ],
+          }}
+        />
       )}
 
       {/* === MODAL DE SAQUE === */}
