@@ -388,6 +388,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [demoReason, setDemoReason] = useState<string>("");
   const [creatingPix, setCreatingPix] = useState(false);
+  const [pixProgress, setPixProgress] = useState(0); // 0-100, anima durante o loading
 
   function openWithdrawModal() {
     if (walletBalance <= 0) return;
@@ -686,6 +687,31 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
+
+  // ============ ANIMAÇÃO DA BARRA DE PROGRESSO DO PIX ============
+  // Quando creatingPix=true: sobe devagar de 0 até 85% em ~10s (curva desacelerando)
+  // Quando pixQrCode chega: dispara pra 100% rapidamente
+  useEffect(() => {
+    if (creatingPix) {
+      setPixProgress(0);
+      const startTime = Date.now();
+      const interval = setInterval(() => {
+        const elapsed = (Date.now() - startTime) / 1000; // segundos
+        // Curva: rápida no início, desacelera, chega em ~85% em 10s
+        // Fórmula: 85 * (1 - exp(-elapsed/3.5))
+        const progress = Math.min(85, 85 * (1 - Math.exp(-elapsed / 3.5)));
+        setPixProgress(progress);
+      }, 100);
+      return () => clearInterval(interval);
+    }
+  }, [creatingPix]);
+
+  // Quando QR chega: dispara pra 100%
+  useEffect(() => {
+    if (pixQrCode && pixProgress < 100) {
+      setPixProgress(100);
+    }
+  }, [pixQrCode]);
 
   // ============ LOAD INICIAL ============
   useEffect(() => {
@@ -2976,46 +3002,49 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   </div>
                 )}
 
-                {/* Quando NÃO tem QR ainda: tela de loading bonita */}
+                {/* Quando NÃO tem QR ainda: tela de loading limpa e calorosa */}
                 {!pixQrCode ? (
-                  <div className="bg-gradient-to-br from-emerald-50 via-white to-[#62C86E]/5 border-2 border-emerald-100 rounded-3xl p-6 mb-3">
-                    {/* Coraçãozinho verde animado */}
-                    <div className="flex justify-center mb-4">
-                      <div className="relative">
-                        <svg className="w-16 h-16 text-[#62C86E] animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+                  <div className="bg-white border border-gray-100 rounded-3xl p-7 mb-3 shadow-sm">
+                    {/* Coraçãozinho verde suave */}
+                    <div className="flex justify-center mb-5">
+                      <div className="relative w-14 h-14 flex items-center justify-center">
+                        {/* Anel sutil pulsando atrás */}
+                        <div className="absolute inset-0 rounded-full bg-[#62C86E]/10 animate-ping-slow"></div>
+                        {/* Coração */}
+                        <svg className="relative w-10 h-10 text-[#62C86E] animate-heartbeat" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                         </svg>
-                        {/* Anel pulsando ao redor */}
-                        <div className="absolute inset-0 rounded-full border-2 border-[#62C86E]/40 animate-ping"></div>
                       </div>
                     </div>
 
                     {/* Mensagem principal */}
-                    <h3 className="font-display text-lg text-center text-gray-900 leading-tight mb-2">
+                    <h3 className="text-base text-center text-gray-900 font-semibold leading-tight mb-1.5">
                       Aguarde uns segundos
                     </h3>
-                    <p className="text-sm text-center text-gray-700 leading-snug mb-4">
-                      Estamos gerando o seu <span className="font-semibold text-[#62C86E]">QR Code de pagamento</span>.
-                      <br />
-                      Leva no máximo <strong>10 segundos</strong>.
+                    <p className="text-xs text-center text-gray-500 leading-relaxed mb-5 px-2">
+                      Estamos gerando o seu QR Code de pagamento.
+                      Leva no máximo <strong className="text-gray-700">10 segundos</strong>.
                     </p>
 
-                    {/* Loading bar com spinner */}
-                    <div className="flex items-center justify-center gap-2 mb-4">
-                      <div className="w-5 h-5 border-3 border-emerald-200 border-t-[#62C86E] rounded-full animate-spin"></div>
-                      <span className="text-xs text-emerald-700 font-semibold">Conectando com banco...</span>
+                    {/* Barra de progresso animada (sobe devagar até 85%, dispara pra 100% quando QR chega) */}
+                    <div className="bg-gray-100 rounded-full h-1 overflow-hidden mb-2">
+                      <div
+                        className="h-full bg-[#62C86E] rounded-full"
+                        style={{
+                          width: `${pixProgress}%`,
+                          transition: pixProgress >= 100 ? "width 0.4s ease-out" : "width 0.3s linear",
+                        }}
+                      ></div>
                     </div>
+                    <p className="text-[10px] text-center text-gray-400 mb-5 tabular-nums">
+                      {Math.round(pixProgress)}%
+                    </p>
 
-                    {/* Barra de progresso visual (vai pulsando) */}
-                    <div className="bg-white rounded-full h-1.5 overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-emerald-400 via-[#62C86E] to-emerald-600 rounded-full animate-pulse" style={{ width: "60%" }}></div>
-                    </div>
-
-                    {/* Valor a ser pago (mantém visível mesmo carregando) */}
-                    <div className="mt-5 pt-4 border-t border-emerald-100 text-center">
-                      <p className="text-[10px] uppercase tracking-wider text-emerald-700 font-bold mb-1">Plano selecionado</p>
-                      <p className="text-2xl font-display text-gray-900">R$ {(PLANS_DATA[selectedPlanId]?.yearly || 79).toFixed(2).replace(".", ",")}</p>
-                      <p className="text-[10px] text-gray-600 mt-0.5">{PLANS_DATA[selectedPlanId]?.name} · 1 ano</p>
+                    {/* Valor a pagar */}
+                    <div className="pt-4 border-t border-gray-100 text-center">
+                      <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-0.5">Plano selecionado</p>
+                      <p className="text-xl font-display text-gray-900">R$ {(PLANS_DATA[selectedPlanId]?.yearly || 79).toFixed(2).replace(".", ",")}</p>
+                      <p className="text-[10px] text-gray-500 mt-0.5">{PLANS_DATA[selectedPlanId]?.name} · 1 ano</p>
                     </div>
                   </div>
                 ) : (
