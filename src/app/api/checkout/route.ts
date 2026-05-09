@@ -154,15 +154,69 @@ export async function POST(req: NextRequest) {
 
     const gatewayData = await gatewayRes.json();
 
-    if (!gatewayRes.ok || !gatewayData.sale) {
+    if (!gatewayRes.ok) {
       console.error("[Checkout] Erro do gateway:", gatewayData);
       return NextResponse.json({
-        error: gatewayData.message || "Erro ao processar pagamento",
+        error: gatewayData.message || gatewayData.error || "Erro ao processar pagamento",
         details: gatewayData,
       }, { status: 502 });
     }
 
-    const sale = gatewayData.sale;
+    // O ImperiumPay pode retornar { sale: {...} } OU { ...sale } direto
+    const sale = gatewayData.sale || gatewayData;
+
+    // LOG completo da resposta pra debug (vai aparecer nos logs do Vercel)
+    console.log("[Checkout] Gateway response:", JSON.stringify(gatewayData, null, 2));
+    console.log("[Checkout] Sale object:", JSON.stringify(sale, null, 2));
+
+    // Extrai QR code + chave PIX tentando MÚLTIPLOS paths possíveis
+    // (cada gateway usa nomes diferentes)
+    const qrCodeBase64 =
+      sale?.payment?.pix?.qrCodeBase64 ||
+      sale?.payment?.pix?.qr_code_base64 ||
+      sale?.payment?.pix?.qrcodeBase64 ||
+      sale?.payment?.pix?.qrCode ||
+      sale?.payment?.pix?.qr_code ||
+      sale?.payment?.pix?.image ||
+      sale?.payment?.pix?.imageBase64 ||
+      sale?.payment?.pix?.image_base64 ||
+      sale?.pix?.qrCodeBase64 ||
+      sale?.pix?.qr_code_base64 ||
+      sale?.pix?.qrCode ||
+      sale?.pix?.qr_code ||
+      sale?.pix?.image ||
+      sale?.qrCodeBase64 ||
+      sale?.qr_code_base64 ||
+      sale?.qrCode ||
+      sale?.qr_code ||
+      null;
+
+    const pixKey =
+      sale?.payment?.pix?.key ||
+      sale?.payment?.pix?.code ||
+      sale?.payment?.pix?.copyPaste ||
+      sale?.payment?.pix?.copy_paste ||
+      sale?.payment?.pix?.copiaECola ||
+      sale?.payment?.pix?.qrCodeText ||
+      sale?.payment?.pix?.qr_code_text ||
+      sale?.payment?.pix?.payload ||
+      sale?.payment?.pix?.brCode ||
+      sale?.payment?.pix?.br_code ||
+      sale?.pix?.key ||
+      sale?.pix?.copyPaste ||
+      sale?.pix?.copy_paste ||
+      sale?.pix?.payload ||
+      sale?.pix?.code ||
+      sale?.pix?.qrCodeText ||
+      sale?.pixCopyPaste ||
+      sale?.pix_copy_paste ||
+      sale?.copyPaste ||
+      sale?.copy_paste ||
+      sale?.payload ||
+      null;
+
+    console.log("[Checkout] QR extraído:", qrCodeBase64 ? `OK (${qrCodeBase64.length} chars)` : "NULL");
+    console.log("[Checkout] Chave extraída:", pixKey ? `OK (${pixKey.length} chars)` : "NULL");
 
     // Salva assinatura no banco
     const { data: sub, error: subError } = await supabase
@@ -174,8 +228,8 @@ export async function POST(req: NextRequest) {
         fee_pct: plan.fee_pct,
         status: "pending",
         gateway_sale_id: String(sale.id),
-        pix_qr_code: sale.payment?.pix?.qrCodeBase64 || null,
-        pix_key: sale.payment?.pix?.key || null,
+        pix_qr_code: qrCodeBase64,
+        pix_key: pixKey,
       })
       .select()
       .single();
@@ -190,8 +244,8 @@ export async function POST(req: NextRequest) {
       demo: false,
       subscription_id: sub.id,
       sale_id: sale.id,
-      qr_code_base64: sale.payment?.pix?.qrCodeBase64,
-      pix_key: sale.payment?.pix?.key,
+      qr_code_base64: qrCodeBase64,
+      pix_key: pixKey,
       amount: amountCents,
       plan_name: plan.name,
     });
