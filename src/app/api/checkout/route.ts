@@ -10,6 +10,23 @@ const PLANS = {
 
 type PlanId = keyof typeof PLANS;
 
+// Valida CPF (algoritmo dos dígitos verificadores)
+function isValidCPF(cpf: string): boolean {
+  cpf = cpf.replace(/\D/g, "");
+  if (cpf.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(cpf)) return false; // todos iguais (111.111.111-11 etc)
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += parseInt(cpf[i]) * (10 - i);
+  let digit = 11 - (sum % 11);
+  if (digit >= 10) digit = 0;
+  if (digit !== parseInt(cpf[9])) return false;
+  sum = 0;
+  for (let i = 0; i < 10; i++) sum += parseInt(cpf[i]) * (11 - i);
+  digit = 11 - (sum % 11);
+  if (digit >= 10) digit = 0;
+  return digit === parseInt(cpf[10]);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -115,21 +132,27 @@ export async function POST(req: NextRequest) {
 
     // Normaliza dados do cliente
     const cleanDoc = (customer_doc || "").replace(/\D/g, "");
-    const cleanPhone = (customer_phone || "11999999999").replace(/\D/g, "");
+    const cleanPhone = (customer_phone || "").replace(/\D/g, "");
 
     // Validação extra dos campos
-    if (cleanDoc.length < 11) {
+    if (cleanDoc.length !== 11) {
       return NextResponse.json({ error: "CPF inválido (precisa ter 11 dígitos)" }, { status: 400 });
     }
-    if (cleanPhone.length < 10) {
-      return NextResponse.json({ error: "Telefone inválido" }, { status: 400 });
+    if (!isValidCPF(cleanDoc)) {
+      return NextResponse.json({ error: "CPF inválido (dígitos verificadores incorretos)" }, { status: 400 });
     }
-    if (!customer_email || !customer_email.includes("@")) {
+    if (cleanPhone.length < 10 || cleanPhone.length > 13) {
+      return NextResponse.json({ error: "Telefone inválido (precisa ter 10 ou 11 dígitos)" }, { status: 400 });
+    }
+    if (!customer_email || !customer_email.includes("@") || customer_email.length < 5) {
       return NextResponse.json({ error: "Email inválido" }, { status: 400 });
     }
     if (!customer_name || customer_name.trim().length < 3) {
       return NextResponse.json({ error: "Nome muito curto" }, { status: 400 });
     }
+
+    // Usa o email real do auth.users (mais confiável que o que veio do front)
+    const realEmail = (user.email || customer_email).trim().toLowerCase();
 
     // Chama ImperiumPay
     const gatewayPayload = {
@@ -137,9 +160,9 @@ export async function POST(req: NextRequest) {
       paymentMethod: "PIX",
       customer: {
         name: customer_name.trim(),
-        email: customer_email.trim().toLowerCase(),
+        email: realEmail,
         document: {
-          type: customer_doc_type || "cpf",
+          type: "cpf",
           number: cleanDoc,
         },
         phone: cleanPhone,
@@ -176,9 +199,17 @@ export async function POST(req: NextRequest) {
 
     if (!gatewayRes.ok) {
       console.error("[Checkout] Gateway retornou erro:", gatewayRes.status, JSON.stringify(gatewayData));
+      console.error("[Checkout] Payload que falhou:", JSON.stringify(gatewayPayload, null, 2));
+      // Mensagem amigável baseada no status do gateway
+      const userMsg = gatewayRes.status === 500
+        ? "O gateway de pagamento está com instabilidade. Tente novamente em alguns segundos."
+        : (gatewayData.message || gatewayData.error || "Erro ao processar pagamento");
       return NextResponse.json({
-        error: gatewayData.message || gatewayData.error || "Erro ao processar pagamento",
-        details: gatewayData,
+        error: userMsg,
+        gateway_status: gatewayRes.status,
+        gateway_message: gatewayData.message,
+        gateway_error: gatewayData.error,
+        gateway_details: gatewayData.details,
       }, { status: 502 });
     }
 
