@@ -138,9 +138,6 @@ export async function POST(req: NextRequest) {
     if (cleanDoc.length !== 11) {
       return NextResponse.json({ error: "CPF inválido (precisa ter 11 dígitos)" }, { status: 400 });
     }
-    if (!isValidCPF(cleanDoc)) {
-      return NextResponse.json({ error: "CPF inválido (dígitos verificadores incorretos)" }, { status: 400 });
-    }
     if (cleanPhone.length < 10 || cleanPhone.length > 13) {
       return NextResponse.json({ error: "Telefone inválido (precisa ter 10 ou 11 dígitos)" }, { status: 400 });
     }
