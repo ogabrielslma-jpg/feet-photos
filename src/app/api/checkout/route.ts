@@ -43,33 +43,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Dados do cliente incompletos" }, { status: 400 });
     }
 
-    // Pega usuário autenticado
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+
+    // OTIMIZAÇÃO: roda auth + cupom em paralelo (economiza ~300ms)
+    const shouldFetchCoupon = !!(coupon_id && coupon_discount_pct && coupon_discount_pct > 0 && coupon_discount_pct <= 80);
+    const [userResult, couponResult] = await Promise.all([
+      supabase.auth.getUser(),
+      shouldFetchCoupon
+        ? supabase
+            .from("coupons")
+            .select("id, discount_pct, status, expires_at, user_id")
+            .eq("id", coupon_id)
+            .eq("status", "active")
+            .gt("expires_at", new Date().toISOString())
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
+
+    const user = userResult.data?.user;
     if (!user) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
-    // Aplica desconto do cupom se fornecido E se o cupom for válido pra esse user
+    // Aplica desconto do cupom se válido pra esse user
     let amountCents = plan.amount_cents;
     let appliedCouponId: string | null = null;
-    if (coupon_id && coupon_discount_pct && coupon_discount_pct > 0 && coupon_discount_pct <= 80) {
-      // Valida que o cupom existe, pertence ao user e está ativo
-      const { data: coupon } = await supabase
-        .from("coupons")
-        .select("id, discount_pct, status, expires_at")
-        .eq("id", coupon_id)
-        .eq("user_id", user.id)
-        .eq("status", "active")
-        .gt("expires_at", new Date().toISOString())
-        .maybeSingle();
-      if (coupon) {
-        amountCents = Math.round(plan.amount_cents * (1 - coupon.discount_pct / 100));
-        appliedCouponId = coupon.id;
-        console.log(`[Checkout] Cupom ${coupon.id} aplicado: ${plan.amount_cents} → ${amountCents} (-${coupon.discount_pct}%)`);
-      } else {
-        console.warn(`[Checkout] Cupom ${coupon_id} inválido ou expirado`);
-      }
+    const coupon = (couponResult as any).data;
+    if (coupon && coupon.user_id === user.id) {
+      amountCents = Math.round(plan.amount_cents * (1 - coupon.discount_pct / 100));
+      appliedCouponId = coupon.id;
+      console.log(`[Checkout] Cupom ${coupon.id} aplicado: ${plan.amount_cents} → ${amountCents} (-${coupon.discount_pct}%)`);
+    } else if (shouldFetchCoupon) {
+      console.warn(`[Checkout] Cupom ${coupon_id} inválido ou não pertence ao user`);
     }
 
     // Lê credenciais do gateway das variáveis de ambiente

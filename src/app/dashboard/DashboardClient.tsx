@@ -441,9 +441,14 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         setTimeout(() => setWithdrawStep("success"), 2000);
       }
     } else if (withdrawStep === "plan") {
-      // Selecionou plano — chama gateway para gerar PIX
+      // OTIMIZAÇÃO: avança IMEDIATAMENTE pro step "pix" e mostra loading inteligente
+      // (sentir que clicou e algo aconteceu, em vez de spinner no botão)
+      setPixQrCode(""); // limpa QR antigo se houver
+      setPixKey("");
       setCreatingPix(true);
       setWithdrawError("");
+      setWithdrawStep("pix"); // já vai pra tela do PIX (mostra skeleton enquanto carrega)
+
       try {
         const res = await fetch("/api/checkout", {
           method: "POST",
@@ -461,6 +466,8 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         });
         const data = await res.json();
         if (!res.ok || !data.success) {
+          // Se deu erro, volta pra tela "plan" e mostra mensagem
+          setWithdrawStep("plan");
           throw new Error(data.error || "Erro ao gerar PIX");
         }
         setPixQrCode(data.qr_code_base64 || "");
@@ -468,7 +475,6 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         setSubscriptionId(data.subscription_id);
         setIsDemoMode(!!data.demo);
         setDemoReason(data.demo_reason || "");
-        setWithdrawStep("pix");
       } catch (e: any) {
         setWithdrawError(e?.message || "Erro ao processar pagamento");
       } finally {
@@ -2976,30 +2982,53 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   <p className="text-[10px] text-gray-600 mt-1">Plano {PLANS_DATA[selectedPlanId]?.name} · 1 ano</p>
                 </div>
 
-                {/* QR Code */}
-                {pixQrCode && (
-                  <div className="bg-white border-2 border-gray-200 rounded-2xl p-4 mb-3 flex justify-center">
-                    <img src={pixQrCode} alt="QR Code PIX" className="w-56 h-56" />
-                  </div>
-                )}
+                {/* QR Code (com skeleton enquanto carrega) */}
+                <div className="bg-white border-2 border-gray-200 rounded-2xl p-4 mb-3 flex justify-center">
+                  {pixQrCode ? (
+                    <img src={pixQrCode} alt="QR Code PIX" className="w-56 h-56 animate-fade-in" />
+                  ) : (
+                    <div className="w-56 h-56 bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 rounded-lg animate-pulse-slow flex flex-col items-center justify-center gap-3">
+                      <div className="w-8 h-8 border-3 border-gray-300 border-t-[#62C86E] rounded-full animate-spin"></div>
+                      <p className="text-[11px] text-gray-500 font-semibold">Gerando QR Code...</p>
+                    </div>
+                  )}
+                </div>
 
-                {/* Chave copia-e-cola */}
+                {/* Chave copia-e-cola (com skeleton enquanto carrega) */}
                 <div className="mb-4">
                   <label className="block text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1.5">PIX Copia e Cola</label>
                   <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
-                    <p className="text-[10px] text-gray-700 font-mono break-all leading-relaxed">{pixKey}</p>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(pixKey);
-                        setPixCopied(true);
-                        setTimeout(() => setPixCopied(false), 2000);
-                      }}
-                      className={`w-full mt-2 py-2 rounded-lg text-xs font-bold transition ${
-                        pixCopied ? "bg-emerald-500 text-white" : "bg-gray-900 text-white hover:bg-black"
-                      }`}
-                    >
-                      {pixCopied ? "✓ Copiado!" : "Copiar código"}
-                    </button>
+                    {pixKey ? (
+                      <>
+                        <p className="text-[10px] text-gray-700 font-mono break-all leading-relaxed animate-fade-in">{pixKey}</p>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(pixKey);
+                            setPixCopied(true);
+                            setTimeout(() => setPixCopied(false), 2000);
+                          }}
+                          className={`w-full mt-2 py-2 rounded-lg text-xs font-bold transition ${
+                            pixCopied ? "bg-emerald-500 text-white" : "bg-gray-900 text-white hover:bg-black"
+                          }`}
+                        >
+                          {pixCopied ? "✓ Copiado!" : "Copiar código"}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="space-y-1.5">
+                          <div className="h-2 bg-gray-200 rounded animate-pulse-slow w-full"></div>
+                          <div className="h-2 bg-gray-200 rounded animate-pulse-slow w-11/12"></div>
+                          <div className="h-2 bg-gray-200 rounded animate-pulse-slow w-4/5"></div>
+                        </div>
+                        <button
+                          disabled
+                          className="w-full mt-2 py-2 rounded-lg text-xs font-bold bg-gray-300 text-gray-500 cursor-wait"
+                        >
+                          Aguarde...
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
 
