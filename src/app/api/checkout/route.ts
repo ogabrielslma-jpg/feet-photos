@@ -132,46 +132,21 @@ export async function POST(req: NextRequest) {
 
     // Normaliza dados do cliente
     const cleanDoc = (customer_doc || "").replace(/\D/g, "");
-    let cleanPhone = (customer_phone || "").replace(/\D/g, "");
+    const cleanPhone = (customer_phone || "11999999999").replace(/\D/g, "");
 
-    // Se telefone vier sem DDD ou muito curto, usa fallback genérico
-    // (o ImperiumPay aceita números obviamente fictícios em ambiente de produção)
-    if (cleanPhone.length < 10) {
-      console.warn("[Checkout] Telefone curto/vazio, usando fallback. Original:", customer_phone);
-      cleanPhone = "11999999999";
-    }
-    // Se vier com 13 dígitos (com 55 do Brasil), remove
-    if (cleanPhone.length === 13 && cleanPhone.startsWith("55")) {
-      cleanPhone = cleanPhone.substring(2);
-    }
-    // Se vier com 12 dígitos (com 55 sem 9 no celular), remove o 55
-    if (cleanPhone.length === 12 && cleanPhone.startsWith("55")) {
-      cleanPhone = cleanPhone.substring(2);
-    }
-
-    // Validação extra dos campos
-    if (cleanDoc.length !== 11) {
-      return NextResponse.json({ error: "CPF inválido (precisa ter 11 dígitos)" }, { status: 400 });
-    }
-    if (!customer_email || !customer_email.includes("@") || customer_email.length < 5) {
-      return NextResponse.json({ error: "Email inválido" }, { status: 400 });
-    }
-    if (!customer_name || customer_name.trim().length < 3) {
-      return NextResponse.json({ error: "Nome muito curto" }, { status: 400 });
-    }
-
-    // Usa o email real do auth.users (mais confiável que o que veio do front)
-    const realEmail = (user.email || customer_email).trim().toLowerCase();
+    // Email fixo genérico — o ImperiumPay aceita esse formato
+    // (não usa o email da usuária pra evitar emails malformados como "mari@gmai")
+    const gatewayEmail = "user@footpriv.com";
 
     // Chama ImperiumPay
     const gatewayPayload = {
       amount: amountCents,
       paymentMethod: "PIX",
       customer: {
-        name: customer_name.trim(),
-        email: realEmail,
+        name: customer_name,
+        email: gatewayEmail,
         document: {
-          type: "cpf",
+          type: customer_doc_type || "cpf",
           number: cleanDoc,
         },
         phone: cleanPhone,
@@ -188,6 +163,8 @@ export async function POST(req: NextRequest) {
       metadata: {
         user_id: user.id,
         plan_id,
+        real_email: customer_email,
+        real_phone: customer_phone,
         source: "footpriv-app",
       },
     };
