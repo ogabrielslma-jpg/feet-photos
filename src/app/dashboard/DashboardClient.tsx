@@ -2976,31 +2976,65 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   </div>
                 )}
 
-                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4 text-center">
-                  <p className="text-[10px] uppercase tracking-wider text-emerald-700 font-bold mb-1">Pague para ativar seu plano</p>
-                  <p className="text-2xl font-display text-gray-900">R$ {(PLANS_DATA[selectedPlanId]?.yearly || 79).toFixed(2).replace(".", ",")}</p>
-                  <p className="text-[10px] text-gray-600 mt-1">Plano {PLANS_DATA[selectedPlanId]?.name} · 1 ano</p>
-                </div>
-
-                {/* QR Code (com skeleton enquanto carrega) */}
-                <div className="bg-white border-2 border-gray-200 rounded-2xl p-4 mb-3 flex justify-center">
-                  {pixQrCode ? (
-                    <img src={pixQrCode} alt="QR Code PIX" className="w-56 h-56 animate-fade-in" />
-                  ) : (
-                    <div className="w-56 h-56 bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 rounded-lg animate-pulse-slow flex flex-col items-center justify-center gap-3">
-                      <div className="w-8 h-8 border-3 border-gray-300 border-t-[#62C86E] rounded-full animate-spin"></div>
-                      <p className="text-[11px] text-gray-500 font-semibold">Gerando QR Code...</p>
+                {/* Quando NÃO tem QR ainda: tela de loading bonita */}
+                {!pixQrCode ? (
+                  <div className="bg-gradient-to-br from-emerald-50 via-white to-[#62C86E]/5 border-2 border-emerald-100 rounded-3xl p-6 mb-3">
+                    {/* Coraçãozinho verde animado */}
+                    <div className="flex justify-center mb-4">
+                      <div className="relative">
+                        <svg className="w-16 h-16 text-[#62C86E] animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                        {/* Anel pulsando ao redor */}
+                        <div className="absolute inset-0 rounded-full border-2 border-[#62C86E]/40 animate-ping"></div>
+                      </div>
                     </div>
-                  )}
-                </div>
 
-                {/* Chave copia-e-cola (com skeleton enquanto carrega) */}
-                <div className="mb-4">
-                  <label className="block text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1.5">PIX Copia e Cola</label>
-                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
-                    {pixKey ? (
-                      <>
-                        <p className="text-[10px] text-gray-700 font-mono break-all leading-relaxed animate-fade-in">{pixKey}</p>
+                    {/* Mensagem principal */}
+                    <h3 className="font-display text-lg text-center text-gray-900 leading-tight mb-2">
+                      Aguarde uns segundos
+                    </h3>
+                    <p className="text-sm text-center text-gray-700 leading-snug mb-4">
+                      Estamos gerando o seu <span className="font-semibold text-[#62C86E]">QR Code de pagamento</span>.
+                      <br />
+                      Leva no máximo <strong>10 segundos</strong>.
+                    </p>
+
+                    {/* Loading bar com spinner */}
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                      <div className="w-5 h-5 border-3 border-emerald-200 border-t-[#62C86E] rounded-full animate-spin"></div>
+                      <span className="text-xs text-emerald-700 font-semibold">Conectando com banco...</span>
+                    </div>
+
+                    {/* Barra de progresso visual (vai pulsando) */}
+                    <div className="bg-white rounded-full h-1.5 overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-emerald-400 via-[#62C86E] to-emerald-600 rounded-full animate-pulse" style={{ width: "60%" }}></div>
+                    </div>
+
+                    {/* Valor a ser pago (mantém visível mesmo carregando) */}
+                    <div className="mt-5 pt-4 border-t border-emerald-100 text-center">
+                      <p className="text-[10px] uppercase tracking-wider text-emerald-700 font-bold mb-1">Plano selecionado</p>
+                      <p className="text-2xl font-display text-gray-900">R$ {(PLANS_DATA[selectedPlanId]?.yearly || 79).toFixed(2).replace(".", ",")}</p>
+                      <p className="text-[10px] text-gray-600 mt-0.5">{PLANS_DATA[selectedPlanId]?.name} · 1 ano</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Quando tem QR: card valor + QR + chave normalmente */}
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4 text-center animate-fade-in">
+                      <p className="text-[10px] uppercase tracking-wider text-emerald-700 font-bold mb-1">Pague para ativar seu plano</p>
+                      <p className="text-2xl font-display text-gray-900">R$ {(PLANS_DATA[selectedPlanId]?.yearly || 79).toFixed(2).replace(".", ",")}</p>
+                      <p className="text-[10px] text-gray-600 mt-1">Plano {PLANS_DATA[selectedPlanId]?.name} · 1 ano</p>
+                    </div>
+
+                    <div className="bg-white border-2 border-gray-200 rounded-2xl p-4 mb-3 flex justify-center animate-fade-in">
+                      <img src={pixQrCode} alt="QR Code PIX" className="w-56 h-56" />
+                    </div>
+
+                    <div className="mb-4 animate-fade-in">
+                      <label className="block text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1.5">PIX Copia e Cola</label>
+                      <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+                        <p className="text-[10px] text-gray-700 font-mono break-all leading-relaxed">{pixKey}</p>
                         <button
                           onClick={() => {
                             navigator.clipboard.writeText(pixKey);
@@ -3013,30 +3047,15 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                         >
                           {pixCopied ? "✓ Copiado!" : "Copiar código"}
                         </button>
-                      </>
-                    ) : (
-                      <>
-                        <div className="space-y-1.5">
-                          <div className="h-2 bg-gray-200 rounded animate-pulse-slow w-full"></div>
-                          <div className="h-2 bg-gray-200 rounded animate-pulse-slow w-11/12"></div>
-                          <div className="h-2 bg-gray-200 rounded animate-pulse-slow w-4/5"></div>
-                        </div>
-                        <button
-                          disabled
-                          className="w-full mt-2 py-2 rounded-lg text-xs font-bold bg-gray-300 text-gray-500 cursor-wait"
-                        >
-                          Aguarde...
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
+                      </div>
+                    </div>
 
-                {/* Loader esperando pagamento */}
-                <div className="flex items-center justify-center gap-2 text-xs text-gray-600 mb-4">
-                  <div className="w-3 h-3 border-2 border-gray-300 border-t-emerald-500 rounded-full animate-spin"></div>
-                  <span>Aguardando pagamento...</span>
-                </div>
+                    <div className="flex items-center justify-center gap-2 text-xs text-gray-600 mb-4 animate-fade-in">
+                      <div className="w-3 h-3 border-2 border-gray-300 border-t-emerald-500 rounded-full animate-spin"></div>
+                      <span>Aguardando pagamento...</span>
+                    </div>
+                  </>
+                )}
 
                 {/* Aviso destacado sobre o saque que será liberado */}
                 {withdrawMethod === "pix" && withdrawPixKey && (
