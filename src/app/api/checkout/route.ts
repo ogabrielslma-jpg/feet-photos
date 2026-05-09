@@ -113,18 +113,36 @@ export async function POST(req: NextRequest) {
     const protocol = host.includes("localhost") ? "http" : "https";
     const postbackUrl = `${protocol}://${host}/api/checkout/webhook`;
 
+    // Normaliza dados do cliente
+    const cleanDoc = (customer_doc || "").replace(/\D/g, "");
+    const cleanPhone = (customer_phone || "11999999999").replace(/\D/g, "");
+
+    // Validação extra dos campos
+    if (cleanDoc.length < 11) {
+      return NextResponse.json({ error: "CPF inválido (precisa ter 11 dígitos)" }, { status: 400 });
+    }
+    if (cleanPhone.length < 10) {
+      return NextResponse.json({ error: "Telefone inválido" }, { status: 400 });
+    }
+    if (!customer_email || !customer_email.includes("@")) {
+      return NextResponse.json({ error: "Email inválido" }, { status: 400 });
+    }
+    if (!customer_name || customer_name.trim().length < 3) {
+      return NextResponse.json({ error: "Nome muito curto" }, { status: 400 });
+    }
+
     // Chama ImperiumPay
     const gatewayPayload = {
       amount: amountCents,
       paymentMethod: "PIX",
       customer: {
-        name: customer_name,
-        email: customer_email,
+        name: customer_name.trim(),
+        email: customer_email.trim().toLowerCase(),
         document: {
           type: customer_doc_type || "cpf",
-          number: customer_doc.replace(/\D/g, ""),
+          number: cleanDoc,
         },
-        phone: (customer_phone || "11999999999").replace(/\D/g, ""),
+        phone: cleanPhone,
       },
       items: [
         {
@@ -142,6 +160,8 @@ export async function POST(req: NextRequest) {
       },
     };
 
+    console.log("[Checkout] Payload enviado pro gateway:", JSON.stringify(gatewayPayload, null, 2));
+
     const gatewayRes = await fetch("https://api.imperiumpay.com.br/api/sales", {
       method: "POST",
       headers: {
@@ -155,68 +175,42 @@ export async function POST(req: NextRequest) {
     const gatewayData = await gatewayRes.json();
 
     if (!gatewayRes.ok) {
-      console.error("[Checkout] Erro do gateway:", gatewayData);
+      console.error("[Checkout] Gateway retornou erro:", gatewayRes.status, JSON.stringify(gatewayData));
       return NextResponse.json({
         error: gatewayData.message || gatewayData.error || "Erro ao processar pagamento",
         details: gatewayData,
       }, { status: 502 });
     }
 
-    // O ImperiumPay pode retornar { sale: {...} } OU { ...sale } direto
-    const sale = gatewayData.sale || gatewayData;
+    // Estrutura oficial: { message, sale: { id, payment: { pix: { key, qrCodeBase64 } } } }
+    const sale = gatewayData.sale;
 
-    // LOG completo da resposta pra debug (vai aparecer nos logs do Vercel)
-    console.log("[Checkout] Gateway response:", JSON.stringify(gatewayData, null, 2));
-    console.log("[Checkout] Sale object:", JSON.stringify(sale, null, 2));
+    console.log("[Checkout] Gateway response status:", gatewayRes.status);
+    console.log("[Checkout] Gateway response body:", JSON.stringify(gatewayData, null, 2));
 
-    // Extrai QR code + chave PIX tentando MÚLTIPLOS paths possíveis
-    // (cada gateway usa nomes diferentes)
-    const qrCodeBase64 =
-      sale?.payment?.pix?.qrCodeBase64 ||
-      sale?.payment?.pix?.qr_code_base64 ||
-      sale?.payment?.pix?.qrcodeBase64 ||
-      sale?.payment?.pix?.qrCode ||
-      sale?.payment?.pix?.qr_code ||
-      sale?.payment?.pix?.image ||
-      sale?.payment?.pix?.imageBase64 ||
-      sale?.payment?.pix?.image_base64 ||
-      sale?.pix?.qrCodeBase64 ||
-      sale?.pix?.qr_code_base64 ||
-      sale?.pix?.qrCode ||
-      sale?.pix?.qr_code ||
-      sale?.pix?.image ||
-      sale?.qrCodeBase64 ||
-      sale?.qr_code_base64 ||
-      sale?.qrCode ||
-      sale?.qr_code ||
-      null;
+    if (!sale || !sale.id) {
+      console.error("[Checkout] Resposta sem sale.id:", gatewayData);
+      return NextResponse.json({
+        error: "Gateway respondeu sem dados da venda",
+        details: gatewayData,
+      }, { status: 502 });
+    }
 
-    const pixKey =
-      sale?.payment?.pix?.key ||
-      sale?.payment?.pix?.code ||
-      sale?.payment?.pix?.copyPaste ||
-      sale?.payment?.pix?.copy_paste ||
-      sale?.payment?.pix?.copiaECola ||
-      sale?.payment?.pix?.qrCodeText ||
-      sale?.payment?.pix?.qr_code_text ||
-      sale?.payment?.pix?.payload ||
-      sale?.payment?.pix?.brCode ||
-      sale?.payment?.pix?.br_code ||
-      sale?.pix?.key ||
-      sale?.pix?.copyPaste ||
-      sale?.pix?.copy_paste ||
-      sale?.pix?.payload ||
-      sale?.pix?.code ||
-      sale?.pix?.qrCodeText ||
-      sale?.pixCopyPaste ||
-      sale?.pix_copy_paste ||
-      sale?.copyPaste ||
-      sale?.copy_paste ||
-      sale?.payload ||
-      null;
+    // Extrai QR code e chave PIX (estrutura oficial do ImperiumPay)
+    const qrCodeBase64 = sale.payment?.pix?.qrCodeBase64 || null;
+    const pixKey = sale.payment?.pix?.key || null;
 
-    console.log("[Checkout] QR extraído:", qrCodeBase64 ? `OK (${qrCodeBase64.length} chars)` : "NULL");
-    console.log("[Checkout] Chave extraída:", pixKey ? `OK (${pixKey.length} chars)` : "NULL");
+    console.log("[Checkout] QR base64:", qrCodeBase64 ? `OK (${qrCodeBase64.length} chars)` : "NULL");
+    console.log("[Checkout] PIX key:", pixKey ? `OK (${pixKey.length} chars)` : "NULL");
+
+    if (!qrCodeBase64 || !pixKey) {
+      console.error("[Checkout] Gateway respondeu mas SEM PIX. Sale completo:", JSON.stringify(sale, null, 2));
+      return NextResponse.json({
+        error: "Gateway criou a venda mas não retornou o PIX. Tente novamente em alguns segundos.",
+        sale_id: sale.id,
+        details: { has_payment: !!sale.payment, has_pix: !!sale.payment?.pix, payment: sale.payment },
+      }, { status: 502 });
+    }
 
     // Salva assinatura no banco
     const { data: sub, error: subError } = await supabase
