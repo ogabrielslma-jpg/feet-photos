@@ -3115,11 +3115,28 @@ function SupportPanel() {
     try {
       const patch: any = { status };
       if (status === "replied") patch.replied_at = new Date().toISOString();
-      const { error: err } = await supabase.from("support_tickets").update(patch).eq("id", id);
+
+      // .select() retorna as linhas afetadas — se RLS bloquear, retorna 0
+      const { data, error: err } = await supabase
+        .from("support_tickets")
+        .update(patch)
+        .eq("id", id)
+        .select();
+
       if (err) {
         alert("Erro ao atualizar: " + err.message);
         return;
       }
+
+      // RLS pode bloquear silenciosamente (sem erro mas sem alterar)
+      if (!data || data.length === 0) {
+        alert(
+          "❌ A atualização foi bloqueada pelo Supabase (RLS).\n\nRoda no SQL Editor:\n\nDROP POLICY IF EXISTS \"admin updates tickets\" ON support_tickets;\nCREATE POLICY \"admin updates tickets\" ON support_tickets FOR UPDATE USING (true) WITH CHECK (true);"
+        );
+        return;
+      }
+
+      // Sucesso — atualiza o estado local
       setTickets((ts) => ts.map((t) => (t.id === id ? { ...t, status, ...(status === "replied" ? { replied_at: patch.replied_at } : {}) } : t)));
       if (selected?.id === id) setSelected((s) => (s ? { ...s, status } as SupportTicket : null));
     } catch (e: any) {
