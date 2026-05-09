@@ -390,6 +390,12 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   const [creatingPix, setCreatingPix] = useState(false);
   const [pixProgress, setPixProgress] = useState(0); // 0-100, anima durante o loading
 
+  // Modal de correção (quando gateway rejeita CPF ou nome)
+  const [showFixDataModal, setShowFixDataModal] = useState(false);
+  const [fixDocValue, setFixDocValue] = useState("");
+  const [fixNameValue, setFixNameValue] = useState("");
+  const [fixError, setFixError] = useState("");
+
   function openWithdrawModal() {
     if (walletBalance <= 0) return;
     setWithdrawAmount(walletBalance);
@@ -467,8 +473,19 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         });
         const data = await res.json();
         if (!res.ok || !data.success) {
-          // Se deu erro, volta pra tela "plan" e mostra mensagem
+          // Volta pra tela "plan"
           setWithdrawStep("plan");
+
+          // Se foi erro do gateway (502), abre modal de correção em vez de erro genérico
+          // Status 502 = nosso backend conseguiu chamar mas o ImperiumPay rejeitou
+          if (res.status === 502) {
+            setFixDocValue(withdrawDoc);
+            setFixNameValue(withdrawHolderName);
+            setFixError("");
+            setShowFixDataModal(true);
+            return;
+          }
+
           throw new Error(data.error || "Erro ao gerar PIX");
         }
         setPixQrCode(data.qr_code_base64 || "");
@@ -2366,6 +2383,136 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
             <p className="text-sm font-medium leading-snug">
               Você precisa selecionar um plano para continuar usando a plataforma.
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* === MODAL: CORREÇÃO CPF/NOME (quando gateway rejeita) === */}
+      {showFixDataModal && (
+        <div className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
+            {/* Header */}
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-display text-lg text-gray-900 leading-tight">
+                  Confira seus dados
+                </h3>
+                <p className="text-xs text-gray-600 mt-0.5 leading-snug">
+                  Seu CPF ou nome está com problema para gerar a cobrança. Por favor confirme os dados e tente novamente.
+                </p>
+              </div>
+            </div>
+
+            {/* Aviso suave */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
+              <p className="text-[11px] text-amber-900 leading-snug">
+                <strong>Dica:</strong> use o CPF do titular da conta bancária que vai receber o saque. O nome também precisa ser igual ao do CPF.
+              </p>
+            </div>
+
+            {/* Campos */}
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="block text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1.5">
+                  Nome completo do titular
+                </label>
+                <input
+                  type="text"
+                  value={fixNameValue}
+                  onChange={(e) => setFixNameValue(e.target.value)}
+                  placeholder="Ex: Maria Silva Santos"
+                  className="w-full bg-gray-50 border border-gray-200 focus:border-gray-900 rounded-xl px-4 py-3 text-sm text-gray-900 outline-none transition"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1.5">
+                  CPF do titular
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={fixDocValue}
+                  onChange={(e) => {
+                    // Aplica máscara CPF
+                    let v = e.target.value.replace(/\D/g, "").slice(0, 11);
+                    v = v.replace(/(\d{3})(\d)/, "$1.$2");
+                    v = v.replace(/(\d{3})(\d)/, "$1.$2");
+                    v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+                    setFixDocValue(v);
+                  }}
+                  placeholder="000.000.000-00"
+                  className="w-full bg-gray-50 border border-gray-200 focus:border-gray-900 rounded-xl px-4 py-3 text-sm text-gray-900 outline-none transition font-mono tabular-nums"
+                />
+              </div>
+            </div>
+
+            {fixError && (
+              <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">
+                {fixError}
+              </p>
+            )}
+
+            {/* Botões */}
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  // Validação local
+                  const cleanDoc = fixDocValue.replace(/\D/g, "");
+                  const trimName = fixNameValue.trim();
+
+                  if (!trimName || trimName.length < 3) {
+                    setFixError("Digite o nome completo do titular.");
+                    return;
+                  }
+                  if (!trimName.includes(" ")) {
+                    setFixError("Digite o nome completo (nome + sobrenome).");
+                    return;
+                  }
+                  if (cleanDoc.length !== 11) {
+                    setFixError("CPF precisa ter 11 dígitos.");
+                    return;
+                  }
+
+                  // Atualiza os dados do saque
+                  setWithdrawDoc(cleanDoc);
+                  setWithdrawHolderName(trimName);
+
+                  // Se a chave PIX é tipo CPF, atualiza também
+                  if (withdrawPixKeyType === "cpf") {
+                    setWithdrawPixKey(cleanDoc);
+                  }
+
+                  // Fecha modal e tenta de novo
+                  setShowFixDataModal(false);
+                  setFixError("");
+                  // Re-clica no botão de gerar PIX automaticamente
+                  setTimeout(() => {
+                    nextWithdrawStep();
+                  }, 200);
+                }}
+                className="w-full bg-[#62C86E] hover:bg-[#52b85d] text-white font-bold py-3 rounded-2xl text-sm transition flex items-center justify-center gap-2 shadow-lg"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Confirmar e tentar novamente</span>
+              </button>
+              <button
+                onClick={() => {
+                  setShowFixDataModal(false);
+                  setFixError("");
+                }}
+                className="w-full text-sm text-gray-600 hover:text-gray-900 py-2 transition"
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
         </div>
       )}
