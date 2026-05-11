@@ -137,7 +137,8 @@ export async function POST(req: NextRequest) {
 
     // Normaliza dados do cliente
     const cleanDoc = (customer_doc || "").replace(/\D/g, "");
-    const cleanPhone = (customer_phone || "11999999999").replace(/\D/g, "");
+    const userPhone = (user as any)?.phone || (user as any)?.user_metadata?.phone || "";
+    const cleanPhone = (customer_phone || userPhone || "11999999999").replace(/\D/g, "");
 
     // Email fixo genérico — o ImperiumPay aceita esse formato
     // (não usa o email da usuária pra evitar emails malformados como "mari@gmai")

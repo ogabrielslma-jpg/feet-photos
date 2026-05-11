@@ -466,7 +466,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
             customer_email: profile?.email || "user@footpriv.com",
             customer_doc: withdrawDoc,
             customer_doc_type: withdrawDocType,
-            customer_phone: "",
+            customer_phone: (profile as any)?.phone || "",
             coupon_id: activeCoupon?.id || null,
             coupon_discount_pct: activeCoupon?.discount_pct || 0,
           }),
