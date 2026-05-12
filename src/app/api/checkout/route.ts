@@ -65,6 +65,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
+    // ANTI-DUPLICACAO: se ja existe PIX pendente do mesmo plano nos ultimos 8min, reutiliza
+    // Evita gerar PIX novo a cada clique/refresh, mantendo a recuperacao de vendas limpa
+    const eightMinutesAgo = new Date(Date.now() - 8 * 60 * 1000).toISOString();
+    const { data: existingSub } = await supabase
+      .from("subscriptions")
+      .select("id, gateway_sale_id, pix_qr_code, pix_key, amount_cents, plan_id, created_at")
+      .eq("user_id", user.id)
+      .eq("plan_id", plan_id)
+      .eq("status", "pending")
+      .gte("created_at", eightMinutesAgo)
+      .not("pix_qr_code", "is", null)
+      .not("pix_key", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingSub && existingSub.pix_qr_code && existingSub.pix_key) {
+      console.log(`[Checkout] Reutilizando PIX pendente ${existingSub.gateway_sale_id} (criado em ${existingSub.created_at})`);
+      return NextResponse.json({
+        success: true,
+        reused: true,
+        subscription_id: existingSub.id,
+        sale_id: existingSub.gateway_sale_id,
+        qr_code_base64: existingSub.pix_qr_code,
+        pix_key: existingSub.pix_key,
+        amount: existingSub.amount_cents,
+        plan_name: PLANS[plan_id as PlanId].name,
+      });
+    }
+
     // Aplica desconto do cupom se válido pra esse user
     let amountCents = plan.amount_cents;
     let appliedCouponId: string | null = null;
