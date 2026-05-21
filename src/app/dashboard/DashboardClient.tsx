@@ -913,7 +913,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
             const planAmount = PLANS_DATA[selectedPlanId]?.yearly || 0;
             if (typeof window !== "undefined" && (window as any).gtag) {
               (window as any).gtag("event", "conversion", {
-                send_to: "AW-17953773434/6S-OCOvN0KccEPqug_FC",
+                send_to: "AW-18099571537/Ri1lCLGj-rAcENGWxrZD",
                 transaction_id: subscriptionId,
                 value: planAmount,
                 currency: "BRL",
