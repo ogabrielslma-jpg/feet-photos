@@ -168,7 +168,16 @@ export async function POST(req: NextRequest) {
     // Normaliza dados do cliente
     const cleanDoc = (customer_doc || "").replace(/\D/g, "");
     const userPhone = (user as any)?.phone || (user as any)?.user_metadata?.phone || "";
-    const cleanPhone = (customer_phone || userPhone || "11999999999").replace(/\D/g, "");
+    let cleanPhone = (customer_phone || userPhone || "11999999999").replace(/\D/g, "");
+    // Remove codigo do pais (+55) se presente — gateway espera apenas DDD + numero (10 ou 11 digitos)
+    if (cleanPhone.length > 11 && cleanPhone.startsWith("55")) {
+      cleanPhone = cleanPhone.substring(2);
+    }
+    // Se ainda estiver com tamanho invalido, usa fallback
+    if (cleanPhone.length < 10 || cleanPhone.length > 11) {
+      console.warn(`[Checkout] Telefone com tamanho invalido (${cleanPhone.length} digitos): ${cleanPhone}. Usando fallback.`);
+      cleanPhone = "11999999999";
+    }
 
     // Email real da usuaria (validacao basica de formato)
     // Se vier malformado, cai no fallback pra nao quebrar o gateway
