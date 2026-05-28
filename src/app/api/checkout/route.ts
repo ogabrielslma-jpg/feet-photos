@@ -180,9 +180,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Email real da usuaria (validacao basica de formato)
-    // Se vier malformado, cai no fallback pra nao quebrar o gateway
+    // 1) tenta o customer_email do front, 2) busca em user.email do Supabase Auth, 3) fallback
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const emailCandidate = (customer_email || "").trim().toLowerCase();
+    const userEmail = (user as any)?.email || "";
+    const emailCandidate = ((customer_email || userEmail || "")).trim().toLowerCase();
     const gatewayEmail = emailRegex.test(emailCandidate) ? emailCandidate : "user@footpriv.com";
 
     // Chama ImperiumPay

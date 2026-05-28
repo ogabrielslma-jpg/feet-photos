@@ -463,7 +463,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
           body: JSON.stringify({
             plan_id: selectedPlanId,
             customer_name: withdrawHolderName,
-            customer_email: profile?.email || "user@footpriv.com",
+            customer_email: user?.email || profile?.email || "user@footpriv.com",
             customer_doc: withdrawDoc,
             customer_doc_type: withdrawDocType,
             customer_phone: (profile as any)?.phone || "",
