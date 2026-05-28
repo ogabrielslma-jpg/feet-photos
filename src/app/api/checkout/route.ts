@@ -170,9 +170,11 @@ export async function POST(req: NextRequest) {
     const userPhone = (user as any)?.phone || (user as any)?.user_metadata?.phone || "";
     const cleanPhone = (customer_phone || userPhone || "11999999999").replace(/\D/g, "");
 
-    // Email fixo genérico — o ImperiumPay aceita esse formato
-    // (não usa o email da usuária pra evitar emails malformados como "mari@gmai")
-    const gatewayEmail = "user@footpriv.com";
+    // Email real da usuaria (validacao basica de formato)
+    // Se vier malformado, cai no fallback pra nao quebrar o gateway
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailCandidate = (customer_email || "").trim().toLowerCase();
+    const gatewayEmail = emailRegex.test(emailCandidate) ? emailCandidate : "user@footpriv.com";
 
     // Chama ImperiumPay
     const gatewayPayload = {
