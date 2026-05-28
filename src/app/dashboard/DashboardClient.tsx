@@ -390,6 +390,13 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [demoReason, setDemoReason] = useState<string>("");
   const [creatingPix, setCreatingPix] = useState(false);
+  // Falha de webhook: timer + painel de comprovante
+  const [showWebhookHelp, setShowWebhookHelp] = useState(false); // mostra o link "pagou e nao atualizou?"
+  const [webhookHelpPanel, setWebhookHelpPanel] = useState(false); // abre o painel com as 2 opcoes
+  const [proofStep, setProofStep] = useState<"ask" | "upload" | "sent">("ask");
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofUploading, setProofUploading] = useState(false);
+  const [proofError, setProofError] = useState("");
   const [pixProgress, setPixProgress] = useState(0); // 0-100, anima durante o loading
 
   // Modal de correção (quando gateway rejeita CPF ou nome)
@@ -940,6 +947,77 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     }, 3000); // checa a cada 3s
     return () => clearInterval(interval);
   }, [withdrawStep, subscriptionId]);
+
+  // ============ TIMER FALHA DE WEBHOOK (60s) ============
+  // Quando o PIX esta na tela, espera 60s. Se ainda nao pagou, mostra o link de ajuda.
+  useEffect(() => {
+    if (withdrawStep === "pix" && pixQrCode) {
+      setShowWebhookHelp(false);
+      const t = setTimeout(() => setShowWebhookHelp(true), 60000); // 60 segundos
+      return () => clearTimeout(t);
+    } else {
+      // saiu da tela do pix: reseta tudo
+      setShowWebhookHelp(false);
+      setWebhookHelpPanel(false);
+      setProofStep("ask");
+      setProofFile(null);
+      setProofError("");
+    }
+  }, [withdrawStep, pixQrCode]);
+
+  // ============ ENVIO DO COMPROVANTE (falha de webhook) ============
+  async function submitPaymentProof() {
+    if (!proofFile) {
+      setProofError("Selecione o comprovante primeiro.");
+      return;
+    }
+    setProofUploading(true);
+    setProofError("");
+    try {
+      if (!profile?.id) {
+        setProofError("Sessao expirada. Recarregue a pagina.");
+        setProofUploading(false);
+        return;
+      }
+      // Upload no storage: pasta = user_id (regra de RLS)
+      const ext = proofFile.name.split(".").pop() || "jpg";
+      const fileName = `${profile.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("payment-proofs")
+        .upload(fileName, proofFile, { cacheControl: "3600", upsert: false });
+      if (upErr) {
+        console.error("[Proof] upload erro:", upErr);
+        setProofError("Falha ao enviar o arquivo. Tente novamente.");
+        setProofUploading(false);
+        return;
+      }
+      // Cria registro em payment_proofs
+      const { error: insErr } = await supabase.from("payment_proofs").insert({
+        user_id: profile.id,
+        subscription_id: subscriptionId || null,
+        gateway_sale_id: null,
+        plan_id: selectedPlanId,
+        amount_cents: PLANS_DATA[selectedPlanId]?.yearly ? Math.round(PLANS_DATA[selectedPlanId].yearly * 100) : null,
+        proof_url: fileName,
+        customer_name: withdrawHolderName || null,
+        customer_email: withdrawEmail || user?.email || profile?.email || null,
+        customer_phone: withdrawPhone || (profile as any)?.phone || null,
+        status: "pending",
+      });
+      if (insErr) {
+        console.error("[Proof] insert erro:", insErr);
+        setProofError("Comprovante enviado mas falhou ao registrar. Fale com o suporte.");
+        setProofUploading(false);
+        return;
+      }
+      setProofStep("sent");
+    } catch (e: any) {
+      console.error("[Proof] erro geral:", e);
+      setProofError("Erro inesperado. Tente novamente.");
+    } finally {
+      setProofUploading(false);
+    }
+  }
 
   // ============ AUTO-SAVE DO ESTADO ============
   // Persiste no banco (Supabase) sempre que algo importante muda.
@@ -3280,6 +3358,96 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                       <div className="w-3 h-3 border-2 border-gray-300 border-t-emerald-500 rounded-full animate-spin"></div>
                       <span>Aguardando pagamento...</span>
                     </div>
+
+                    {/* === FALHA DE WEBHOOK: link de ajuda apos 60s === */}
+                    {showWebhookHelp && !webhookHelpPanel && (
+                      <button
+                        onClick={() => { setWebhookHelpPanel(true); setProofStep("ask"); }}
+                        className="w-full text-center text-xs text-emerald-700 underline font-semibold mb-4 hover:text-emerald-900 transition animate-fade-in"
+                      >
+                        Realizou o pagamento e a tela não atualizou? Clique aqui
+                      </button>
+                    )}
+
+                    {/* === PAINEL DE COMPROVANTE === */}
+                    {webhookHelpPanel && (
+                      <div className="bg-white border-2 border-emerald-200 rounded-2xl p-4 mb-4 animate-fade-in">
+                        {proofStep === "ask" && (
+                          <>
+                            <p className="text-sm font-bold text-gray-900 mb-1">Você já realizou o pagamento?</p>
+                            <p className="text-xs text-gray-600 mb-4 leading-snug">
+                              Às vezes a confirmação leva alguns minutos. Se você já pagou, envie o comprovante para liberarmos manualmente.
+                            </p>
+                            <div className="space-y-2">
+                              <button
+                                onClick={() => setProofStep("upload")}
+                                className="w-full bg-[#62C86E] hover:bg-[#52b85d] text-white font-bold py-3 rounded-xl text-sm transition"
+                              >
+                                Sim, já paguei — enviar comprovante
+                              </button>
+                              <button
+                                onClick={() => { setWebhookHelpPanel(false); setShowWebhookHelp(false); }}
+                                className="w-full text-sm text-gray-600 hover:text-gray-900 py-2 transition"
+                              >
+                                Ainda não paguei — voltar ao PIX
+                              </button>
+                            </div>
+                          </>
+                        )}
+
+                        {proofStep === "upload" && (
+                          <>
+                            <p className="text-sm font-bold text-gray-900 mb-1">Envie o comprovante</p>
+                            <p className="text-xs text-gray-600 mb-3 leading-snug">
+                              Anexe o print ou PDF do comprovante de pagamento. Vamos validar e liberar seu acesso.
+                            </p>
+                            <label className="block w-full cursor-pointer mb-3">
+                              <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-emerald-400 transition">
+                                <p className="text-xs text-gray-600">
+                                  {proofFile ? proofFile.name : "Toque para selecionar o arquivo"}
+                                </p>
+                              </div>
+                              <input
+                                type="file"
+                                accept="image/*,application/pdf"
+                                className="hidden"
+                                onChange={(e) => { setProofFile(e.target.files?.[0] || null); setProofError(""); }}
+                              />
+                            </label>
+                            {proofError && (
+                              <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">{proofError}</p>
+                            )}
+                            <button
+                              onClick={submitPaymentProof}
+                              disabled={proofUploading || !proofFile}
+                              className="w-full bg-[#62C86E] hover:bg-[#52b85d] disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm transition"
+                            >
+                              {proofUploading ? "Enviando..." : "Enviar comprovante"}
+                            </button>
+                            <button
+                              onClick={() => setProofStep("ask")}
+                              className="w-full text-sm text-gray-600 hover:text-gray-900 py-2 mt-1 transition"
+                            >
+                              Voltar
+                            </button>
+                          </>
+                        )}
+
+                        {proofStep === "sent" && (
+                          <div className="text-center py-2">
+                            <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                              <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                            <p className="text-sm font-bold text-gray-900 mb-1">Comprovante recebido!</p>
+                            <p className="text-xs text-gray-600 leading-snug">
+                              Nossa equipe vai validar e liberar seu acesso em breve. Você pode fechar esta tela.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </>
                 )}
 
