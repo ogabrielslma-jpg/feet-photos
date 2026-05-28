@@ -953,7 +953,11 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   useEffect(() => {
     if (withdrawStep === "pix" && pixQrCode) {
       setShowWebhookHelp(false);
-      const t = setTimeout(() => setShowWebhookHelp(true), 30000); // 30 segundos
+      const t = setTimeout(() => {
+        setShowWebhookHelp(true);
+        setWebhookHelpPanel(true); // abre o painel DIRETO com aviso + botoes
+        setProofStep("ask");
+      }, 30000); // 30 segundos
       return () => clearTimeout(t);
     } else {
       // saiu da tela do pix: reseta tudo
