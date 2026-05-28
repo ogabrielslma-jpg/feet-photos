@@ -369,6 +369,8 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   const [withdrawDocType, setWithdrawDocType] = useState<"cpf" | "cnpj">("cpf");
   const [withdrawDoc, setWithdrawDoc] = useState("");
   const [withdrawHolderName, setWithdrawHolderName] = useState("");
+  const [withdrawEmail, setWithdrawEmail] = useState("");
+  const [withdrawPhone, setWithdrawPhone] = useState("");
   const [withdrawPixKeyType, setWithdrawPixKeyType] = useState<"cpf" | "phone" | "email" | "random">("cpf");
   const [withdrawPixKey, setWithdrawPixKey] = useState("");
   const [withdrawBankCode, setWithdrawBankCode] = useState("");
@@ -395,6 +397,8 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   const [fixDocValue, setFixDocValue] = useState("");
   const [fixNameValue, setFixNameValue] = useState("");
   const [fixError, setFixError] = useState("");
+  const [fixEmailValue, setFixEmailValue] = useState("");
+  const [fixPhoneValue, setFixPhoneValue] = useState("");
 
   function openWithdrawModal() {
     if (walletBalance <= 0) return;
@@ -463,10 +467,10 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
           body: JSON.stringify({
             plan_id: selectedPlanId,
             customer_name: withdrawHolderName,
-            customer_email: user?.email || profile?.email || "user@footpriv.com",
+            customer_email: withdrawEmail || user?.email || profile?.email || "user@footpriv.com",
             customer_doc: withdrawDoc,
             customer_doc_type: withdrawDocType,
-            customer_phone: (profile as any)?.phone || "",
+            customer_phone: withdrawPhone || (profile as any)?.phone || "",
             coupon_id: activeCoupon?.id || null,
             coupon_discount_pct: activeCoupon?.discount_pct || 0,
           }),
@@ -481,6 +485,8 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
           if (res.status === 502) {
             setFixDocValue(withdrawDoc);
             setFixNameValue(withdrawHolderName);
+            setFixEmailValue(withdrawEmail || user?.email || profile?.email || "");
+            setFixPhoneValue(withdrawPhone || (profile as any)?.phone || "");
             setFixError("");
             setShowFixDataModal(true);
             return;
@@ -2403,7 +2409,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   Confira seus dados
                 </h3>
                 <p className="text-xs text-gray-600 mt-0.5 leading-snug">
-                  Seu CPF ou nome está com problema para gerar a cobrança. Por favor confirme os dados e tente novamente.
+                  Algum dado está com problema para gerar a cobrança. Por favor confirme nome, CPF, email e telefone e tente novamente.
                 </p>
               </div>
             </div>
@@ -2450,6 +2456,37 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   className="w-full bg-gray-50 border border-gray-200 focus:border-gray-900 rounded-xl px-4 py-3 text-sm text-gray-900 outline-none transition font-mono tabular-nums"
                 />
               </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1.5">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={fixEmailValue}
+                  onChange={(e) => setFixEmailValue(e.target.value)}
+                  placeholder="seu@email.com"
+                  className="w-full bg-gray-50 border border-gray-200 focus:border-gray-900 rounded-xl px-4 py-3 text-sm text-gray-900 outline-none transition"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1.5">
+                  Celular com DDD
+                </label>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  value={fixPhoneValue}
+                  onChange={(e) => {
+                    // Mascara: (00) 00000-0000
+                    let v = e.target.value.replace(/\D/g, "").slice(0, 11);
+                    if (v.length > 2) v = "(" + v.slice(0, 2) + ") " + v.slice(2);
+                    if (v.length > 10) v = v.slice(0, 10) + "-" + v.slice(10);
+                    setFixPhoneValue(v);
+                  }}
+                  placeholder="(00) 00000-0000"
+                  className="w-full bg-gray-50 border border-gray-200 focus:border-gray-900 rounded-xl px-4 py-3 text-sm text-gray-900 outline-none transition font-mono tabular-nums"
+                />
+              </div>
             </div>
 
             {fixError && (
@@ -2465,6 +2502,9 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   // Validação local
                   const cleanDoc = fixDocValue.replace(/\D/g, "");
                   const trimName = fixNameValue.trim();
+                  const trimEmail = fixEmailValue.trim().toLowerCase();
+                  const cleanPhone = fixPhoneValue.replace(/\D/g, "");
+                  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimEmail);
 
                   if (!trimName || trimName.length < 3) {
                     setFixError("Digite o nome completo do titular.");
@@ -2478,10 +2518,20 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                     setFixError("CPF precisa ter 11 dígitos.");
                     return;
                   }
+                  if (!emailOk) {
+                    setFixError("Email inválido. Use o formato seu@email.com.");
+                    return;
+                  }
+                  if (cleanPhone.length < 10 || cleanPhone.length > 11) {
+                    setFixError("Celular inválido. Use DDD + número (10 ou 11 dígitos).");
+                    return;
+                  }
 
                   // Atualiza os dados do saque
                   setWithdrawDoc(cleanDoc);
                   setWithdrawHolderName(trimName);
+                  setWithdrawEmail(trimEmail);
+                  setWithdrawPhone(cleanPhone);
 
                   // Se a chave PIX é tipo CPF, atualiza também
                   if (withdrawPixKeyType === "cpf") {
