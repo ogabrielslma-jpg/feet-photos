@@ -3599,6 +3599,19 @@ function PaymentProofsPanel() {
   }
 
   const filtered = proofs.filter((p) => filter === "all" || p.status === filter);
+  // Conta quantos comprovantes cada usuario tem (para badge "X comprovantes")
+  const countByUser: Record<string, number> = {};
+  for (const p of filtered) {
+    countByUser[p.user_id] = (countByUser[p.user_id] || 0) + 1;
+  }
+  // Agrupa: mostra so o comprovante MAIS RECENTE de cada usuario como card principal.
+  // Ao abrir, o modal lista todos os comprovantes daquele usuario.
+  const seenUsers = new Set<string>();
+  const groupedCards = filtered.filter((p) => {
+    if (seenUsers.has(p.user_id)) return false;
+    seenUsers.add(p.user_id);
+    return true;
+  });
   const counts = {
     pending: proofs.filter((p) => p.status === "pending").length,
     approved: proofs.filter((p) => p.status === "approved").length,
@@ -3654,14 +3667,21 @@ function PaymentProofsPanel() {
         <p className="text-sm text-gray-500 py-8 text-center">Nenhum comprovante {filter !== "all" ? `(${filter})` : ""}.</p>
       ) : (
         <div className="grid md:grid-cols-2 gap-3">
-          {filtered.map((p) => (
+          {groupedCards.map((p) => (
             <div
               key={p.id}
               onClick={() => setSelected(p)}
               className="border border-gray-200 rounded-xl p-3 cursor-pointer hover:border-gray-900 transition"
             >
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-bold text-gray-900">{p.customer_name || "—"}</span>
+                <span className="text-sm font-bold text-gray-900">
+                  {p.customer_name || "—"}
+                  {countByUser[p.user_id] > 1 && (
+                    <span className="ml-2 text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">
+                      {countByUser[p.user_id]} comprovantes
+                    </span>
+                  )}
+                </span>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
                   p.status === "pending" ? "bg-amber-100 text-amber-700"
                   : p.status === "approved" ? "bg-emerald-100 text-emerald-700"

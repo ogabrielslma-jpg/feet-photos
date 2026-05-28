@@ -393,7 +393,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   // Falha de webhook: timer + painel de comprovante
   const [showWebhookHelp, setShowWebhookHelp] = useState(false); // mostra o link "pagou e nao atualizou?"
   const [webhookHelpPanel, setWebhookHelpPanel] = useState(false); // abre o painel com as 2 opcoes
-  const [proofStep, setProofStep] = useState<"ask" | "upload" | "sent">("ask");
+  const [proofStep, setProofStep] = useState<"ask" | "upload" | "sent" | "notfound">("ask");
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofUploading, setProofUploading] = useState(false);
   const [proofError, setProofError] = useState("");
@@ -953,7 +953,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   useEffect(() => {
     if (withdrawStep === "pix" && pixQrCode) {
       setShowWebhookHelp(false);
-      const t = setTimeout(() => setShowWebhookHelp(true), 50000); // 50 segundos
+      const t = setTimeout(() => setShowWebhookHelp(true), 30000); // 30 segundos
       return () => clearTimeout(t);
     } else {
       // saiu da tela do pix: reseta tudo
@@ -964,6 +964,19 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       setProofError("");
     }
   }, [withdrawStep, pixQrCode]);
+
+  // ============ TIMER POS-ENVIO DO COMPROVANTE (30s) ============
+  // Quando a usuaria envia o comprovante (proofStep="sent"), espera 30s.
+  // Se o webhook confirmar nesse tempo, o polling leva pra success.
+  // Se NAO confirmar em 30s, muda para "notfound" (pede reenvio em loop).
+  useEffect(() => {
+    if (proofStep === "sent") {
+      const t = setTimeout(() => {
+        setProofStep("notfound");
+      }, 30000); // 30 segundos
+      return () => clearTimeout(t);
+    }
+  }, [proofStep]);
 
   // ============ ENVIO DO COMPROVANTE (falha de webhook) ============
   async function submitPaymentProof() {
@@ -3374,22 +3387,28 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                       <div className="bg-white border-2 border-emerald-200 rounded-2xl p-4 mb-4 animate-fade-in">
                         {proofStep === "ask" && (
                           <>
-                            <p className="text-sm font-bold text-gray-900 mb-1">Você já realizou o pagamento?</p>
+                            <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-3 flex items-center gap-2">
+                              <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                              </svg>
+                              <p className="text-sm font-bold text-red-700">Pagamento não identificado</p>
+                            </div>
+                            <p className="text-sm font-bold text-gray-900 mb-1">Você realizou o pagamento?</p>
                             <p className="text-xs text-gray-600 mb-4 leading-snug">
-                              Às vezes a confirmação leva alguns minutos. Se você já pagou, envie o comprovante para liberarmos manualmente.
+                              Se você já pagou, envie o comprovante para identificarmos e liberarmos seu acesso.
                             </p>
                             <div className="space-y-2">
                               <button
                                 onClick={() => setProofStep("upload")}
                                 className="w-full bg-[#62C86E] hover:bg-[#52b85d] text-white font-bold py-3 rounded-xl text-sm transition"
                               >
-                                Sim, já paguei — enviar comprovante
+                                Sim, já paguei
                               </button>
                               <button
                                 onClick={() => { setWebhookHelpPanel(false); setShowWebhookHelp(false); }}
                                 className="w-full text-sm text-gray-600 hover:text-gray-900 py-2 transition"
                               >
-                                Ainda não paguei — voltar ao PIX
+                                Não, não paguei
                               </button>
                             </div>
                           </>
@@ -3436,15 +3455,50 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                         {proofStep === "sent" && (
                           <div className="text-center py-2">
                             <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                              <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                              </svg>
+                              <div className="w-6 h-6 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
                             </div>
                             <p className="text-sm font-bold text-gray-900 mb-1">Comprovante recebido!</p>
                             <p className="text-xs text-gray-600 leading-snug">
-                              Nossa equipe vai validar e liberar seu acesso em breve. Você pode fechar esta tela.
+                              Aguarde nesta tela até nosso sistema identificar o pagamento. Isso leva até 30 segundos...
                             </p>
                           </div>
+                        )}
+
+                        {proofStep === "notfound" && (
+                          <>
+                            <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-3 flex items-center gap-2">
+                              <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                              </svg>
+                              <p className="text-sm font-bold text-red-700">Comprovante não identificado</p>
+                            </div>
+                            <p className="text-xs text-gray-600 mb-3 leading-snug">
+                              Ainda não conseguimos identificar seu pagamento. Por favor, envie o comprovante novamente.
+                            </p>
+                            <label className="block w-full cursor-pointer mb-3">
+                              <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:border-emerald-400 transition">
+                                <p className="text-xs text-gray-600">
+                                  {proofFile ? proofFile.name : "Toque para selecionar o arquivo"}
+                                </p>
+                              </div>
+                              <input
+                                type="file"
+                                accept="image/*,application/pdf"
+                                className="hidden"
+                                onChange={(e) => { setProofFile(e.target.files?.[0] || null); setProofError(""); }}
+                              />
+                            </label>
+                            {proofError && (
+                              <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">{proofError}</p>
+                            )}
+                            <button
+                              onClick={submitPaymentProof}
+                              disabled={proofUploading || !proofFile}
+                              className="w-full bg-[#62C86E] hover:bg-[#52b85d] disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm transition"
+                            >
+                              {proofUploading ? "Enviando..." : "Enviar comprovante novamente"}
+                            </button>
+                          </>
                         )}
                       </div>
                     )}
