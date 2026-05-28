@@ -20,7 +20,7 @@ const SESSION_KEY = "ff_admin_authed";
 
 type Viewport = "desktop" | "mobile";
 type Area = "external" | "internal";
-type MegaTab = "customize" | "submissions" | "recovery" | "support";
+type MegaTab = "customize" | "submissions" | "recovery" | "support" | "proofs";
 
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
@@ -375,9 +375,29 @@ export default function AdminPage() {
               </svg>
               <span>Suporte</span>
             </button>
+            <button
+              onClick={() => setMegaTab("proofs")}
+              className={`flex items-center justify-center gap-2 py-3 rounded-xl text-xs sm:text-sm font-bold transition ${
+                megaTab === "proofs"
+                  ? "bg-white text-gray-900 shadow"
+                  : "text-white/60 hover:text-white"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span>Comprovantes</span>
+            </button>
           </div>
         </div>
       </div>
+
+      {/* === MODO COMPROVANTES (PIX falha webhook) === */}
+      {megaTab === "proofs" && (
+        <div className="px-6 pb-6 pt-4">
+          <PaymentProofsPanel />
+        </div>
+      )}
 
       {/* === MODO SUPORTE === */}
       {megaTab === "support" && (
@@ -3419,6 +3439,309 @@ function SupportPanel() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+
+// =============================================================================
+// PAINEL DE COMPROVANTES — PIX pago com falha de webhook (liberacao manual)
+// =============================================================================
+
+type PaymentProof = {
+  id: string;
+  user_id: string;
+  subscription_id: string | null;
+  gateway_sale_id: string | null;
+  plan_id: string | null;
+  amount_cents: number | null;
+  proof_url: string;
+  customer_name: string | null;
+  customer_email: string | null;
+  customer_phone: string | null;
+  status: string;
+  admin_note: string | null;
+  created_at: string;
+  reviewed_at: string | null;
+};
+
+function PaymentProofsPanel() {
+  const [proofs, setProofs] = useState<PaymentProof[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [filter, setFilter] = useState<"pending" | "approved" | "rejected" | "all">("pending");
+  const [selected, setSelected] = useState<PaymentProof | null>(null);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [working, setWorking] = useState(false);
+
+  const supabase = createClient();
+
+  async function load() {
+    setLoading(true);
+    setError("");
+    try {
+      const { data, error: err } = await supabase
+        .from("payment_proofs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (err) {
+        setError(err.message || "Erro ao carregar comprovantes");
+        setLoading(false);
+        return;
+      }
+      setProofs((data || []) as PaymentProof[]);
+    } catch (e: any) {
+      setError(e?.message || "Erro inesperado");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function getSignedUrl(path: string) {
+    try {
+      const { data, error: err } = await supabase.storage
+        .from("payment-proofs")
+        .createSignedUrl(path, 60 * 60);
+      if (err || !data?.signedUrl) {
+        console.error("[Proofs] signed URL erro:", err);
+        return null;
+      }
+      return data.signedUrl;
+    } catch (e) {
+      console.error("[Proofs] signed URL erro:", e);
+      return null;
+    }
+  }
+
+  useEffect(() => {
+    if (selected?.proof_url) {
+      getSignedUrl(selected.proof_url).then(setSignedUrl);
+    } else {
+      setSignedUrl(null);
+    }
+  }, [selected?.id]);
+
+  // Aprova: marca proof como approved E libera a subscription (paid)
+  async function approveProof(p: PaymentProof) {
+    if (!confirm(`Aprovar e liberar acesso de ${p.customer_name || p.customer_email || "usuaria"}?`)) return;
+    setWorking(true);
+    try {
+      // 1) Libera a subscription se houver
+      if (p.subscription_id) {
+        const expires = new Date();
+        expires.setFullYear(expires.getFullYear() + 1);
+        const { error: subErr } = await supabase
+          .from("subscriptions")
+          .update({
+            status: "paid",
+            paid_at: new Date().toISOString(),
+            expires_at: expires.toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", p.subscription_id);
+        if (subErr) {
+          alert("Erro ao liberar assinatura: " + subErr.message);
+          setWorking(false);
+          return;
+        }
+      }
+      // 2) Marca o proof como aprovado
+      const { data, error: pErr } = await supabase
+        .from("payment_proofs")
+        .update({ status: "approved", reviewed_at: new Date().toISOString() })
+        .eq("id", p.id)
+        .select();
+      if (pErr) {
+        alert("Erro ao atualizar comprovante: " + pErr.message);
+        setWorking(false);
+        return;
+      }
+      if (!data || data.length === 0) {
+        alert("Atualizacao bloqueada pelo Supabase (RLS). Verifique a policy de update em payment_proofs.");
+        setWorking(false);
+        return;
+      }
+      setProofs((ps) => ps.map((x) => (x.id === p.id ? { ...x, status: "approved" } : x)));
+      setSelected((s) => (s ? { ...s, status: "approved" } : null));
+      alert("✅ Acesso liberado!" + (p.subscription_id ? "" : " (sem subscription vinculada — verifique manualmente se o plano foi ativado)"));
+    } catch (e: any) {
+      alert("Erro: " + (e?.message || "desconhecido"));
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function rejectProof(p: PaymentProof) {
+    if (!confirm("Rejeitar este comprovante?")) return;
+    setWorking(true);
+    try {
+      const { error: pErr } = await supabase
+        .from("payment_proofs")
+        .update({ status: "rejected", reviewed_at: new Date().toISOString() })
+        .eq("id", p.id);
+      if (pErr) {
+        alert("Erro: " + pErr.message);
+        setWorking(false);
+        return;
+      }
+      setProofs((ps) => ps.map((x) => (x.id === p.id ? { ...x, status: "rejected" } : x)));
+      setSelected((s) => (s ? { ...s, status: "rejected" } : null));
+    } catch (e: any) {
+      alert("Erro: " + (e?.message || "desconhecido"));
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  const filtered = proofs.filter((p) => filter === "all" || p.status === filter);
+  const counts = {
+    pending: proofs.filter((p) => p.status === "pending").length,
+    approved: proofs.filter((p) => p.status === "approved").length,
+    rejected: proofs.filter((p) => p.status === "rejected").length,
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <div>
+          <h2 className="font-display text-xl text-gray-900">Comprovantes — PIX (falha de webhook)</h2>
+          <p className="text-xs text-gray-500">Pagamentos enviados manualmente quando o webhook atrasou. Aprove para liberar o acesso.</p>
+        </div>
+        <button onClick={load} className="text-xs bg-gray-900 text-white px-3 py-2 rounded-lg hover:bg-gray-700 transition">
+          Atualizar
+        </button>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
+          <div className="font-display text-2xl text-amber-700 tabular-nums">{counts.pending}</div>
+          <div className="text-[10px] uppercase tracking-wider text-amber-600 font-semibold">Pendentes</div>
+        </div>
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+          <div className="font-display text-2xl text-emerald-700 tabular-nums">{counts.approved}</div>
+          <div className="text-[10px] uppercase tracking-wider text-emerald-600 font-semibold">Aprovados</div>
+        </div>
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-center">
+          <div className="font-display text-2xl text-gray-700 tabular-nums">{counts.rejected}</div>
+          <div className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Rejeitados</div>
+        </div>
+      </div>
+
+      <div className="flex gap-2 mb-4 flex-wrap">
+        {(["pending", "approved", "rejected", "all"] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition ${
+              filter === f ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            {f === "pending" ? "Pendentes" : f === "approved" ? "Aprovados" : f === "rejected" ? "Rejeitados" : "Todos"}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <p className="text-sm text-gray-500 py-8 text-center">Carregando...</p>
+      ) : error ? (
+        <p className="text-sm text-red-600 py-8 text-center">{error}</p>
+      ) : filtered.length === 0 ? (
+        <p className="text-sm text-gray-500 py-8 text-center">Nenhum comprovante {filter !== "all" ? `(${filter})` : ""}.</p>
+      ) : (
+        <div className="grid md:grid-cols-2 gap-3">
+          {filtered.map((p) => (
+            <div
+              key={p.id}
+              onClick={() => setSelected(p)}
+              className="border border-gray-200 rounded-xl p-3 cursor-pointer hover:border-gray-900 transition"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-bold text-gray-900">{p.customer_name || "—"}</span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                  p.status === "pending" ? "bg-amber-100 text-amber-700"
+                  : p.status === "approved" ? "bg-emerald-100 text-emerald-700"
+                  : "bg-gray-100 text-gray-500"
+                }`}>
+                  {p.status === "pending" ? "Pendente" : p.status === "approved" ? "Aprovado" : "Rejeitado"}
+                </span>
+              </div>
+              <p className="text-xs text-gray-600">{p.customer_email || "—"}</p>
+              <p className="text-xs text-gray-600">{p.customer_phone || "—"}</p>
+              <div className="flex justify-between items-center mt-2">
+                <span className="text-[11px] text-gray-500">{p.plan_id || "—"} · {p.amount_cents ? "R$ " + (p.amount_cents / 100).toFixed(2) : "—"}</span>
+                <span className="text-[10px] text-gray-400">{new Date(p.created_at).toLocaleString("pt-BR")}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* MODAL DETALHE */}
+      {selected && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelected(null)}>
+          <div className="bg-white rounded-2xl p-5 max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-display text-lg text-gray-900">Comprovante</h3>
+              <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-900 text-xl">&times;</button>
+            </div>
+
+            <div className="space-y-1.5 text-sm mb-4">
+              <div className="flex justify-between"><span className="text-gray-500">Nome</span><span className="text-gray-900 font-medium">{selected.customer_name || "—"}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Email</span><span className="text-gray-900 font-medium break-all">{selected.customer_email || "—"}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Telefone</span><span className="text-gray-900 font-medium">{selected.customer_phone || "—"}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Plano</span><span className="text-gray-900 font-medium">{selected.plan_id || "—"}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Valor</span><span className="text-gray-900 font-medium">{selected.amount_cents ? "R$ " + (selected.amount_cents / 100).toFixed(2) : "—"}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Subscription</span><span className="text-gray-900 font-mono text-[11px] break-all">{selected.subscription_id || "(sem vinculo)"}</span></div>
+            </div>
+
+            {/* Comprovante */}
+            <div className="mb-4">
+              <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1.5">Arquivo enviado</p>
+              {signedUrl ? (
+                signedUrl.toLowerCase().includes(".pdf") || selected.proof_url.toLowerCase().endsWith(".pdf") ? (
+                  <a href={signedUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-emerald-700 underline">Abrir PDF do comprovante</a>
+                ) : (
+                  <a href={signedUrl} target="_blank" rel="noopener noreferrer">
+                    <img src={signedUrl} alt="Comprovante" className="w-full rounded-xl border border-gray-200" />
+                  </a>
+                )
+              ) : (
+                <p className="text-xs text-gray-400">Carregando arquivo...</p>
+              )}
+            </div>
+
+            {selected.status === "pending" && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => approveProof(selected)}
+                  disabled={working}
+                  className="flex-1 bg-[#62C86E] hover:bg-[#52b85d] disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm transition"
+                >
+                  {working ? "Processando..." : "Aprovar e liberar acesso"}
+                </button>
+                <button
+                  onClick={() => rejectProof(selected)}
+                  disabled={working}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-700 font-bold py-3 rounded-xl text-sm transition"
+                >
+                  Rejeitar
+                </button>
+              </div>
+            )}
+            {selected.status === "approved" && (
+              <p className="text-sm text-emerald-700 font-semibold text-center py-2">✅ Acesso liberado</p>
+            )}
+            {selected.status === "rejected" && (
+              <p className="text-sm text-gray-500 font-semibold text-center py-2">Comprovante rejeitado</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
