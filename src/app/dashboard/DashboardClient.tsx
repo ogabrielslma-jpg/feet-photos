@@ -2780,7 +2780,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
       {/* === POPUP AUTO-CUPOM 47% — comprador assumiu (apos 100s sem pagar) === */}
       {showAutoCouponPopup && (
-        <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="text-center mb-4">
               <div className="text-5xl mb-2">🎉</div>
