@@ -161,12 +161,14 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq, hasActive
           {/* Header */}
           <div className="bg-gradient-to-br from-[#0084FF] to-[#0070d8] text-white px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0">
-              {view !== "menu" && (
+              {view !== "list" && (
                 <button
                   onClick={() => {
                     if (view === "form") setView("answer");
                     else if (view === "answer") setView(formCategory);
                     else if (view === "general" || view === "payment") setView("menu");
+                    else if (view === "menu") setView("list");
+                    else if (view === "chat") setView("list");
                     else if (view === "success") {
                       reset();
                       setOpen(false);

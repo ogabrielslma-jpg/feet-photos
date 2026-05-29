@@ -341,6 +341,59 @@ export function ChatPanel({ userName, compact = false, hasActivePlan = false }: 
     } catch {}
   }, [hasActivePlan]);
 
+  // Carrega mensagens persistidas (sua saudacao + 3 respostas) ao montar
+  useEffect(() => {
+    try {
+      const savedUser = localStorage.getItem("footpriv_chat_user_msgs");
+      const savedIncoming = localStorage.getItem("footpriv_chat_incoming_msgs");
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        if (Array.isArray(parsed)) setUserMessages(parsed);
+      }
+      if (savedIncoming) {
+        const parsed = JSON.parse(savedIncoming);
+        if (Array.isArray(parsed)) setIncomingMessages(parsed);
+      }
+    } catch {}
+  }, []);
+
+  // Salva mensagens da usuaria sempre que mudam
+  useEffect(() => {
+    try {
+      if (userMessages.length > 0) {
+        // So salva mensagens "sent" (nao salva "sending" pra nao ficar com loading no reload)
+        const toSave = userMessages.filter(m => m.status !== "sending");
+        if (toSave.length > 0) {
+          localStorage.setItem("footpriv_chat_user_msgs", JSON.stringify(toSave));
+        }
+      }
+    } catch {}
+  }, [userMessages]);
+
+  // Salva mensagens recebidas sempre que mudam
+  useEffect(() => {
+    try {
+      if (incomingMessages.length > 0) {
+        localStorage.setItem("footpriv_chat_incoming_msgs", JSON.stringify(incomingMessages));
+      }
+    } catch {}
+  }, [incomingMessages]);
+
+  // Online dinamico (110-142, oscila a cada 60s)
+  const [onlineCount, setOnlineCount] = useState(() => 110 + Math.floor(Math.random() * 33));
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setOnlineCount((prev) => {
+        const delta = Math.floor(Math.random() * 5) - 2; // -2 a +2
+        const next = prev + delta;
+        if (next < 110) return 110;
+        if (next > 142) return 142;
+        return next;
+      });
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem("footpriv_chat_username");
@@ -484,7 +537,7 @@ export function ChatPanel({ userName, compact = false, hasActivePlan = false }: 
           <h2 className="font-bold text-gray-900 text-sm truncate">Chat público de creators</h2>
           <p className="text-[11px] text-emerald-600 flex items-center gap-1">
             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-            127 online · comunidade BR
+            {onlineCount} online · comunidade BR
           </p>
         </div>
       </div>
