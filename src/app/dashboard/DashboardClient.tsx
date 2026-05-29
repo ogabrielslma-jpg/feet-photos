@@ -1063,6 +1063,14 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       setPixQrCode("");
       setPixKey("");
       setSubscriptionId("");
+      // Marca PIX antigos como expired para o backend nao reutilizar (anti-duplicacao)
+      if (profile?.id) {
+        await supabase
+          .from("subscriptions")
+          .update({ status: "expired", updated_at: new Date().toISOString() })
+          .eq("user_id", profile.id)
+          .eq("status", "pending");
+      }
       setWithdrawStep("plan");
     } catch (e: any) {
       console.error("[AutoCoupon] Erro:", e);
