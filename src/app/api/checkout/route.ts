@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Aplica desconto do cupom se válido pra esse user
-    let amountCents = plan.amount_cents;
+    let amountCents: number = plan.amount_cents;
     let appliedCouponId: string | null = null;
     const coupon = (couponResult as any).data;
     if (coupon && coupon.user_id === user.id) {
