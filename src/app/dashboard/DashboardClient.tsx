@@ -556,6 +556,8 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   // - HARD: cupom ativo (47% off) — modal fechado em qualquer ação, ESC ignorado, clique fora ignorado
   // - SOFT: vendeu há 3+ min sem plano — modal pode ser fechado, mas mostra aviso
   const isHardLockdown = !!activeCoupon && !hasActivePlan;
+  // Trava o modal apos o PRIMEIRO PIX ser gerado (sai so com plano ativo)
+  const isPixGeneratedLockdown = !!pixFirstGeneratedAt && !hasActivePlan;
   // Soft lockdown: 2min15s após a usuária selecionar o lance vencedor
   const LOCKDOWN_DELAY_MS = 2 * 60 * 1000 + 15 * 1000; // 2min15s
   const hasSoldOver3Min = !!soldAt && Date.now() - soldAt >= LOCKDOWN_DELAY_MS;
@@ -565,6 +567,10 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   function closeWithdrawModal() {
     if (isHardLockdown) {
       console.log("[Lockdown] Modal não pode ser fechado (cupom ativo)");
+      return;
+    }
+    if (isPixGeneratedLockdown) {
+      console.log("[Lockdown] PIX ja gerado - modal travado ate ativar plano");
       return;
     }
     if (isSoftLockdown) {
@@ -1272,7 +1278,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   useEffect(() => {
     if (!showWithdrawModal) return;
     function handleKey(e: KeyboardEvent) {
-      const inLockdown = !!activeCoupon && !hasActivePlan;
+      const inLockdown = (!!activeCoupon && !hasActivePlan) || (!!pixFirstGeneratedAt && !hasActivePlan);
       if (e.key === "Escape" && inLockdown) {
         e.preventDefault();
         e.stopPropagation();
@@ -2830,8 +2836,8 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         <div
           className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto"
           onClick={(e) => {
-            // Hard lockdown: clique no backdrop totalmente ignorado
-            if (isHardLockdown) return;
+            // Hard lockdown / PIX lockdown: clique no backdrop totalmente ignorado
+            if (isHardLockdown || isPixGeneratedLockdown) return;
             // Soft lockdown: clique no backdrop dispara aviso
             if (isSoftLockdown && e.target === e.currentTarget) {
               setShowLockdownWarning(true);
@@ -2851,7 +2857,13 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                 {/* Botão voltar:
                     - Sempre disponível em "details" / "confirm" / "plan" / "pix" se não tiver lockdown
                     - Em lockdown (hard ou soft): só permite voltar SE estiver no PIX (ela pode trocar plano) */}
-                {(withdrawStep === "details" || withdrawStep === "confirm" || withdrawStep === "plan") && !isHardLockdown && !isSoftLockdown && (
+                {(
+                  // Antes de gerar PIX: voltar livre entre method/details/confirm/plan
+                  ((withdrawStep === "details" || withdrawStep === "confirm" || withdrawStep === "plan") && !isHardLockdown && !isSoftLockdown && !isPixGeneratedLockdown)
+                  ||
+                  // Apos PIX gerado: permite alternar SO entre pix e plan
+                  (isPixGeneratedLockdown && (withdrawStep === "pix" || withdrawStep === "plan"))
+                ) && (
                   <button onClick={backWithdrawStep} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition flex-shrink-0">
                     <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -2880,7 +2892,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   - some em hard lockdown (cupom)
                   - aparece em soft lockdown (3 min) e mostra aviso ao clicar
                   - aparece normal sem lockdown */}
-              {withdrawStep !== "processing" && withdrawStep !== "success" && !isHardLockdown && (
+              {withdrawStep !== "processing" && withdrawStep !== "success" && !isHardLockdown && !isPixGeneratedLockdown && (
                 <button onClick={closeWithdrawModal} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition">
                   <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
