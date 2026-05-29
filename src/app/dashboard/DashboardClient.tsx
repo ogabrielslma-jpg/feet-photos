@@ -530,7 +530,12 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   function backWithdrawStep() {
     if (withdrawStep === "details") setWithdrawStep("method");
     else if (withdrawStep === "confirm") setWithdrawStep("details");
-    else if (withdrawStep === "plan") setWithdrawStep("confirm");
+    else if (withdrawStep === "plan") {
+      // Bloqueado: depois de entrar em plan, nao pode voltar pra confirm
+      // (planos sao a partir daqui, so alterna entre plan e pix)
+      console.log("[Lockdown] Bloqueado voltar de plan para confirm");
+      return;
+    }
     else if (withdrawStep === "pix") setWithdrawStep("plan");
   }
 
