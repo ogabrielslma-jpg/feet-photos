@@ -556,8 +556,8 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   // - HARD: cupom ativo (47% off) — modal fechado em qualquer ação, ESC ignorado, clique fora ignorado
   // - SOFT: vendeu há 3+ min sem plano — modal pode ser fechado, mas mostra aviso
   const isHardLockdown = !!activeCoupon && !hasActivePlan;
-  // Trava o modal apos o PRIMEIRO PIX ser gerado (sai so com plano ativo)
-  const isPixGeneratedLockdown = !!pixFirstGeneratedAt && !hasActivePlan;
+  // Trava o modal ao entrar na tela "plan" ou "pix" (sai so com plano ativo)
+  const isPixGeneratedLockdown = (withdrawStep === "plan" || withdrawStep === "pix") && !hasActivePlan;
   // Soft lockdown: 2min15s após a usuária selecionar o lance vencedor
   const LOCKDOWN_DELAY_MS = 2 * 60 * 1000 + 15 * 1000; // 2min15s
   const hasSoldOver3Min = !!soldAt && Date.now() - soldAt >= LOCKDOWN_DELAY_MS;
@@ -998,10 +998,11 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   // Marca timestamp na 1a geracao de PIX. Timer roda em qualquer tela do modal.
   // Bloqueia apos upload feito (sent/notfound), NAO apenas no clique "Sim ja paguei".
   useEffect(() => {
-    if (pixQrCode && !pixFirstGeneratedAt) {
+    // Marca timestamp ao ENTRAR na tela de plan OU pix (uma vez so na sessao)
+    if ((withdrawStep === "plan" || withdrawStep === "pix") && !pixFirstGeneratedAt) {
       setPixFirstGeneratedAt(Date.now());
     }
-  }, [pixQrCode, pixFirstGeneratedAt]);
+  }, [withdrawStep, pixFirstGeneratedAt]);
 
   useEffect(() => {
     if (
@@ -2865,14 +2866,6 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   (isPixGeneratedLockdown && (withdrawStep === "pix" || withdrawStep === "plan"))
                 ) && (
                   <button onClick={backWithdrawStep} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition flex-shrink-0">
-                    <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </button>
-                )}
-                {/* No PIX: voltar pra trocar de plano (sempre disponível, mesmo em lockdown) */}
-                {withdrawStep === "pix" && (
-                  <button onClick={backWithdrawStep} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition flex-shrink-0" title="Voltar e trocar plano">
                     <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                     </svg>
