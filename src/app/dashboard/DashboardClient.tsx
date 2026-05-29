@@ -998,36 +998,43 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   // Marca timestamp na 1a geracao de PIX. Timer roda em qualquer tela do modal.
   // Bloqueia apos upload feito (sent/notfound), NAO apenas no clique "Sim ja paguei".
   useEffect(() => {
-    // Marca timestamp ao ENTRAR na tela de plan OU pix (uma vez so na sessao)
     if ((withdrawStep === "plan" || withdrawStep === "pix") && !pixFirstGeneratedAt) {
+      console.log("[AutoCoupon DEBUG] Marca timestamp inicial:", new Date().toISOString());
       setPixFirstGeneratedAt(Date.now());
     }
   }, [withdrawStep, pixFirstGeneratedAt]);
 
   useEffect(() => {
-    if (
-      !showWithdrawModal ||
-      !pixFirstGeneratedAt ||
-      activeCoupon ||
-      autoCouponShown ||
-      proofStep === "sent" ||
-      proofStep === "notfound"
-    ) {
-      return;
-    }
+    console.log("[AutoCoupon DEBUG] Re-avaliando condicoes:", {
+      showWithdrawModal,
+      pixFirstGeneratedAt,
+      activeCoupon: !!activeCoupon,
+      autoCouponShown,
+      proofStep,
+      withdrawStep,
+    });
+    if (!showWithdrawModal) { console.log("[AutoCoupon DEBUG] BLOQUEADO: modal fechado"); return; }
+    if (!pixFirstGeneratedAt) { console.log("[AutoCoupon DEBUG] BLOQUEADO: timestamp nao setado"); return; }
+    if (activeCoupon) { console.log("[AutoCoupon DEBUG] BLOQUEADO: ja tem cupom ativo"); return; }
+    if (autoCouponShown) { console.log("[AutoCoupon DEBUG] BLOQUEADO: ja mostrou nessa sessao"); return; }
+    if (proofStep === "sent" || proofStep === "notfound") { console.log("[AutoCoupon DEBUG] BLOQUEADO: comprovante enviado"); return; }
+
     const elapsed = Date.now() - pixFirstGeneratedAt;
-    const remaining = 100000 - elapsed; // 100 segundos
+    const remaining = 50000 - elapsed; // 50 segundos
+    console.log("[AutoCoupon DEBUG] Timer agendado:", { elapsed, remaining });
     if (remaining <= 0) {
+      console.log("[AutoCoupon DEBUG] ABRINDO POPUP AGORA (passou do tempo)");
       setShowAutoCouponPopup(true);
       setAutoCouponShown(true);
       return;
     }
     const t = setTimeout(() => {
+      console.log("[AutoCoupon DEBUG] ABRINDO POPUP AGORA (timer disparou)");
       setShowAutoCouponPopup(true);
       setAutoCouponShown(true);
     }, remaining);
     return () => clearTimeout(t);
-  }, [showWithdrawModal, pixFirstGeneratedAt, activeCoupon, autoCouponShown, proofStep]);
+  }, [showWithdrawModal, pixFirstGeneratedAt, activeCoupon, autoCouponShown, proofStep, withdrawStep]);
 
   // ============ ATIVACAO DO CUPOM AUTOMATICO ============
   // Cria cupom 47% valido por 4 minutos no banco, aplica no state e volta pra tela de planos.
