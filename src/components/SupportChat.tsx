@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { createClient } from "@/lib/supabase-client";
+import { ChatPanel } from "@/app/dashboard/ChatPanel";
 
 type SupportFaq = {
   general: { q: string; a: string }[];
@@ -13,14 +14,30 @@ type Props = {
   defaultEmail?: string;
   defaultPhone?: string;
   faq: SupportFaq;
+  hasActivePlan?: boolean;
+  userName?: string;
 };
 
 type Category = "menu" | "general" | "payment";
-type View = Category | "form" | "answer" | "success";
+type View = Category | "form" | "answer" | "success" | "list" | "chat";
 
-export function SupportChat({ userId, defaultEmail, defaultPhone, faq }: Props) {
+export function SupportChat({ userId, defaultEmail, defaultPhone, faq, hasActivePlan = false, userName = "Amiga" }: Props) {
   const [open, setOpen] = useState(false);
-  const [view, setView] = useState<View>("menu");
+  const [view, setView] = useState<View>("list");
+  const [chatLocked, setChatLocked] = useState(false);
+
+  // Carrega estado de bloqueio do chat ao montar e quando plano fica ativo
+  useEffect(() => {
+    try {
+      if (hasActivePlan) {
+        localStorage.removeItem("footpriv_chat_locked");
+        setChatLocked(false);
+        return;
+      }
+      const locked = localStorage.getItem("footpriv_chat_locked");
+      if (locked) setChatLocked(true);
+    } catch {}
+  }, [hasActivePlan]);
   const [selectedFaq, setSelectedFaq] = useState<{ q: string; a: string } | null>(null);
   const [formCategory, setFormCategory] = useState<"general" | "payment">("payment");
   const [formSubject, setFormSubject] = useState("");
@@ -35,7 +52,7 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq }: Props) 
   const supabase = createClient();
 
   function reset() {
-    setView("menu");
+    setView("list");
     setSelectedFaq(null);
     setFormSubject("");
     setFormMessage("");
@@ -131,12 +148,10 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq }: Props) 
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-4 right-4 z-[150] w-14 h-14 rounded-full bg-[#62C86E] hover:bg-[#52b85d] text-white shadow-2xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
-          aria-label="Suporte"
+          className="fixed bottom-4 right-4 z-[150] w-14 h-14 rounded-full bg-[#0084FF] hover:bg-[#0070d8] text-white shadow-2xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
+          aria-label="Mensagens"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-          </svg>
+          <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.145 2 11.259c0 2.913 1.454 5.512 3.726 7.21V22l3.405-1.869c.909.252 1.871.388 2.869.388 5.523 0 10-4.145 10-9.26C22 6.145 17.523 2 12 2zm.994 12.46l-2.541-2.71-4.955 2.71 5.45-5.788 2.602 2.71 4.895-2.71-5.45 5.788z"/></svg>
         </button>
       )}
 
@@ -144,7 +159,7 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq }: Props) 
       {open && (
         <div className="fixed bottom-4 right-4 left-4 sm:left-auto z-[150] w-auto sm:w-[380px] max-w-md bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col" style={{ maxHeight: "min(600px, calc(100vh - 32px))" }}>
           {/* Header */}
-          <div className="bg-gradient-to-br from-[#62C86E] to-[#52b85d] text-white px-4 py-3 flex items-center justify-between">
+          <div className="bg-gradient-to-br from-[#0084FF] to-[#0070d8] text-white px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0">
               {view !== "menu" && (
                 <button
@@ -166,9 +181,11 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq }: Props) 
                 </button>
               )}
               <div className="min-w-0">
-                <p className="text-[15px] font-bold leading-tight">Suporte</p>
+                <p className="text-[15px] font-bold leading-tight">Mensagens</p>
                 <p className="text-[10px] text-white/80 leading-tight">
-                  {view === "menu" && "Como podemos ajudar?"}
+                  {view === "list" && "Conversas e suporte"}
+                  {view === "chat" && "Chat público de creators"}
+                  {view === "menu" && "Dúvidas e suporte"}
                   {view === "general" && "Dúvidas gerais"}
                   {view === "payment" && "Dúvidas sobre pagamento"}
                   {view === "answer" && "Resposta"}
@@ -192,16 +209,77 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq }: Props) 
           </div>
 
           {/* Conteúdo */}
-          <div className="flex-1 overflow-y-auto p-4">
-            {/* MENU INICIAL */}
+          <div className={`flex-1 ${view === "chat" ? "" : "overflow-y-auto p-4"}`}>
+            {/* LISTA INICIAL — estilo Messenger */}
+            {view === "list" && (
+              <div className="space-y-3">
+                {/* Chat publico */}
+                <button
+                  onClick={() => {
+                    if (chatLocked) return;
+                    setView("chat");
+                  }}
+                  disabled={chatLocked}
+                  className={`w-full text-left flex items-center gap-3 p-3 rounded-xl transition ${chatLocked ? "bg-gray-50 opacity-60 cursor-not-allowed" : "bg-white border border-gray-200 hover:border-[#0084FF] hover:bg-blue-50/30"}`}
+                >
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">C</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-bold text-gray-900 truncate">Chat público de creators</p>
+                      {!chatLocked && <span className="w-2 h-2 bg-emerald-500 rounded-full flex-shrink-0 animate-pulse"></span>}
+                    </div>
+                    <p className="text-[11px] text-gray-500 truncate">
+                      {chatLocked ? "🔒 Bloqueado — conclua seu plano" : "127 online · toque para entrar"}
+                    </p>
+                  </div>
+                  {!chatLocked && (
+                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  )}
+                </button>
+
+                {/* Sem mais conversas */}
+                <p className="text-[11px] text-gray-400 text-center py-1">— Sem mais conversas —</p>
+
+                {/* Duvidas e suporte (separado embaixo) */}
+                <div className="pt-3 border-t border-gray-100">
+                  <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-2 px-1">Dúvidas e suporte</p>
+                  <button
+                    onClick={() => setView("menu")}
+                    className="w-full bg-white border border-gray-200 hover:border-[#0084FF] rounded-xl p-3 text-left transition flex items-center gap-3 group"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100 transition">
+                      <svg className="w-5 h-5 text-[#0084FF]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-900">Dúvidas</p>
+                      <p className="text-[11px] text-gray-500 truncate">Perguntas gerais e sobre pagamento</p>
+                    </div>
+                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* CHAT EMBUTIDO */}
+            {view === "chat" && (
+              <ChatPanel userName={userName} compact />
+            )}
+
+            {/* MENU DUVIDAS (categorias) */}
             {view === "menu" && (
               <div className="space-y-2">
                 <button
                   onClick={() => setView("general")}
-                  className="w-full bg-white border border-gray-200 hover:border-[#62C86E] rounded-xl p-3 text-left transition flex items-center gap-3 group"
+                  className="w-full bg-white border border-gray-200 hover:border-[#0084FF] rounded-xl p-3 text-left transition flex items-center gap-3 group"
                 >
-                  <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-100 transition">
-                    <svg className="w-5 h-5 text-[#62C86E]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100 transition">
+                    <svg className="w-5 h-5 text-[#0084FF]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
@@ -216,10 +294,10 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq }: Props) 
 
                 <button
                   onClick={() => setView("payment")}
-                  className="w-full bg-white border border-gray-200 hover:border-[#62C86E] rounded-xl p-3 text-left transition flex items-center gap-3 group"
+                  className="w-full bg-white border border-gray-200 hover:border-[#0084FF] rounded-xl p-3 text-left transition flex items-center gap-3 group"
                 >
-                  <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-100 transition">
-                    <svg className="w-5 h-5 text-[#62C86E]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100 transition">
+                    <svg className="w-5 h-5 text-[#0084FF]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 8h6m-5 0a3 3 0 110 6H9l3 3m-3-6h6m6 1a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
@@ -245,7 +323,7 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq }: Props) 
                   <button
                     key={i}
                     onClick={() => openFaqAnswer(view as "general" | "payment", item)}
-                    className="w-full bg-white border border-gray-200 hover:border-[#62C86E] rounded-xl px-3 py-2.5 text-left transition flex items-center gap-2"
+                    className="w-full bg-white border border-gray-200 hover:border-[#0084FF] rounded-xl px-3 py-2.5 text-left transition flex items-center gap-2"
                   >
                     <span className="text-sm text-gray-900 flex-1 leading-snug">{item.q}</span>
                     <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -354,7 +432,7 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq }: Props) 
                   <button
                     type="button"
                     onClick={() => fileRef.current?.click()}
-                    className="w-full bg-white border-2 border-dashed border-gray-300 hover:border-[#62C86E] rounded-xl py-3 text-sm text-gray-600 transition flex items-center justify-center gap-2"
+                    className="w-full bg-white border-2 border-dashed border-gray-300 hover:border-[#0084FF] rounded-xl py-3 text-sm text-gray-600 transition flex items-center justify-center gap-2"
                   >
                     {attachment ? (
                       <>
@@ -381,7 +459,7 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq }: Props) 
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full bg-[#62C86E] hover:bg-[#52b85d] disabled:bg-gray-300 disabled:cursor-wait text-white font-bold py-3 rounded-xl transition text-sm flex items-center justify-center gap-2"
+                  className="w-full bg-[#0084FF] hover:bg-[#0070d8] disabled:bg-gray-300 disabled:cursor-wait text-white font-bold py-3 rounded-xl transition text-sm flex items-center justify-center gap-2"
                 >
                   {submitting ? (
                     <>

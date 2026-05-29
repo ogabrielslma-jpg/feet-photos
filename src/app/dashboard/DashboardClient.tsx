@@ -1821,7 +1821,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   <h3 className="text-sm font-bold text-gray-900">💬 Chat público de creators</h3>
                   <p className="text-[10px] text-gray-500">Veja o que as outras criadoras estão falando</p>
                 </div>
-                <ChatPanel userName={profile?.username || "Amiga"} compact />
+                <ChatPanel userName={profile?.username || "Amiga"} compact hasActivePlan={hasActivePlan} />
               </div>
 
               {/* Posts do feed */}
@@ -2292,7 +2292,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
           {/* === PERFIL === */}
           {tab === "chat" && (
-            <ChatPanel userName={profile?.username || "Amiga"} />
+            <ChatPanel userName={profile?.username || "Amiga"} hasActivePlan={hasActivePlan} />
           )}
 
           {tab === "profile" && (
@@ -2857,6 +2857,8 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
           userId={profile?.id}
           defaultEmail={profile?.email}
           defaultPhone={(profile as any)?.phone}
+          hasActivePlan={hasActivePlan}
+          userName={profile?.username || "Amiga"}
           faq={config.support_faq || {
             general: [
               { q: "Posso sacar antes de ativar um plano?", a: "Não. Para liberar saque é necessário plano ativo." },
