@@ -316,7 +316,7 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
               <div className="font-display tracking-[0.4em] text-bone-100 leading-none" style={{ fontSize: `${viewport.logo_size * 0.3}px` }}>{config.logo_secondary}</div>
             </div>
           )}
-          <p
+          <div
             className="text-bone-100/70 mt-8 mb-8"
             style={{
               fontSize: `${config.headline_size}px`,
@@ -324,6 +324,7 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
               textAlign: config.headline_align,
               lineHeight: 1.4,
             }}
+            suppressHydrationWarning
             dangerouslySetInnerHTML={{
               __html: sanitizeRichHtml(config.headline_html || config.headline),
             }}
