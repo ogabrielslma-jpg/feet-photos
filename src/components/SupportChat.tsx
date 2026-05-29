@@ -19,12 +19,14 @@ type Props = {
 };
 
 type Category = "menu" | "general" | "payment";
-type View = Category | "form" | "answer" | "success" | "list" | "chat";
+type View = Category | "form" | "answer" | "success" | "list" | "chat" | "direct-lariis";
 
 export function SupportChat({ userId, defaultEmail, defaultPhone, faq, hasActivePlan = false, userName = "Amiga" }: Props) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<View>("list");
   const [chatLocked, setChatLocked] = useState(false);
+  const [lariisReceived, setLariisReceived] = useState(false);
+  const [lariisRead, setLariisRead] = useState(false);
 
   // Carrega estado de bloqueio do chat ao montar e quando plano fica ativo
   useEffect(() => {
@@ -38,6 +40,19 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq, hasActive
       if (locked) setChatLocked(true);
     } catch {}
   }, [hasActivePlan]);
+
+  // Carrega estado da mensagem da lariis (re-checa periodicamente p/ pegar quando o ChatPanel marcar received)
+  useEffect(() => {
+    const sync = () => {
+      try {
+        if (localStorage.getItem("footpriv_lariis_received") === "1") setLariisReceived(true);
+        if (localStorage.getItem("footpriv_lariis_read") === "1") setLariisRead(true);
+      } catch {}
+    };
+    sync();
+    const interval = setInterval(sync, 2000); // checa a cada 2s
+    return () => clearInterval(interval);
+  }, []);
   const [selectedFaq, setSelectedFaq] = useState<{ q: string; a: string } | null>(null);
   const [formCategory, setFormCategory] = useState<"general" | "payment">("payment");
   const [formSubject, setFormSubject] = useState("");
@@ -148,10 +163,13 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq, hasActive
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-4 right-4 z-[150] w-14 h-14 rounded-full bg-[#0084FF] hover:bg-[#0070d8] text-white shadow-2xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
+          className="fixed bottom-4 right-4 z-[150] w-14 h-14 rounded-full bg-[#0084FF] hover:bg-[#0070d8] text-white shadow-2xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95 relative"
           aria-label="Mensagens"
         >
           <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.145 2 11.259c0 2.913 1.454 5.512 3.726 7.21V22l3.405-1.869c.909.252 1.871.388 2.869.388 5.523 0 10-4.145 10-9.26C22 6.145 17.523 2 12 2zm.994 12.46l-2.541-2.71-4.955 2.71 5.45-5.788 2.602 2.71 4.895-2.71-5.45 5.788z"/></svg>
+          {lariisReceived && !lariisRead && (
+            <span className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-500 border-2 border-white flex items-center justify-center text-[11px] text-white font-bold shadow-lg">1</span>
+          )}
         </button>
       )}
 
@@ -169,6 +187,7 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq, hasActive
                     else if (view === "general" || view === "payment") setView("menu");
                     else if (view === "menu") setView("list");
                     else if (view === "chat") setView("list");
+                    else if (view === "direct-lariis") setView("list");
                     else if (view === "success") {
                       reset();
                       setOpen(false);
@@ -187,6 +206,7 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq, hasActive
                 <p className="text-[10px] text-white/80 leading-tight">
                   {view === "list" && "Conversas e suporte"}
                   {view === "chat" && "Chat público de creators"}
+                  {view === "direct-lariis" && "Mensagem privada"}
                   {view === "menu" && "Dúvidas e suporte"}
                   {view === "general" && "Dúvidas gerais"}
                   {view === "payment" && "Dúvidas sobre pagamento"}
@@ -224,7 +244,7 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq, hasActive
                   disabled={chatLocked}
                   className={`w-full text-left flex items-center gap-3 p-3 rounded-xl transition ${chatLocked ? "bg-gray-50 opacity-60 cursor-not-allowed" : "bg-white border border-gray-200 hover:border-[#0084FF] hover:bg-blue-50/30"}`}
                 >
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">C</div>
+                  <img src="https://i.pinimg.com/736x/18/57/b0/1857b072b8d6070ea49173879fc47de7.jpg" alt="Foot Priv" className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-bold text-gray-900 truncate">Chat público de creators</p>
@@ -240,6 +260,29 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq, hasActive
                     </svg>
                   )}
                 </button>
+
+                {/* Direct privado da lariis (so aparece se ja chegou a msg) */}
+                {lariisReceived && (
+                  <button
+                    onClick={() => {
+                      try { localStorage.setItem("footpriv_lariis_read", "1"); } catch {}
+                      setLariisRead(true);
+                      setView("direct-lariis");
+                    }}
+                    className="w-full text-left flex items-center gap-3 p-3 rounded-xl transition bg-white border border-gray-200 hover:border-[#0084FF] hover:bg-blue-50/30 relative"
+                  >
+                    <img src="https://i.pinimg.com/736x/df/5c/8b/df5c8b26cdd1322c50e240089abf24d4.jpg" alt="lariis.priv" className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-900 truncate">lariis.priv</p>
+                      <p className="text-[11px] text-gray-500 truncate">ooi bem vinda flor 💕 a gente tem um grupinho no zap...</p>
+                    </div>
+                    {!lariisRead && (
+                      <div className="w-5 h-5 rounded-full bg-[#0084FF] flex items-center justify-center flex-shrink-0">
+                        <span className="text-[10px] text-white font-bold">1</span>
+                      </div>
+                    )}
+                  </button>
+                )}
 
                 {/* Sem mais conversas */}
                 <p className="text-[11px] text-gray-400 text-center py-1">— Sem mais conversas —</p>
@@ -271,6 +314,44 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq, hasActive
             {/* CHAT EMBUTIDO */}
             {view === "chat" && (
               <ChatPanel userName={userName} compact />
+            )}
+
+            {/* DIRECT PRIVADO DA LARIIS */}
+            {view === "direct-lariis" && (
+              <div className="space-y-3 p-1">
+                {/* Header da conversa */}
+                <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3 border border-gray-100">
+                  <img src="https://i.pinimg.com/736x/df/5c/8b/df5c8b26cdd1322c50e240089abf24d4.jpg" alt="lariis.priv" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-gray-900">lariis.priv</p>
+                    <p className="text-[10px] text-gray-500">creator · ativa agora</p>
+                  </div>
+                </div>
+
+                {/* Mensagem da lariis */}
+                <div className="flex items-start gap-2">
+                  <img src="https://i.pinimg.com/736x/df/5c/8b/df5c8b26cdd1322c50e240089abf24d4.jpg" alt="lariis.priv" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="bg-white rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm border border-gray-100 inline-block max-w-full">
+                      <p className="text-[11px] font-bold text-amber-600 mb-0.5">lariis.priv</p>
+                      <p className="text-sm text-gray-800 leading-snug whitespace-pre-wrap break-words">
+                        ooi bem vinda flor 💕 a gente tem um grupinho no zap pra trocar ideia. a gente se ajuda mt, posicao de foto, dica de valor, td.. se quiser eu te add, me passa teu num ou eu te mando o link aqui mesmo. boas vendas 🤍
+                      </p>
+                      <p className="text-[9px] text-gray-400 text-right mt-1">agora</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Input bloqueado */}
+                <div className="bg-gray-50 border-t border-gray-200 px-4 py-4 mt-4">
+                  <div className="flex items-center justify-center gap-2 text-gray-600">
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <p className="text-xs text-gray-600 text-center">Ative seu plano para responder mensagens privadas</p>
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* MENU DUVIDAS (categorias) */}

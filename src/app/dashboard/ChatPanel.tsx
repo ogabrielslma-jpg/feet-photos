@@ -21,14 +21,20 @@ const MESSAGES: Msg[] = [
   { id: 8, name: "isafoot_22", text: "boa dica anota anota", minutesAgo: 1280 },
   { id: 9, name: "liaa_22", text: "tbm com problema, ja troquei de dispositivo, n eh isso", minutesAgo: 1275, replyTo: 1 },
   { id: 10, name: "viviana_oficial", text: "ja fiz tudo, instagram morreu pra creator adulto", minutesAgo: 1270, replyTo: 1 },
-  { id: 11, name: "mahbianchi", text: "MENINAS acabou de cair r$ 380 aqui", minutesAgo: 1240 },
-  { id: 12, name: "gabivendeoficial", text: "ARRASOU Ca!!! 👏", minutesAgo: 1235, replyTo: 11 },
-  { id: 13, name: "Brunaprivy", text: "VAI MINHA FIA", minutesAgo: 1232, replyTo: 11 },
+  { id: 11, name: "mahbianchi", text: "meninas acabou de cair r$ 380 aqui", minutesAgo: 1240 },
+  { id: 12, name: "gabivendeoficial", text: "arrasou Ca!!! 👏", minutesAgo: 1235, replyTo: 11 },
+  { id: 13, name: "Brunaprivy", text: "vai minha fia", minutesAgo: 1232, replyTo: 11 },
   { id: 14, name: "onlypes_aananda", text: "👏👏👏 quero ser vc qdo crescer", minutesAgo: 1230, replyTo: 11 },
   { id: 15, name: "camilavendinha", text: "tava precisando dessa energia, parabens amiga", minutesAgo: 1228, replyTo: 11 },
   { id: 16, name: "mahbianchi", text: "obg meninas vcs sao tudo", minutesAgo: 1225, replyTo: 11 },
   { id: 17, name: "babi_doll", text: "demais Ca, qm foi q pagou?? aquele cara da ferrari de novo?", minutesAgo: 1222, replyTo: 11 },
   { id: 18, name: "mahbianchi", text: "ele mesmo babi, ja é o 4o lance dele essa semana 💸", minutesAgo: 1220, replyTo: 17 },
+  { id: 202, name: "dieniferbrum_", text: "amigas to feliz dms, fechei outro mes com mais de 5k", minutesAgo: 9 },
+  { id: 203, name: "onlypes_aananda", text: "arrasa amg ❤️‍🔥❤️‍🔥", minutesAgo: 8, replyTo: 202 },
+  { id: 204, name: "gabivendeoficial", text: "ta voando!! parabens", minutesAgo: 8, replyTo: 202 },
+  { id: 205, name: "lariis.priv", text: "vontade de pegar tua receita rsrs", minutesAgo: 7, replyTo: 202 },
+  { id: 206, name: "dieniferbrum_", text: "eh constancia gata, todo dia 1 foto nova 📸", minutesAgo: 7, replyTo: 202 },
+  { id: 207, name: "babi_doll", text: "constancia eh td amg, parabens", minutesAgo: 7, replyTo: 202 },
   { id: 19, name: "helooo_priv", text: "gente o lance mais pao-duro da minha vida agora, cara dando 15 reais", minutesAgo: 1200 },
   { id: 20, name: "Pesdaamanda", text: "15 REAIS???? amg recusa ate o fim", minutesAgo: 1195, replyTo: 19 },
   { id: 21, name: "luvendinha", text: "tem cada um, axam q eh feirinha", minutesAgo: 1192, replyTo: 19 },
@@ -53,7 +59,7 @@ const MESSAGES: Msg[] = [
   { id: 40, name: "dani_creator", text: "evita o do shopping center norte, machucaram minha cuticula la", minutesAgo: 1082, replyTo: 34 },
   { id: 41, name: "manuelaaa.b", text: "primeira venda do mes caiu agora!!! 100 dolares!!!! ❤️‍🔥", minutesAgo: 1050 },
   { id: 42, name: "carolperola", text: "comemora muito Manu, primeiro eh o + dificil", minutesAgo: 1045, replyTo: 41 },
-  { id: 43, name: "Brunaprivy", text: "EBA!!!!", minutesAgo: 1043, replyTo: 41 },
+  { id: 43, name: "Brunaprivy", text: "eba!!!", minutesAgo: 1043, replyTo: 41 },
   { id: 44, name: "vivi.privy", text: "🚀🚀🚀", minutesAgo: 1042, replyTo: 41 },
   { id: 45, name: "manuelaaa.b", text: "to tremenda ainda kkk, comprei o curso de 197 e ja paguei", minutesAgo: 1040, replyTo: 41 },
   { id: 46, name: "babi_doll", text: "se cuida com curso amg, mt deles eh furada", minutesAgo: 1037, replyTo: 45 },
@@ -70,10 +76,10 @@ const MESSAGES: Msg[] = [
   { id: 57, name: "liaa_22", text: "qual cor vcs mais vendem? cor neutra ou vermelho?", minutesAgo: 981, replyTo: 48 },
   { id: 58, name: "onlypes_aananda", text: "vermelho, MUITO mais. eh fetiche classico", minutesAgo: 980, replyTo: 57 },
   { id: 59, name: "Pesdaamanda", text: "amei as dicas <3", minutesAgo: 978, replyTo: 48 },
-  { id: 60, name: "rafaela_oficial", text: "PESSOAL meu marido descobriu o q eu faço hj", minutesAgo: 920 },
-  { id: 61, name: "yasmim__real", text: "OXE como reagiu??", minutesAgo: 915, replyTo: 60 },
+  { id: 60, name: "rafaela_oficial", text: "pessoal meu marido descobriu o q eu faço hj", minutesAgo: 920 },
+  { id: 61, name: "yasmim__real", text: "oxe como reagiu??", minutesAgo: 915, replyTo: 60 },
   { id: 62, name: "rafaela_oficial", text: "ficou bravo no comeco mas qdo viu o saldo no banco aceitou kkkk", minutesAgo: 912, replyTo: 60 },
-  { id: 63, name: "camilavendinha", text: "AHHAHA dinheiro convence", minutesAgo: 910, replyTo: 60 },
+  { id: 63, name: "camilavendinha", text: "ahhaha dinheiro convence", minutesAgo: 910, replyTo: 60 },
   { id: 64, name: "mirellapasso", text: "o meu apoia desde o inicio, sou sortuda", minutesAgo: 908, replyTo: 60 },
   { id: 65, name: "dudazinhah", text: "amg q alivio q ele aceitou", minutesAgo: 906, replyTo: 60 },
   { id: 66, name: "claradalmaa", text: "ngm precisa saber nem mae nem marido se vc n quer", minutesAgo: 904, replyTo: 60 },
@@ -83,15 +89,15 @@ const MESSAGES: Msg[] = [
   { id: 70, name: "leticia_priv", text: "credo, troca de personal urgente!!", minutesAgo: 845, replyTo: 69 },
   { id: 71, name: "ninaa_real", text: "homem n perde uma, denuncia na academia", minutesAgo: 843, replyTo: 69 },
   { id: 72, name: "carolperola", text: "vou trocar mesmo, q saco", minutesAgo: 841, replyTo: 69 },
-  { id: 73, name: "rafaela_oficial", text: "GENTE meu cliente bizarro voltou hj, eh o do bob esponja KKKK", minutesAgo: 800 },
-  { id: 74, name: "isafoot_22", text: "PARA TUDO o bob esponja? rsrs", minutesAgo: 795, replyTo: 73 },
+  { id: 73, name: "rafaela_oficial", text: "gente meu cliente bizarro voltou hj, eh o do bob esponja KKKK", minutesAgo: 800 },
+  { id: 74, name: "isafoot_22", text: "para tudo o bob esponja? rsrs", minutesAgo: 795, replyTo: 73 },
   { id: 75, name: "rafaela_oficial", text: "ele quer agora uma meia da patrick estrela 💀", minutesAgo: 793, replyTo: 73 },
-  { id: 76, name: "gabivendeoficial", text: "NAO TO RINDO DEMAIS", minutesAgo: 791, replyTo: 73 },
+  { id: 76, name: "gabivendeoficial", text: "nao to rindo demais", minutesAgo: 791, replyTo: 73 },
   { id: 77, name: "vivi.privy", text: "amg da uma googlada na riachuelo, ja te salvou antes", minutesAgo: 789, replyTo: 73 },
   { id: 78, name: "rafaela_oficial", text: "tati minha salvadora kkkk obg", minutesAgo: 787, replyTo: 73 },
   { id: 79, name: "viviana_oficial", text: "esses bizarros pagam BEM, n julga n", minutesAgo: 785, replyTo: 73 },
   { id: 80, name: "rafaela_oficial", text: "ele paga 200 fixo por video kkkk uso o salario dele pra mercado", minutesAgo: 783, replyTo: 79 },
-  { id: 81, name: "gabivendeoficial", text: "ATENCAO golpe novo: cara fingindo q eh comprador pedindo pra mover pro tg, n caiam!!!", minutesAgo: 740 },
+  { id: 81, name: "gabivendeoficial", text: "atencao golpe novo: cara fingindo q eh comprador pedindo pra mover pro tg, n caiam!!!", minutesAgo: 740 },
   { id: 82, name: "vivi.privy", text: "ouvi falar tbm. tudo deve ficar na plataforma", minutesAgo: 735, replyTo: 81 },
   { id: 83, name: "mahbianchi", text: "ja recebi msg assim, bloqueei", minutesAgo: 733, replyTo: 81 },
   { id: 84, name: "dieniferbrum_", text: "obg pelo aviso amg ❤️", minutesAgo: 731, replyTo: 81 },
@@ -109,15 +115,15 @@ const MESSAGES: Msg[] = [
   { id: 96, name: "dudazinhah", text: "tem uns studios alugaveis no savassi, da uma olhada", minutesAgo: 595, replyTo: 95 },
   { id: 97, name: "mirellapasso", text: "obg, vou pesquisar", minutesAgo: 593, replyTo: 95 },
   { id: 98, name: "helooo_priv", text: "tbm to procurando o mesmo aqui em recife", minutesAgo: 590, replyTo: 95 },
-  { id: 99, name: "mahirambo", text: "minha mae LIGOU AGORA falando q meu pai viu uma materia sobre creators e quer conversar 🫠", minutesAgo: 560 },
-  { id: 100, name: "dieniferbrum_", text: "respira fundo, n conta nada", minutesAgo: 555, replyTo: 99 },
-  { id: 101, name: "Brunaprivy", text: "diz q eh influencer de produtos de beleza, da pra escapar", minutesAgo: 553, replyTo: 99 },
-  { id: 102, name: "lariis.priv", text: "MELHOR mentira eh a de produtos pq da pra mostrar foto de pe com creme", minutesAgo: 551, replyTo: 99 },
-  { id: 103, name: "mahbianchi", text: "amiga vai dar td certo, manda fe 🙏", minutesAgo: 549, replyTo: 99 },
-  { id: 104, name: "mahirambo", text: "vou seguir essa narrativa do esmalte e creme, obg gatas", minutesAgo: 547, replyTo: 99 },
-  { id: 105, name: "ninaa_real", text: "passei por isso ano passado, segura firme", minutesAgo: 545, replyTo: 99 },
-  { id: 106, name: "carolperola", text: "bom diaaa, ja é meio dia mas pra mim acabei de acordar 🌞", minutesAgo: 460 },
-  { id: 107, name: "biancavendinha", text: "bdia Pe, descansou bem?", minutesAgo: 455, replyTo: 106 },
+  { id: 99, name: "mahirambo", text: "amg minha vizinha curiosa começou a perguntar com o q eu trabalho, q saco kkk", minutesAgo: 560 },
+  { id: 100, name: "dieniferbrum_", text: "n conta nada amg, fica vaga", minutesAgo: 555, replyTo: 99 },
+  { id: 101, name: "Brunaprivy", text: "diz q eh influencer de produtos de beleza, sempre funciona", minutesAgo: 553, replyTo: 99 },
+  { id: 102, name: "lariis.priv", text: "melhor desculpa eh de produtos de beleza, da pra mostrar foto com creme", minutesAgo: 551, replyTo: 99 },
+  { id: 103, name: "mahbianchi", text: "amiga ignora ela, vizinho ta sempre querendo saber", minutesAgo: 549, replyTo: 99 },
+  { id: 104, name: "mahirambo", text: "vou seguir essa do esmalte e creme entao, obg gatas", minutesAgo: 547, replyTo: 99 },
+  { id: 105, name: "ninaa_real", text: "passei por isso, segura firme. depois ela esquece", minutesAgo: 545, replyTo: 99 },
+  { id: 106, name: "carolperola", text: "amgs voltei de uma soneca enorme kkk dormi muito", minutesAgo: 460 },
+  { id: 107, name: "biancavendinha", text: "carol vc dorme demais kkkk descansou bem?", minutesAgo: 455, replyTo: 106 },
   { id: 108, name: "carolperola", text: "demais, dormi 11h direto 😴", minutesAgo: 453, replyTo: 106 },
   { id: 109, name: "manuelaaa.b", text: "alguem ja deu match com cliente q reconheceu vc em outra plataforma? to com medo disso", minutesAgo: 420 },
   { id: 110, name: "claradalmaa", text: "ja me aconteceu mas eu uso outro nome em cada lugar, nem ligo", minutesAgo: 415, replyTo: 109 },
@@ -129,23 +135,23 @@ const MESSAGES: Msg[] = [
   { id: 116, name: "Pesdaamanda", text: "amg toma um buscopan e descansa, leilao roda sozinho", minutesAgo: 375, replyTo: 115 },
   { id: 117, name: "dieniferbrum_", text: "agua morna no pe ajuda mt na colica", minutesAgo: 373, replyTo: 115 },
   { id: 118, name: "dudazinhah", text: "vou tomar e fica deitada, obg flores", minutesAgo: 371, replyTo: 115 },
-  { id: 119, name: "lariis.priv", text: "alguem usou o cupom de 47% q a plataforma libera?", minutesAgo: 340 },
-  { id: 120, name: "Brunaprivy", text: "EU eh real, paguei so 41 conto no basico", minutesAgo: 335, replyTo: 119 },
-  { id: 121, name: "mahbianchi", text: "ja peguei tbm, dura pouco mas vale aproveitar", minutesAgo: 333, replyTo: 119 },
-  { id: 122, name: "isafoot_22", text: "aparece sozinho qdo n paga rapido o pix, ele vem kkkk", minutesAgo: 331, replyTo: 119 },
-  { id: 123, name: "gabivendeoficial", text: "essa dica eh OURO bia 🥇", minutesAgo: 329, replyTo: 119 },
-  { id: 124, name: "lariis.priv", text: "vou testar isso entao", minutesAgo: 327, replyTo: 119 },
-  { id: 125, name: "babi_doll", text: "consegui o 47% e o cara da ferrari tava la dando lance kkk milagrei", minutesAgo: 325, replyTo: 119 },
+  { id: 119, name: "lariis.priv", text: "amgs como vcs lidam com os arabes? meu tradutor do whats ta uma porcaria, sempre traduz errado", minutesAgo: 340 },
+  { id: 120, name: "Brunaprivy", text: "lariii o google tradutor eh melhor q o do whats, juro", minutesAgo: 335, replyTo: 119 },
+  { id: 121, name: "mahbianchi", text: "uso o deepl, traduz arabe bem melhor q o google", minutesAgo: 333, replyTo: 119 },
+  { id: 122, name: "isafoot_22", text: "as vezes ele pede uma coisa esquisita e eu n entendo, ai mando audio em ingles q vc resolve mais facil", minutesAgo: 331, replyTo: 119 },
+  { id: 123, name: "gabivendeoficial", text: "aprende algumas palavras tipo shukran (obg) e habibi, eles ficam felizes", minutesAgo: 329, replyTo: 119 },
+  { id: 124, name: "lariis.priv", text: "vou baixar o deepl entao, valeu mahbianchi", minutesAgo: 327, replyTo: 119 },
+  { id: 125, name: "babi_doll", text: "arabe paga MUITO bem se tu trata bem, ja virei especialista kkk", minutesAgo: 325, replyTo: 119 },
   { id: 126, name: "mirellapasso", text: "amgs sumi pq fui dormir cedo, voltei, alguma novidade?", minutesAgo: 300 },
-  { id: 127, name: "vivi.privy", text: "td calmo, sol descobriu o cupom kkkk", minutesAgo: 295, replyTo: 126 },
-  { id: 128, name: "mirellapasso", text: "kkkk feliz por ela", minutesAgo: 293, replyTo: 126 },
+  { id: 127, name: "vivi.privy", text: "td calmo, conversamos sobre tradutor pra arabe kkkk", minutesAgo: 295, replyTo: 126 },
+  { id: 128, name: "mirellapasso", text: "kkkk dica boa", minutesAgo: 293, replyTo: 126 },
   { id: 129, name: "mahirambo", text: "comprei aquele OLEO de coco da granado, juro q meu pe ta HIDRATADISSIMO", minutesAgo: 260 },
   { id: 130, name: "carolperola", text: "o cheiro tbm eh divino", minutesAgo: 255, replyTo: 129 },
   { id: 131, name: "biancavendinha", text: "amo amo amo esse oleo", minutesAgo: 253, replyTo: 129 },
   { id: 132, name: "manuelaaa.b", text: "to anotando td q vcs falam, vou comprar a feira inteira amanha", minutesAgo: 251, replyTo: 129 },
   { id: 133, name: "rafapezinhah", text: "qts ml? eh o pote pequeno?", minutesAgo: 250, replyTo: 129 },
   { id: 134, name: "mahirambo", text: "200ml, dura uns 2 meses fácil", minutesAgo: 248, replyTo: 133 },
-  { id: 135, name: "viviana_oficial", text: "GENTE preciso desabafar, esses caras q ficam mandando 'oi gata' achando q sao especiais", minutesAgo: 230 },
+  { id: 135, name: "viviana_oficial", text: "gente preciso desabafar, esses caras q ficam mandando 'oi gata' achando q sao especiais", minutesAgo: 230 },
   { id: 136, name: "liaa_22", text: "kkkk q pesadelo, ignoro td", minutesAgo: 227, replyTo: 135 },
   { id: 137, name: "yasmim__real", text: "+1, eu so respondo qdo tem lance no carrinho", minutesAgo: 225, replyTo: 135 },
   { id: 138, name: "miareal", text: "se vc respondeu uma vez, eles axam q ja sao seus amigos kkk", minutesAgo: 223, replyTo: 135 },
@@ -153,12 +159,12 @@ const MESSAGES: Msg[] = [
   { id: 140, name: "viviana_oficial", text: "exatamente!! ja levei calote 2x esse mes", minutesAgo: 219, replyTo: 139 },
   { id: 141, name: "helooo_priv", text: "por isso so confio em quem paga adiantado", minutesAgo: 217, replyTo: 135 },
   { id: 142, name: "gabivendeoficial", text: "gente, tem cara querendo q eu mande video descascando uma laranja com o pe 🍊 KKKK", minutesAgo: 220 },
-  { id: 143, name: "Pesdaamanda", text: "MENINA O QUE", minutesAgo: 215, replyTo: 142 },
+  { id: 143, name: "Pesdaamanda", text: "menina o que", minutesAgo: 215, replyTo: 142 },
   { id: 144, name: "gabivendeoficial", text: "to falando, e paga 150!! vou tentar", minutesAgo: 213, replyTo: 142 },
   { id: 145, name: "onlypes_aananda", text: "deus me livre, mas $$ eh $$", minutesAgo: 211, replyTo: 142 },
   { id: 146, name: "yasmim__real", text: "depois conta se conseguiu, q tenso", minutesAgo: 209, replyTo: 142 },
   { id: 147, name: "luvendinha", text: "amg manda video sem mostrar caminho ate a cozinha, segurança", minutesAgo: 207, replyTo: 142 },
-  { id: 148, name: "isafoot_22", text: "TIKTOK BANIU MEU PERFIL DE NOVO 😡", minutesAgo: 180 },
+  { id: 148, name: "isafoot_22", text: "tiktok baniu meu perfil de novo 😡", minutesAgo: 180 },
   { id: 149, name: "leticia_priv", text: "amg, ja eh o que? quinto?", minutesAgo: 175, replyTo: 148 },
   { id: 150, name: "isafoot_22", text: "sexto. ja desisti, vou so focar aqui", minutesAgo: 173, replyTo: 148 },
   { id: 151, name: "claradalmaa", text: "tiktok eh guerra, melhor focar onde paga", minutesAgo: 171, replyTo: 148 },
@@ -170,15 +176,15 @@ const MESSAGES: Msg[] = [
   { id: 157, name: "vivi.privy", text: "+1, comprei luz de studio e paguei em 1 semana", minutesAgo: 133, replyTo: 155 },
   { id: 158, name: "rafapezinhah", text: "qual altura do salto Ca? to pensando em comprar tbm", minutesAgo: 131, replyTo: 155 },
   { id: 159, name: "mahbianchi", text: "comprei de 8cm e 12cm, o de 12 vende mais", minutesAgo: 129, replyTo: 158 },
-  { id: 160, name: "miareal", text: "MENINAS preciso reclamar, tem um comprador q fica MUDANDO de mente toda hora", minutesAgo: 130 },
+  { id: 160, name: "miareal", text: "meninas preciso reclamar, tem um comprador q fica MUDANDO de mente toda hora", minutesAgo: 130 },
   { id: 161, name: "babi_doll", text: "conta amg", minutesAgo: 127, replyTo: 160 },
   { id: 162, name: "miareal", text: "pede foto, eu mando, ele diz q n era essa pose, pede outra, eh DESGASTANTE", minutesAgo: 125, replyTo: 160 },
   { id: 163, name: "Pesdaamanda", text: "amg bloqueia, esse tipo n compensa", minutesAgo: 123, replyTo: 160 },
   { id: 164, name: "lariis.priv", text: "ou cobra cada nova foto separado", minutesAgo: 121, replyTo: 160 },
   { id: 165, name: "miareal", text: "vou bloquear mesmo, cansei", minutesAgo: 119, replyTo: 160 },
-  { id: 166, name: "rafaela_oficial", text: "ALGUEM TEM CUPOM DE IFOOD?? to com fome", minutesAgo: 100 },
+  { id: 166, name: "rafaela_oficial", text: "alguem tem cupom de ifood?? to com fome", minutesAgo: 100 },
   { id: 167, name: "lariis.priv", text: "te mando no priv, vc ganha 20 reais", minutesAgo: 95, replyTo: 166 },
-  { id: 168, name: "rafaela_oficial", text: "AMG VC EH TUDO", minutesAgo: 93, replyTo: 166 },
+  { id: 168, name: "rafaela_oficial", text: "amg vc eh tudo", minutesAgo: 93, replyTo: 166 },
   { id: 169, name: "carolperola", text: "qual app vcs usam pra controlar o q ganha? to pensando em planilha mas eh trabalhoso", minutesAgo: 80 },
   { id: 170, name: "mahirambo", text: "uso o organizze, sincroniza com banco", minutesAgo: 75, replyTo: 169 },
   { id: 171, name: "claradalmaa", text: "mobills aqui, perfeito", minutesAgo: 73, replyTo: 169 },
@@ -187,22 +193,39 @@ const MESSAGES: Msg[] = [
   { id: 174, name: "yasmim__real", text: "duda KKKK humor preto", minutesAgo: 67, replyTo: 169 },
   { id: 175, name: "liaa_22", text: "uso a calculadora do celular mesmo kkkk vergonha", minutesAgo: 65, replyTo: 169 },
   { id: 176, name: "manuelaaa.b", text: "consegui meu 2o pagamento, fechei o mes com R$ 280 (sou novata) ❤️", minutesAgo: 55 },
-  { id: 177, name: "Pesdaamanda", text: "MARAVILHA Manu, vc ta indo rapido!!", minutesAgo: 50, replyTo: 176 },
+  { id: 177, name: "Pesdaamanda", text: "maravilha Manu, vc ta indo rapido!!", minutesAgo: 50, replyTo: 176 },
   { id: 178, name: "lariis.priv", text: "primeiros meses eh assim, daqui a 6 meses vc ta em 3k tranquilo", minutesAgo: 48, replyTo: 176 },
   { id: 179, name: "manuelaaa.b", text: "ai vontade de chorar 🥹 obg pela acolhida", minutesAgo: 46, replyTo: 176 },
   { id: 180, name: "viviana_oficial", text: "vai com tudo Manu, todas começam assim", minutesAgo: 44, replyTo: 176 },
   { id: 181, name: "gabivendeoficial", text: "consegui!! mandei o video da laranja e o cara TRANSFERIU 200 🍊💰", minutesAgo: 38 },
-  { id: 182, name: "isafoot_22", text: "AHAHA gloria a deus pelos esquisitos ricos", minutesAgo: 35, replyTo: 181 },
+  { id: 182, name: "isafoot_22", text: "ahaha gloria a deus pelos esquisitos ricos", minutesAgo: 35, replyTo: 181 },
   { id: 183, name: "carolperola", text: "vou aceitar td pedido bizarro a partir de hj", minutesAgo: 33, replyTo: 181 },
   { id: 184, name: "mahbianchi", text: "kkkk mt bom Lari", minutesAgo: 31, replyTo: 181 },
+  { id: 208, name: "dani_creator", text: "MENINAS pergunta seria: qual a pior bizarrice q ja pediram pra vcs?? to curiosa", minutesAgo: 32 },
+  { id: 209, name: "viviana_oficial", text: "kkkkk amg, papelao molhado. tinha q pisar com o pe descalço", minutesAgo: 30, replyTo: 208 },
+  { id: 210, name: "helooo_priv", text: "jura papelão??? amg", minutesAgo: 29, replyTo: 208 },
+  { id: 211, name: "liaa_22", text: "pediram pra eu cantar parabens enquanto pisava num bolo de aniversario 🎂", minutesAgo: 28, replyTo: 208 },
+  { id: 212, name: "isafoot_22", text: "ahahaha bolo, n consigo", minutesAgo: 27, replyTo: 208 },
+  { id: 213, name: "miareal", text: "olha gente, pagando bem q mal tem 🤷‍♀️ eu faço quase tudo dentro do limite", minutesAgo: 26, replyTo: 208 },
+  { id: 214, name: "babi_doll", text: "concordo Mia, se paga bem e n machuca ngm eu topo", minutesAgo: 25, replyTo: 208 },
+  { id: 215, name: "miareal", text: "cara me pediu pra falar em grego. eu falando q n sabia e ele insistindo", minutesAgo: 24, replyTo: 208 },
+  { id: 216, name: "ninaa_real", text: "grego kkkkk de onde tira isso", minutesAgo: 23, replyTo: 208 },
+  { id: 217, name: "Brunaprivy", text: "ja pediram pra eu chorar fingindo, n consegui pq n sou atriz kkk", minutesAgo: 22, replyTo: 208 },
+  { id: 218, name: "onlypes_aananda", text: "MENINAS to tremenda. cara me ofereceu MAIS se eu mostrasse o rosto. mandei so parte e ele pagou 600 REAIS", minutesAgo: 20, replyTo: 208 },
+  { id: 219, name: "gabivendeoficial", text: "mel 600 reais??? amg vc eh genia", minutesAgo: 18, replyTo: 208 },
+  { id: 220, name: "dieniferbrum_", text: "olha o do iogurte, queria q eu pisasse num pote de iogurte SEM TAMPA", minutesAgo: 16, replyTo: 208 },
+  { id: 221, name: "rafapezinhah", text: "voces sao demais kkkkk eu so tive pedido normal ate hj, queria contar uma bizarra", minutesAgo: 14, replyTo: 208 },
+  { id: 222, name: "luvendinha", text: "pediram pra eu fingir q era robo, falar em voz mecânica", minutesAgo: 11, replyTo: 208 },
+  { id: 223, name: "mahirambo", text: "robô kkkkk imagina vc fazendo bip bop", minutesAgo: 9, replyTo: 208 },
+  { id: 224, name: "yasmim__real", text: "gente o cara q queria q eu lesse uma receita de bolo enquanto mostrava o pe foi o + estranho", minutesAgo: 7, replyTo: 208 },
   { id: 185, name: "helooo_priv", text: "olha gente, mais um pedindo DESCONTO. vc paga desconto no supermercado? n. entao", minutesAgo: 35 },
   { id: 186, name: "luvendinha", text: "DEFENDIDOOOO. somos profissionais, n eh feira", minutesAgo: 32, replyTo: 185 },
   { id: 187, name: "ninaa_real", text: "qdo pedem desconto eu aumento o preco kkk eles aprendem", minutesAgo: 30, replyTo: 185 },
   { id: 188, name: "rafapezinhah", text: "nina vc eh um genio", minutesAgo: 28, replyTo: 187 },
   { id: 189, name: "babi_doll", text: "tatic do aumento de preco quando pedem desconto eh OURO", minutesAgo: 26, replyTo: 187 },
-  { id: 190, name: "Brunaprivy", text: "gente ja fizeram leilao agora a noite? ta movimentado?", minutesAgo: 28 },
-  { id: 191, name: "onlypes_aananda", text: "EXTREMAMENTE, ta entrando lance a cada 2 min aqui", minutesAgo: 25, replyTo: 190 },
-  { id: 192, name: "vivi.privy", text: "noite eh nosso prime time", minutesAgo: 23, replyTo: 190 },
+  { id: 190, name: "Brunaprivy", text: "gente ja fizeram leilao agora? ta movimentado?", minutesAgo: 28 },
+  { id: 191, name: "onlypes_aananda", text: "extremamente, ta entrando lance a cada 2 min aqui", minutesAgo: 25, replyTo: 190 },
+  { id: 192, name: "vivi.privy", text: "ta no fluxo agora, esse momento eh ouro", minutesAgo: 23, replyTo: 190 },
   { id: 193, name: "Brunaprivy", text: "to publicando AGORA entao 🚀", minutesAgo: 21, replyTo: 190 },
   { id: 194, name: "biancavendinha", text: "rolando promo nova naquela loja de meia fofa q a Cah recomendou", minutesAgo: 18 },
   { id: 195, name: "yasmim__real", text: "link plsssss", minutesAgo: 16, replyTo: 194 },
@@ -212,29 +235,6 @@ const MESSAGES: Msg[] = [
   { id: 199, name: "leticia_priv", text: "vamo sim, te chamo amanha", minutesAgo: 11, replyTo: 197 },
   { id: 200, name: "dudazinhah", text: "colica passou, milagres existem ✨", minutesAgo: 10 },
   { id: 201, name: "isafoot_22", text: "🙏🙏🙏", minutesAgo: 9, replyTo: 200 },
-  { id: 202, name: "dieniferbrum_", text: "amigas to feliz dms, fechei outro mes com mais de 5k", minutesAgo: 9 },
-  { id: 203, name: "onlypes_aananda", text: "ARRASA AMG ❤️‍🔥❤️‍🔥", minutesAgo: 8, replyTo: 202 },
-  { id: 204, name: "gabivendeoficial", text: "ta voando!! parabens", minutesAgo: 8, replyTo: 202 },
-  { id: 205, name: "lariis.priv", text: "vontade de pegar tua receita rsrs", minutesAgo: 7, replyTo: 202 },
-  { id: 206, name: "dieniferbrum_", text: "eh constancia gata, todo dia 1 foto nova 📸", minutesAgo: 7, replyTo: 202 },
-  { id: 207, name: "babi_doll", text: "constancia eh td amg, parabens", minutesAgo: 7, replyTo: 202 },
-  { id: 208, name: "dani_creator", text: "MENINAS pergunta seria: qual a pior bizarrice q ja pediram pra vcs?? to curiosa", minutesAgo: 32 },
-  { id: 209, name: "viviana_oficial", text: "kkkkk amg, papelao molhado. tinha q pisar com o pe descalço", minutesAgo: 30, replyTo: 208 },
-  { id: 210, name: "helooo_priv", text: "JURA papelão??? amg", minutesAgo: 29, replyTo: 208 },
-  { id: 211, name: "liaa_22", text: "pediram pra eu cantar parabens enquanto pisava num bolo de aniversario 🎂", minutesAgo: 28, replyTo: 208 },
-  { id: 212, name: "isafoot_22", text: "AHAHAHAHA bolo, n consigo", minutesAgo: 27, replyTo: 208 },
-  { id: 213, name: "miareal", text: "olha gente, pagando bem q mal tem 🤷‍♀️ eu faço quase tudo dentro do limite", minutesAgo: 26, replyTo: 208 },
-  { id: 214, name: "babi_doll", text: "concordo Mia, se paga bem e n machuca ngm eu topo", minutesAgo: 25, replyTo: 208 },
-  { id: 215, name: "miareal", text: "cara me pediu pra falar em GREGO. eu falando q n sabia e ele insistindo", minutesAgo: 24, replyTo: 208 },
-  { id: 216, name: "ninaa_real", text: "grego kkkkk de onde tira isso", minutesAgo: 23, replyTo: 208 },
-  { id: 217, name: "Brunaprivy", text: "ja pediram pra eu chorar fingindo, n consegui pq n sou atriz kkk", minutesAgo: 22, replyTo: 208 },
-  { id: 218, name: "onlypes_aananda", text: "MENINAS to tremenda. cara me ofereceu MAIS se eu mostrasse o rosto. mandei so parte e ele pagou 600 REAIS", minutesAgo: 20, replyTo: 208 },
-  { id: 219, name: "gabivendeoficial", text: "MEL 600 REAIS??? amg vc eh genia", minutesAgo: 18, replyTo: 208 },
-  { id: 220, name: "dieniferbrum_", text: "olha o do iogurte, queria q eu pisasse num pote de iogurte SEM TAMPA", minutesAgo: 16, replyTo: 208 },
-  { id: 221, name: "rafapezinhah", text: "voces sao demais kkkkk eu so tive pedido normal ate hj, queria contar uma bizarra", minutesAgo: 14, replyTo: 208 },
-  { id: 222, name: "luvendinha", text: "pediram pra eu fingir q era robo, falar em voz mecânica", minutesAgo: 11, replyTo: 208 },
-  { id: 223, name: "mahirambo", text: "robô kkkkk imagina vc fazendo bip bop", minutesAgo: 9, replyTo: 208 },
-  { id: 224, name: "yasmim__real", text: "GENTE o cara q queria q eu lesse uma receita de bolo enquanto mostrava o pe foi o + estranho", minutesAgo: 7, replyTo: 208 },
 ];
 
 const AVATAR_URLS: Record<string, string> = {
@@ -327,6 +327,22 @@ export function ChatPanel({ userName, compact = false, hasActivePlan = false }: 
   const [typingNames, setTypingNames] = useState<string[]>([]);
   const [draftMessage, setDraftMessage] = useState("");
   const [chatLocked, setChatLocked] = useState(false);
+  const [showFakeNewMsg, setShowFakeNewMsg] = useState(false);
+  const [showTwelveBadge, setShowTwelveBadge] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  // Direct privado da lariis: 30s apos saudacao
+  const [lariisReceived, setLariisReceived] = useState(false);
+
+  function triggerLock() {
+    try { localStorage.setItem("footpriv_chat_locked", "1"); } catch {}
+    setChatLocked(true);
+  }
+
+  function handleBlockedClick() {
+    setToastMessage("🔒 Ative seu plano para visualizar e interagir");
+    triggerLock();
+    setTimeout(() => setToastMessage(null), 3500);
+  }
 
   // Carrega estado de bloqueio e libera se plano ativo
   useEffect(() => {
@@ -341,7 +357,7 @@ export function ChatPanel({ userName, compact = false, hasActivePlan = false }: 
     } catch {}
   }, [hasActivePlan]);
 
-  // Carrega mensagens persistidas (sua saudacao + 3 respostas) ao montar
+  // Carrega mensagens persistidas (sua saudacao + 3 respostas + flags fake) ao montar
   useEffect(() => {
     try {
       const savedUser = localStorage.getItem("footpriv_chat_user_msgs");
@@ -354,8 +370,23 @@ export function ChatPanel({ userName, compact = false, hasActivePlan = false }: 
         const parsed = JSON.parse(savedIncoming);
         if (Array.isArray(parsed)) setIncomingMessages(parsed);
       }
+      if (localStorage.getItem("footpriv_chat_fake_new") === "1") setShowFakeNewMsg(true);
+      if (localStorage.getItem("footpriv_chat_twelve") === "1") setShowTwelveBadge(true);
+      if (localStorage.getItem("footpriv_lariis_received") === "1") setLariisReceived(true);
     } catch {}
   }, []);
+
+  // Persiste flags
+  useEffect(() => {
+    try {
+      if (showFakeNewMsg) localStorage.setItem("footpriv_chat_fake_new", "1");
+    } catch {}
+  }, [showFakeNewMsg]);
+  useEffect(() => {
+    try {
+      if (showTwelveBadge) localStorage.setItem("footpriv_chat_twelve", "1");
+    } catch {}
+  }, [showTwelveBadge]);
 
   // Salva mensagens da usuaria sempre que mudam
   useEffect(() => {
@@ -494,24 +525,29 @@ export function ChatPanel({ userName, compact = false, hasActivePlan = false }: 
       }, delay);
     });
 
-    // Apos a 3a resposta (delay 16s), trava o chat
+    // Apos a 3a resposta: trava em 500ms. +12 aparece 40s depois.
     const lastDelay = fixedReplies[fixedReplies.length - 1].delay;
     setTimeout(() => {
-      try { localStorage.setItem("footpriv_chat_locked", "1"); } catch {}
-      setChatLocked(true);
+      triggerLock();
     }, lastDelay + 500);
+    setTimeout(() => {
+      setShowTwelveBadge(true);
+    }, lastDelay + 40000);
+
+    // Direct privado da lariis: 30s apos a saudacao inicial
+    setTimeout(() => {
+      try { localStorage.setItem("footpriv_lariis_received", "1"); } catch {}
+      setLariisReceived(true);
+    }, 30000);
   }
 
   function handleDraftSend() {
     if (!draftMessage.trim()) return;
-    const msgId = `user-${Date.now()}`;
-    const text = draftMessage.trim();
-    setUserMessages((prev) => [...prev, { id: msgId, text, status: "sending" }]);
+    // Tentar enviar mensagem nova trava o chat imediatamente (nao envia)
     setDraftMessage("");
-    // Apos 8s, marca como "failed"
-    setTimeout(() => {
-      setUserMessages((prev) => prev.map((m) => (m.id === msgId ? { ...m, status: "failed" } : m)));
-    }, 8000);
+    triggerLock();
+    setToastMessage("🔒 Ative seu plano para enviar mensagens");
+    setTimeout(() => setToastMessage(null), 3500);
   }
 
   function renderMessage(m: Msg, isReply = false) {
@@ -530,9 +566,9 @@ export function ChatPanel({ userName, compact = false, hasActivePlan = false }: 
   }
 
   return (
-    <div className={`flex flex-col ${compact ? "h-[480px] rounded-2xl border border-gray-200 overflow-hidden" : "h-[calc(100vh-180px)] sm:h-[calc(100vh-200px)]"} bg-gray-50`}>
+    <div className={`relative flex flex-col ${compact ? "h-[480px] rounded-2xl border border-gray-200 overflow-hidden" : "h-[calc(100vh-180px)] sm:h-[calc(100vh-200px)]"} bg-gray-50`}>
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 flex-shrink-0">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white font-bold text-lg shadow">C</div>
+        <img src="https://i.pinimg.com/736x/18/57/b0/1857b072b8d6070ea49173879fc47de7.jpg" alt="Foot Priv" className="w-10 h-10 rounded-full object-cover shadow flex-shrink-0" />
         <div className="flex-1 min-w-0">
           <h2 className="font-bold text-gray-900 text-sm truncate">Chat público de creators</h2>
           <p className="text-[11px] text-emerald-600 flex items-center gap-1">
@@ -543,6 +579,17 @@ export function ChatPanel({ userName, compact = false, hasActivePlan = false }: 
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
+        {/* Ver mensagens mais antigas (sempre visivel no topo) */}
+        <button
+          onClick={handleBlockedClick}
+          className="w-full text-center py-2.5 text-[11px] text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition flex items-center justify-center gap-1.5 mb-1"
+        >
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+          </svg>
+          Ver mensagens mais antigas
+        </button>
+
         {threads.map((thread) => {
           const totalReplies = thread.replies.length;
           const expanded = expandedThreads.has(thread.root.id);
@@ -599,6 +646,8 @@ export function ChatPanel({ userName, compact = false, hasActivePlan = false }: 
           </div>
         ))}
 
+
+
         {/* Mensagens recebidas das creators ficticias */}
         {incomingMessages.map((m, i) => (
           <div key={`inc-${i}`} className="flex items-start gap-2">
@@ -628,6 +677,19 @@ export function ChatPanel({ userName, compact = false, hasActivePlan = false }: 
             </div>
           </div>
         ))}
+
+        {/* +12 novas mensagens (discreto, no rodape, 40s apos trava) */}
+        {showTwelveBadge && (
+          <button
+            onClick={handleBlockedClick}
+            className="w-full text-center py-2 text-[11px] text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition flex items-center justify-center gap-1.5"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            +12 novas mensagens · ative para ver
+          </button>
+        )}
 
       </div>
 
@@ -709,6 +771,13 @@ export function ChatPanel({ userName, compact = false, hasActivePlan = false }: 
               </svg>
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Toast */}
+      {toastMessage && (
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-4 py-2 rounded-full shadow-lg z-50 animate-fade-in pointer-events-none">
+          {toastMessage}
         </div>
       )}
     </div>
