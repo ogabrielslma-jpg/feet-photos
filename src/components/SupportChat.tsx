@@ -163,7 +163,7 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq, hasActive
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-4 right-4 z-[150] w-14 h-14 rounded-full bg-[#0084FF] hover:bg-[#0070d8] text-white shadow-2xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95 relative"
+          className="fixed bottom-4 right-4 z-[150] w-14 h-14 rounded-full bg-[#0084FF] hover:bg-[#0070d8] text-white shadow-2xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
           aria-label="Mensagens"
         >
           <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.145 2 11.259c0 2.913 1.454 5.512 3.726 7.21V22l3.405-1.869c.909.252 1.871.388 2.869.388 5.523 0 10-4.145 10-9.26C22 6.145 17.523 2 12 2zm.994 12.46l-2.541-2.71-4.955 2.71 5.45-5.788 2.602 2.71 4.895-2.71-5.45 5.788z"/></svg>
