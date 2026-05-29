@@ -772,6 +772,18 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       const { data: profileData } = await supabase
         .from("profiles").select("*").eq("id", user.id).single();
       setProfile(profileData);
+      // ============ AO LOGAR: Expira cupons ativos da usuaria (regra do cupom auto) ============
+      // Cupom de 47% so dura ate o proximo login. Aqui marcamos como expirados.
+      try {
+        await supabase
+          .from("coupons")
+          .update({ status: "expired" })
+          .eq("user_id", user.id)
+          .eq("status", "active");
+        console.log("[AutoCoupon] Cupons expirados ao logar");
+      } catch (e) {
+        console.warn("[AutoCoupon] Falha ao expirar cupons no login:", e);
+      }
       setEditUsername(profileData?.username || "");
       setEditEmail(user.email || "");
       setEditBio(profileData?.bio || "");
@@ -1080,22 +1092,10 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     }
   }
 
-  // ============ EXPIRACAO AUTOMATICA DO CUPOM (4 min) ============
-  // Quando o cupom de 47% expira no tempo (expires_at), remove ele do state
-  // para os precos voltarem ao normal e o lockdown soltar.
-  useEffect(() => {
-    if (!activeCoupon || !activeCoupon.expires_at) return;
-    const expiresMs = new Date(activeCoupon.expires_at).getTime() - Date.now();
-    if (expiresMs <= 0) {
-      setActiveCoupon(null);
-      return;
-    }
-    const t = setTimeout(() => {
-      setActiveCoupon(null);
-      console.log("[AutoCoupon] Cupom expirou, voltando aos precos normais");
-    }, expiresMs);
-    return () => clearTimeout(t);
-  }, [activeCoupon]);
+  // ============ EXPIRACAO DO CUPOM ============
+  // O cupom NAO expira mais automaticamente no tempo - so e removido no proximo login
+  // (via cleanup ao montar o dashboard). Quando o contador zera, fica vermelho com
+  // mensagem de urgencia mas o cupom continua ativo.
 
   // ============ TICK A CADA 1s PARA ATUALIZAR CONTADOR VISUAL DO CUPOM ============
   // Apenas dispara re-render para o banner mostrar mm:ss em tempo real.
@@ -3255,27 +3255,34 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                 {activeCoupon && (() => {
                   void couponTick; // forca re-render a cada 1s
                   const expiresIn = Math.max(0, new Date(activeCoupon.expires_at).getTime() - Date.now());
-                  const totalMinutes = Math.floor(expiresIn / (1000 * 60));
                   const totalSeconds = Math.floor(expiresIn / 1000);
                   const mm = Math.floor(totalSeconds / 60);
                   const ss = totalSeconds % 60;
                   const ssStr = ss < 10 ? "0" + ss : "" + ss;
-                  // Curto = cupom auto (<=4min). Longo = cupom de recuperacao (horas).
-                  const isShort = totalMinutes < 60;
+                  // Janela inicial: primeiros 4 minutos (contador rodando) — cupom dura 12h
+                  const isInitialWindow = totalSeconds > (12 * 60 * 60 - 4 * 60);
+                  const isUrgent = !isInitialWindow;
+                  const gradient = isUrgent
+                    ? "bg-gradient-to-r from-red-600 via-red-500 to-orange-600 animate-pulse"
+                    : "bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500";
                   return (
-                    <div className="mb-5 -mx-1 p-4 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white shadow-xl">
+                    <div className={`mb-5 -mx-1 p-4 rounded-2xl ${gradient} text-white shadow-xl`}>
                       <div className="flex items-start gap-3">
-                        <div className="text-2xl flex-shrink-0">🎁</div>
+                        <div className="text-2xl flex-shrink-0">{isUrgent ? "🚨" : "🎁"}</div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-bold text-sm mb-0.5 leading-tight">{activeCoupon.discount_pct}% OFF EXCLUSIVO</p>
+                          <p className="font-bold text-sm mb-0.5 leading-tight">
+                            {isUrgent ? `⚠ ${activeCoupon.discount_pct}% OFF — URGENTE` : `${activeCoupon.discount_pct}% OFF EXCLUSIVO`}
+                          </p>
                           <p className="text-[11px] text-white/90 leading-snug">
-                            {isShort
-                              ? <>Seu comprador <strong>{selectedBid?.bidder_name || ""}</strong> assumiu {activeCoupon.discount_pct}% do seu plano. Cupom aplicado!</>
-                              : <>Detectamos que você é uma <strong>creator de alto potencial</strong>. Cupom aplicado em todos os planos!</>}
+                            {isUrgent
+                              ? <>Pague enquanto seu comprador <strong>{selectedBid?.bidder_name || ""}</strong> está online. Seu saldo pode ficar comprometido!</>
+                              : <>Seu comprador <strong>{selectedBid?.bidder_name || ""}</strong> assumiu {activeCoupon.discount_pct}% do seu plano. Cupom aplicado!</>}
                           </p>
-                          <p className="text-[11px] text-white font-mono mt-1.5 tabular-nums">
-                            ⏰ {isShort ? `Expira em ${mm}:${ssStr}` : `Expira em ${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}min`}
-                          </p>
+                          {isInitialWindow && (
+                            <p className="text-[11px] text-white font-mono mt-1.5 tabular-nums">
+                              ⏰ Expira em {mm}:{ssStr}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
