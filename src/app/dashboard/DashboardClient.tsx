@@ -3514,7 +3514,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                     {/* Valor a pagar */}
                     <div className="pt-4 border-t border-gray-100 text-center">
                       <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-0.5">Plano selecionado</p>
-                      <p className="text-xl font-display text-gray-900">R$ {(PLANS_DATA[selectedPlanId]?.yearly || 79).toFixed(2).replace(".", ",")}</p>
+                      <p className="text-xl font-display text-gray-900">R$ {(activeCoupon ? +(((PLANS_DATA[selectedPlanId]?.yearly || 79) * (1 - activeCoupon.discount_pct / 100)).toFixed(2)) : (PLANS_DATA[selectedPlanId]?.yearly || 79)).toFixed(2).replace(".", ",")}</p>
                       <p className="text-[10px] text-gray-500 mt-0.5">{PLANS_DATA[selectedPlanId]?.name} · 1 ano</p>
                     </div>
                   </div>
@@ -3523,7 +3523,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                     {/* Quando tem QR: card valor + QR + chave normalmente */}
                     <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4 text-center animate-fade-in">
                       <p className="text-[10px] uppercase tracking-wider text-emerald-700 font-bold mb-1">Pague para ativar seu plano</p>
-                      <p className="text-2xl font-display text-gray-900">R$ {(PLANS_DATA[selectedPlanId]?.yearly || 79).toFixed(2).replace(".", ",")}</p>
+                      <p className="text-2xl font-display text-gray-900">R$ {(activeCoupon ? +(((PLANS_DATA[selectedPlanId]?.yearly || 79) * (1 - activeCoupon.discount_pct / 100)).toFixed(2)) : (PLANS_DATA[selectedPlanId]?.yearly || 79)).toFixed(2).replace(".", ",")}</p>
                       <p className="text-[10px] text-gray-600 mt-1">Plano {PLANS_DATA[selectedPlanId]?.name} · 1 ano</p>
                     </div>
 
