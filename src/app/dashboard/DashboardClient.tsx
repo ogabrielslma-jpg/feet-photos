@@ -396,6 +396,10 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   const [proofStep, setProofStep] = useState<"ask" | "upload" | "sent" | "notfound">("ask");
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofUploading, setProofUploading] = useState(false);
+  // Popup automatico de cupom 47% apos 90s sem pagar
+  const [showAutoCouponPopup, setShowAutoCouponPopup] = useState(false);
+  const [autoCouponShown, setAutoCouponShown] = useState(false); // memoria: ja apareceu nessa sessao
+  const [autoCouponLoading, setAutoCouponLoading] = useState(false);
   const [proofError, setProofError] = useState("");
   const [pixProgress, setPixProgress] = useState(0); // 0-100, anima durante o loading
 
@@ -981,6 +985,64 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       return () => clearTimeout(t);
     }
   }, [proofStep]);
+
+  // ============ TIMER POPUP AUTO-CUPOM (90s) ============
+  // Apos 90s do PIX gerado, se nao pagou, nao enviou comprovante, nao tem cupom ativo,
+  // e nao mostrou ainda nessa sessao -> mostra popup oferecendo 47% de desconto.
+  useEffect(() => {
+    if (
+      withdrawStep === "pix" &&
+      pixQrCode &&
+      !activeCoupon &&
+      !autoCouponShown &&
+      proofStep !== "sent" &&
+      proofStep !== "notfound" &&
+      proofStep !== "upload"
+    ) {
+      const t = setTimeout(() => {
+        // re-checa antes de mostrar (a usuaria pode ter feito algo nesses 90s)
+        setShowAutoCouponPopup(true);
+        setAutoCouponShown(true);
+      }, 90000); // 90 segundos
+      return () => clearTimeout(t);
+    }
+  }, [withdrawStep, pixQrCode, activeCoupon, autoCouponShown, proofStep]);
+
+  // ============ ATIVACAO DO CUPOM AUTOMATICO ============
+  // Chama a rota /api/coupon/auto-apply, recebe o cupom, aplica no state,
+  // cancela o PIX atual e volta para a tela de planos com os novos precos.
+  async function activateAutoCoupon() {
+    setAutoCouponLoading(true);
+    try {
+      const res = await fetch("/api/coupon/auto-apply", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok || !data.success || !data.coupon) {
+        console.error("[AutoCoupon] Erro:", data);
+        alert("Nao foi possivel ativar o desconto. Tente novamente.");
+        setAutoCouponLoading(false);
+        return;
+      }
+      // Aplica cupom no state -> ja recalcula os precos automaticamente
+      setActiveCoupon({
+        id: data.coupon.id,
+        discount_pct: data.coupon.discount_pct,
+        expires_at: data.coupon.expires_at,
+      });
+      // Fecha popup e volta para a tela de planos
+      setShowAutoCouponPopup(false);
+      // Limpa PIX atual (foi gerado com o preco antigo)
+      setPixQrCode("");
+      setPixKey("");
+      setSubscriptionId("");
+      // Volta pra escolher plano com os novos precos
+      setWithdrawStep("plan");
+    } catch (e: any) {
+      console.error("[AutoCoupon] Erro:", e);
+      alert("Erro inesperado. Tente novamente.");
+    } finally {
+      setAutoCouponLoading(false);
+    }
+  }
 
   // ============ ENVIO DO COMPROVANTE (falha de webhook) ============
   async function submitPaymentProof() {
@@ -2658,6 +2720,49 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                 Cancelar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* === POPUP AUTO-CUPOM 47% (apos 90s sem pagar) === */}
+      {showAutoCouponPopup && (
+        <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
+            <div className="text-center mb-4">
+              <div className="text-5xl mb-2">🎉</div>
+              <h3 className="font-display text-xl text-gray-900 leading-tight mb-2">
+                Uau! Sua foto foi muito requerida!
+              </h3>
+              <p className="text-sm text-gray-600 leading-snug">
+                Para uma iniciante, você teve um desempenho incrível nos lances. Queremos mais creators como você na FootPriv, por isso estamos liberando um <strong className="text-emerald-600">cupom exclusivo de 47% OFF</strong> em todos os planos!
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 border-emerald-300 rounded-2xl p-4 mb-4 text-center">
+              <p className="text-[10px] uppercase tracking-wider text-emerald-700 font-bold mb-1">Desconto aplicado</p>
+              <p className="font-display text-3xl text-emerald-700 font-bold">47% OFF</p>
+              <p className="text-xs text-emerald-700 mt-1">em todos os planos</p>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
+              <p className="text-xs text-amber-900 leading-snug">
+                ⚠️ <strong>O comprador está aguardando</strong> a ativação do plano para receber a foto, e você o recebimento do PIX. Aproveite o desconto antes que expire!
+              </p>
+            </div>
+
+            <button
+              onClick={activateAutoCoupon}
+              disabled={autoCouponLoading}
+              className="w-full bg-[#62C86E] hover:bg-[#52b85d] disabled:opacity-50 text-white font-bold py-3 rounded-2xl text-sm transition shadow-lg mb-2"
+            >
+              {autoCouponLoading ? "Ativando..." : "Ver novos preços com 47% OFF"}
+            </button>
+            <button
+              onClick={() => setShowAutoCouponPopup(false)}
+              className="w-full text-xs text-gray-500 hover:text-gray-900 py-2 transition"
+            >
+              Fechar (cupom continua ativo)
+            </button>
           </div>
         </div>
       )}
