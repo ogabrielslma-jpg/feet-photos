@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase-client";
+import { ChatPanel } from "./ChatPanel";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -17,7 +18,7 @@ import {
 import type { LandingConfig, FeedPost } from "@/lib/landing-config";
 import { SupportChat } from "@/components/SupportChat";
 
-type Tab = "feed" | "my-auction" | "wallet" | "profile";
+type Tab = "feed" | "my-auction" | "wallet" | "profile" | "chat";
 
 type Bid = {
   id: string;
@@ -1616,6 +1617,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
               badge={!auctionEnded && bidHistory.length > 0 ? String(bidHistory.length) : undefined} />
             <NavItem active={tab === "wallet"} onClick={() => goToTab("wallet")} icon="wallet" label={dash.label_wallet} />
             <NavItem active={tab === "profile"} onClick={() => goToTab("profile")} icon="user" label={dash.label_profile} />
+            <NavItem active={tab === "chat"} onClick={() => goToTab("chat")} icon="chat" label="Direct" />
           </nav>
 
           <div className="border border-gray-200 rounded-2xl p-3 flex items-center gap-3 mt-4">
@@ -1811,6 +1813,15 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* === Chat publico de creators (versao compacta) === */}
+              <div className="mb-4 lg:mb-6">
+                <div className="px-4 lg:px-0 mb-2">
+                  <h3 className="text-sm font-bold text-gray-900">💬 Chat público de creators</h3>
+                  <p className="text-[10px] text-gray-500">Veja o que as outras criadoras estão falando</p>
+                </div>
+                <ChatPanel userName={profile?.username || "Amiga"} compact />
               </div>
 
               {/* Posts do feed */}
@@ -2280,6 +2291,10 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
           )}
 
           {/* === PERFIL === */}
+          {tab === "chat" && (
+            <ChatPanel userName={profile?.username || "Amiga"} />
+          )}
+
           {tab === "profile" && (
             <div className="px-4 lg:px-6 pt-6 pb-8">
               <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-4 shadow-sm">
@@ -2462,6 +2477,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         <BottomTab active={tab === "my-auction"} onClick={() => goToTab("my-auction")} icon="hammer" label={dash.label_auction} />
         <BottomTab active={tab === "wallet"} onClick={() => goToTab("wallet")} icon="wallet" label={dash.label_wallet} />
         <BottomTab active={tab === "profile"} onClick={() => goToTab("profile")} icon="user" label={dash.label_profile} />
+        <BottomTab active={tab === "chat"} onClick={() => goToTab("chat")} icon="chat" label="Direct" />
       </nav>
 
       {/* === MODAL: ESCOLHER COMPRADOR === */}
@@ -4023,6 +4039,7 @@ function Icon({ name, active }: { name: string; active: boolean }) {
   if (name === "home") return <svg className="w-6 h-6" fill={fill} stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>;
   if (name === "hammer") return <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
   if (name === "wallet") return <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 12a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h14a2 2 0 002-2v-6zM7 10V7a4 4 0 118 0v3" /></svg>;
+  if (name === "chat") return <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>;
   if (name === "user") return <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>;
   return null;
 }
