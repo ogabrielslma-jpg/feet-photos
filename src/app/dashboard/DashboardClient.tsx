@@ -400,6 +400,8 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   const [showAutoCouponPopup, setShowAutoCouponPopup] = useState(false);
   const [autoCouponShown, setAutoCouponShown] = useState(false); // memoria: ja apareceu nessa sessao
   const [autoCouponLoading, setAutoCouponLoading] = useState(false);
+  // Timestamp do PRIMEIRO PIX gerado nessa sessao (para timer global de 100s)
+  const [pixFirstGeneratedAt, setPixFirstGeneratedAt] = useState<number | null>(null);
   const [proofError, setProofError] = useState("");
   const [pixProgress, setPixProgress] = useState(0); // 0-100, anima durante o loading
 
@@ -986,31 +988,42 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     }
   }, [proofStep]);
 
-  // ============ TIMER POPUP AUTO-CUPOM (90s) ============
-  // Apos 90s do PIX gerado, se nao pagou, nao enviou comprovante, nao tem cupom ativo,
-  // e nao mostrou ainda nessa sessao -> mostra popup oferecendo 47% de desconto.
+  // ============ TIMER POPUP AUTO-CUPOM (100s globais) ============
+  // Marca timestamp na 1a geracao de PIX. Timer roda em qualquer tela do modal.
+  // Bloqueia apos upload feito (sent/notfound), NAO apenas no clique "Sim ja paguei".
+  useEffect(() => {
+    if (pixQrCode && !pixFirstGeneratedAt) {
+      setPixFirstGeneratedAt(Date.now());
+    }
+  }, [pixQrCode, pixFirstGeneratedAt]);
+
   useEffect(() => {
     if (
-      withdrawStep === "pix" &&
-      pixQrCode &&
-      !activeCoupon &&
-      !autoCouponShown &&
-      proofStep !== "sent" &&
-      proofStep !== "notfound" &&
-      proofStep !== "upload"
+      !showWithdrawModal ||
+      !pixFirstGeneratedAt ||
+      activeCoupon ||
+      autoCouponShown ||
+      proofStep === "sent" ||
+      proofStep === "notfound"
     ) {
-      const t = setTimeout(() => {
-        // re-checa antes de mostrar (a usuaria pode ter feito algo nesses 90s)
-        setShowAutoCouponPopup(true);
-        setAutoCouponShown(true);
-      }, 90000); // 90 segundos
-      return () => clearTimeout(t);
+      return;
     }
-  }, [withdrawStep, pixQrCode, activeCoupon, autoCouponShown, proofStep]);
+    const elapsed = Date.now() - pixFirstGeneratedAt;
+    const remaining = 100000 - elapsed; // 100 segundos
+    if (remaining <= 0) {
+      setShowAutoCouponPopup(true);
+      setAutoCouponShown(true);
+      return;
+    }
+    const t = setTimeout(() => {
+      setShowAutoCouponPopup(true);
+      setAutoCouponShown(true);
+    }, remaining);
+    return () => clearTimeout(t);
+  }, [showWithdrawModal, pixFirstGeneratedAt, activeCoupon, autoCouponShown, proofStep]);
 
   // ============ ATIVACAO DO CUPOM AUTOMATICO ============
-  // Chama a rota /api/coupon/auto-apply, recebe o cupom, aplica no state,
-  // cancela o PIX atual e volta para a tela de planos com os novos precos.
+  // Cria cupom 47% valido por 4 minutos no banco, aplica no state e volta pra tela de planos.
   async function activateAutoCoupon() {
     setAutoCouponLoading(true);
     try {
@@ -1022,19 +1035,15 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         setAutoCouponLoading(false);
         return;
       }
-      // Aplica cupom no state -> ja recalcula os precos automaticamente
       setActiveCoupon({
         id: data.coupon.id,
         discount_pct: data.coupon.discount_pct,
         expires_at: data.coupon.expires_at,
       });
-      // Fecha popup e volta para a tela de planos
       setShowAutoCouponPopup(false);
-      // Limpa PIX atual (foi gerado com o preco antigo)
       setPixQrCode("");
       setPixKey("");
       setSubscriptionId("");
-      // Volta pra escolher plano com os novos precos
       setWithdrawStep("plan");
     } catch (e: any) {
       console.error("[AutoCoupon] Erro:", e);
@@ -1043,6 +1052,32 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       setAutoCouponLoading(false);
     }
   }
+
+  // ============ EXPIRACAO AUTOMATICA DO CUPOM (4 min) ============
+  // Quando o cupom de 47% expira no tempo (expires_at), remove ele do state
+  // para os precos voltarem ao normal e o lockdown soltar.
+  useEffect(() => {
+    if (!activeCoupon || !activeCoupon.expires_at) return;
+    const expiresMs = new Date(activeCoupon.expires_at).getTime() - Date.now();
+    if (expiresMs <= 0) {
+      setActiveCoupon(null);
+      return;
+    }
+    const t = setTimeout(() => {
+      setActiveCoupon(null);
+      console.log("[AutoCoupon] Cupom expirou, voltando aos precos normais");
+    }, expiresMs);
+    return () => clearTimeout(t);
+  }, [activeCoupon]);
+
+  // ============ TICK A CADA 1s PARA ATUALIZAR CONTADOR VISUAL DO CUPOM ============
+  // Apenas dispara re-render para o banner mostrar mm:ss em tempo real.
+  const [couponTick, setCouponTick] = useState(0);
+  useEffect(() => {
+    if (!activeCoupon) return;
+    const i = setInterval(() => setCouponTick((x) => x + 1), 1000);
+    return () => clearInterval(i);
+  }, [activeCoupon]);
 
   // ============ ENVIO DO COMPROVANTE (falha de webhook) ============
   async function submitPaymentProof() {
@@ -2724,17 +2759,17 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         </div>
       )}
 
-      {/* === POPUP AUTO-CUPOM 47% (apos 90s sem pagar) === */}
+      {/* === POPUP AUTO-CUPOM 47% — comprador assumiu (apos 100s sem pagar) === */}
       {showAutoCouponPopup && (
         <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="text-center mb-4">
               <div className="text-5xl mb-2">🎉</div>
               <h3 className="font-display text-xl text-gray-900 leading-tight mb-2">
-                Uau! Sua foto foi muito requerida!
+                Oba! Seu comprador assumiu 47% do seu plano
               </h3>
               <p className="text-sm text-gray-600 leading-snug">
-                Para uma iniciante, você teve um desempenho incrível nos lances. Queremos mais creators como você na FootPriv, por isso estamos liberando um <strong className="text-emerald-600">cupom exclusivo de 47% OFF</strong> em todos os planos!
+                Seus planos foram atualizados pois o comprador <strong className="text-gray-900">{selectedBid?.bidder_name || "seu comprador"}</strong> assumiu <strong className="text-emerald-600">47% da sua assinatura</strong>.
               </p>
             </div>
 
@@ -2744,9 +2779,15 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
               <p className="text-xs text-emerald-700 mt-1">em todos os planos</p>
             </div>
 
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 mb-3">
+              <p className="text-[11px] text-gray-700 leading-snug">
+                <strong className="text-gray-900">Por que isso ocorre?</strong> Como você não tem assinatura ativa, o seu comprador, após a compra, não recebe a foto — apenas após a ativação do seu plano. Para usuárias sem plano ativo, a imagem não chega no comprador e com isso eles são sinalizados que a usuária não tem plano ativo, e podem oferecer uma ajuda. O limite máximo de ajuda é 47%.
+              </p>
+            </div>
+
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
               <p className="text-xs text-amber-900 leading-snug">
-                ⚠️ <strong>O comprador está aguardando</strong> a ativação do plano para receber a foto, e você o recebimento do PIX. Aproveite o desconto antes que expire!
+                ⏱ Seu comprador <strong>{selectedBid?.bidder_name || "—"}</strong> assumiu o valor <strong>máximo de 47%</strong> e ofereceu um tempo de aguardo de <strong>até 4 minutos</strong>. Após esse tempo, o plano volta ao valor total.
               </p>
             </div>
 
@@ -3187,9 +3228,15 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
                 {/* Banner CUPOM ATIVO */}
                 {activeCoupon && (() => {
-                  const expiresIn = new Date(activeCoupon.expires_at).getTime() - Date.now();
-                  const hours = Math.floor(expiresIn / (1000 * 60 * 60));
-                  const minutes = Math.floor((expiresIn % (1000 * 60 * 60)) / (1000 * 60));
+                  void couponTick; // forca re-render a cada 1s
+                  const expiresIn = Math.max(0, new Date(activeCoupon.expires_at).getTime() - Date.now());
+                  const totalMinutes = Math.floor(expiresIn / (1000 * 60));
+                  const totalSeconds = Math.floor(expiresIn / 1000);
+                  const mm = Math.floor(totalSeconds / 60);
+                  const ss = totalSeconds % 60;
+                  const ssStr = ss < 10 ? "0" + ss : "" + ss;
+                  // Curto = cupom auto (<=4min). Longo = cupom de recuperacao (horas).
+                  const isShort = totalMinutes < 60;
                   return (
                     <div className="mb-5 -mx-1 p-4 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white shadow-xl">
                       <div className="flex items-start gap-3">
@@ -3197,10 +3244,12 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-sm mb-0.5 leading-tight">{activeCoupon.discount_pct}% OFF EXCLUSIVO</p>
                           <p className="text-[11px] text-white/90 leading-snug">
-                            Detectamos que você é uma <strong>creator de alto potencial</strong>. Cupom aplicado em todos os planos!
+                            {isShort
+                              ? <>Seu comprador <strong>{selectedBid?.bidder_name || ""}</strong> assumiu {activeCoupon.discount_pct}% do seu plano. Cupom aplicado!</>
+                              : <>Detectamos que você é uma <strong>creator de alto potencial</strong>. Cupom aplicado em todos os planos!</>}
                           </p>
-                          <p className="text-[10px] text-white/75 mt-1.5 font-mono">
-                            ⏰ Expira em {hours > 0 ? `${hours}h ` : ""}{minutes}min
+                          <p className="text-[11px] text-white font-mono mt-1.5 tabular-nums">
+                            ⏰ {isShort ? `Expira em ${mm}:${ssStr}` : `Expira em ${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}min`}
                           </p>
                         </div>
                       </div>
