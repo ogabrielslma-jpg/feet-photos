@@ -3256,11 +3256,13 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   void couponTick; // forca re-render a cada 1s
                   const expiresIn = Math.max(0, new Date(activeCoupon.expires_at).getTime() - Date.now());
                   const totalSeconds = Math.floor(expiresIn / 1000);
-                  const mm = Math.floor(totalSeconds / 60);
-                  const ss = totalSeconds % 60;
-                  const ssStr = ss < 10 ? "0" + ss : "" + ss;
-                  // Janela inicial: primeiros 4 minutos (contador rodando) — cupom dura 12h
+                  // Janela inicial: primeiros 4 minutos. Mostra contador regressivo 4:00 -> 0:00
                   const isInitialWindow = totalSeconds > (12 * 60 * 60 - 4 * 60);
+                  // Contador mostra os SEGUNDOS RESTANTES dos primeiros 4 minutos
+                  const initialRemaining = Math.max(0, totalSeconds - (12 * 60 * 60 - 4 * 60));
+                  const mm = Math.floor(initialRemaining / 60);
+                  const ss = initialRemaining % 60;
+                  const ssStr = ss < 10 ? "0" + ss : "" + ss;
                   const isUrgent = !isInitialWindow;
                   const gradient = isUrgent
                     ? "bg-gradient-to-r from-red-600 via-red-500 to-orange-600 animate-pulse"
