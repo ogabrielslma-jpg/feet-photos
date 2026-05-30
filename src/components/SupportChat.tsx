@@ -271,10 +271,10 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq, hasActive
                     }}
                     className="w-full text-left flex items-center gap-3 p-3 rounded-xl transition bg-white border border-gray-200 hover:border-[#0084FF] hover:bg-blue-50/30 relative"
                   >
-                    <img src="https://i.pinimg.com/736x/df/5c/8b/df5c8b26cdd1322c50e240089abf24d4.jpg" alt="lariis.priv" className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
+                    <img src="https://i.pinimg.com/736x/45/04/36/450436f8951b6fc7146c29983b1485ce.jpg" alt="gaby_mypriv" className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-gray-900 truncate">lariis.priv</p>
-                      <p className="text-[11px] text-gray-500 truncate">ooi bem vinda flor 💕 a gente tem um grupinho no zap...</p>
+                      <p className="text-sm font-bold text-gray-900 truncate">gaby_mypriv</p>
+                      <p className="text-[11px] text-gray-500 truncate">oii, td bem? vi no grupo que vc é nova, temos um grupinho no zap...</p>
                     </div>
                     {!lariisRead && (
                       <div className="w-5 h-5 rounded-full bg-[#0084FF] flex items-center justify-center flex-shrink-0">
@@ -321,21 +321,21 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq, hasActive
               <div className="space-y-3 p-1">
                 {/* Header da conversa */}
                 <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3 border border-gray-100">
-                  <img src="https://i.pinimg.com/736x/df/5c/8b/df5c8b26cdd1322c50e240089abf24d4.jpg" alt="lariis.priv" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                  <img src="https://i.pinimg.com/736x/45/04/36/450436f8951b6fc7146c29983b1485ce.jpg" alt="gaby_mypriv" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-gray-900">lariis.priv</p>
+                    <p className="text-sm font-bold text-gray-900">gaby_mypriv</p>
                     <p className="text-[10px] text-gray-500">creator · ativa agora</p>
                   </div>
                 </div>
 
                 {/* Mensagem da lariis */}
                 <div className="flex items-start gap-2">
-                  <img src="https://i.pinimg.com/736x/df/5c/8b/df5c8b26cdd1322c50e240089abf24d4.jpg" alt="lariis.priv" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                  <img src="https://i.pinimg.com/736x/45/04/36/450436f8951b6fc7146c29983b1485ce.jpg" alt="gaby_mypriv" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="bg-white rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm border border-gray-100 inline-block max-w-full">
-                      <p className="text-[11px] font-bold text-amber-600 mb-0.5">lariis.priv</p>
+                      <p className="text-[11px] font-bold text-amber-600 mb-0.5">gaby_mypriv</p>
                       <p className="text-sm text-gray-800 leading-snug whitespace-pre-wrap break-words">
-                        ooi bem vinda flor 💕 a gente tem um grupinho no zap pra trocar ideia. a gente se ajuda mt, posicao de foto, dica de valor, td.. se quiser eu te add, me passa teu num ou eu te mando o link aqui mesmo. boas vendas 🤍
+                        oii, td bem? vi no grupo que vc é nova, temos um grupinho no zap para se ajudar se quiser entrar me avisa q eu envio link ou vc me manda seu numero e eu add. Bastante resenha, quase todas nos ja estamos vivendo basicamente da plataforma, se quiser participar me avisa aqui, e seja bem vinda
                       </p>
                       <p className="text-[9px] text-gray-400 text-right mt-1">agora</p>
                     </div>
