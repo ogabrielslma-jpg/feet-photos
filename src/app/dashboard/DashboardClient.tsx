@@ -1038,7 +1038,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     if (proofStep === "sent" || proofStep === "notfound") { console.log("[AutoCoupon DEBUG] BLOQUEADO: comprovante enviado"); return; }
 
     const elapsed = Date.now() - pixFirstGeneratedAt;
-    const remaining = 75000 - elapsed; // 75 segundos
+    const remaining = 90000 - elapsed; // 90 segundos
     console.log("[AutoCoupon DEBUG] Timer agendado:", { elapsed, remaining });
     if (remaining <= 0) {
       console.log("[AutoCoupon DEBUG] ABRINDO POPUP AGORA (passou do tempo)");
