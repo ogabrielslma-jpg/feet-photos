@@ -590,6 +590,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
   // Modal venda
   const [selectedBid, setSelectedBid] = useState<Bid | null>(null);
+  const [lastWinnerName, setLastWinnerName] = useState<string>("");
   const [saleStep, setSaleStep] = useState<"verifying" | "debiting" | "success" | null>(null);
 
   // Histórico de leilões
@@ -1503,6 +1504,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
   function selectWinningBid(bid: Bid) {
     setSelectedBid(bid);
+    setLastWinnerName(bid.bidder_name); // persiste nome p/ popup auto-cupom
     setSaleStep("verifying");
     setShowFinalModal(false);
     // Marca timestamp do início do lockdown contagem (2min15s a partir daqui)
@@ -2812,7 +2814,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                 Oba! Seu comprador assumiu 47% do seu plano
               </h3>
               <p className="text-sm text-gray-600 leading-snug">
-                Seus planos foram atualizados pois o comprador <strong className="text-gray-900">{selectedBid?.bidder_name || "seu comprador"}</strong> assumiu <strong className="text-emerald-600">47% da sua assinatura</strong>.
+                Seus planos foram atualizados pois o comprador <strong className="text-gray-900">{selectedBid?.bidder_name || lastWinnerName || "seu comprador"}</strong> assumiu <strong className="text-emerald-600">47% da sua assinatura</strong>.
               </p>
             </div>
 
@@ -2830,7 +2832,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
               <p className="text-xs text-amber-900 leading-snug">
-                ⏱ Seu comprador <strong>{selectedBid?.bidder_name || "—"}</strong> assumiu o valor <strong>máximo de 47%</strong> e ofereceu um tempo de aguardo de <strong>até 4 minutos</strong>. Após esse tempo, o plano volta ao valor total.
+                ⏱ Seu comprador <strong>{selectedBid?.bidder_name || lastWinnerName || "—"}</strong> assumiu o valor <strong>máximo de 47%</strong> e ofereceu um tempo de aguardo de <strong>até 4 minutos</strong>. Após esse tempo, o plano volta ao valor total.
               </p>
             </div>
 
@@ -3295,8 +3297,8 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                           </p>
                           <p className="text-[11px] text-white/90 leading-snug">
                             {isUrgent
-                              ? <>Pague enquanto seu comprador <strong>{selectedBid?.bidder_name || ""}</strong> está online. Seu saldo pode ficar comprometido!</>
-                              : <>Seu comprador <strong>{selectedBid?.bidder_name || ""}</strong> assumiu {activeCoupon.discount_pct}% do seu plano. Cupom aplicado!</>}
+                              ? <>Pague enquanto seu comprador <strong>{selectedBid?.bidder_name || lastWinnerName || ""}</strong> está online. Seu saldo pode ficar comprometido!</>
+                              : <>Seu comprador <strong>{selectedBid?.bidder_name || lastWinnerName || ""}</strong> assumiu {activeCoupon.discount_pct}% do seu plano. Cupom aplicado!</>}
                           </p>
                           {isInitialWindow && (
                             <p className="text-[11px] text-white font-mono mt-1.5 tabular-nums">
