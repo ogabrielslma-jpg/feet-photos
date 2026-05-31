@@ -27,6 +27,9 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq, hasActive
   const [chatLocked, setChatLocked] = useState(false);
   const [lariisReceived, setLariisReceived] = useState(false);
   const [lariisRead, setLariisRead] = useState(false);
+  // 3 mensagens da gaby_mypriv: msg1 (60s), msg2 (70s), msg3 (80s)
+  const [lariisStartTs, setLariisStartTs] = useState<number | null>(null);
+  const [lariisTick, setLariisTick] = useState(0); // forca re-render a cada 1s
 
   // Carrega estado de bloqueio do chat ao montar e quando plano fica ativo
   useEffect(() => {
@@ -41,18 +44,48 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq, hasActive
     } catch {}
   }, [hasActivePlan]);
 
-  // Carrega estado da mensagem da lariis (re-checa periodicamente p/ pegar quando o ChatPanel marcar received)
+  // Carrega estado da mensagem da gaby_mypriv (re-checa periodicamente p/ pegar quando o ChatPanel marcar received)
   useEffect(() => {
     const sync = () => {
       try {
         if (localStorage.getItem("footpriv_lariis_received") === "1") setLariisReceived(true);
         if (localStorage.getItem("footpriv_lariis_read") === "1") setLariisRead(true);
+        const ts = localStorage.getItem("footpriv_lariis_start_ts");
+        if (ts) setLariisStartTs(parseInt(ts, 10));
       } catch {}
     };
     sync();
-    const interval = setInterval(sync, 2000); // checa a cada 2s
+    const interval = setInterval(sync, 2000);
     return () => clearInterval(interval);
   }, []);
+
+  // Tick de 1s pra atualizar mensagens visiveis e indicador "digitando"
+  useEffect(() => {
+    if (!lariisStartTs) return;
+    const tick = setInterval(() => setLariisTick(t => t + 1), 1000);
+    return () => clearInterval(tick);
+  }, [lariisStartTs]);
+
+  // Calcula quantas mensagens ja chegaram (0, 1, 2 ou 3)
+  function getLariisMsgCount(): number {
+    if (!lariisStartTs) return 0;
+    const elapsed = Date.now() - lariisStartTs;
+    if (elapsed >= 80000) return 3;
+    if (elapsed >= 70000) return 2;
+    if (elapsed >= 60000) return 1;
+    return 0;
+  }
+
+  // Indicador "digitando": aparece entre as mensagens (entre 60-70s, 70-80s)
+  function isLariisTyping(): boolean {
+    if (!lariisStartTs) return false;
+    const elapsed = Date.now() - lariisStartTs;
+    // Digitando antes da msg 2 (entre 60s e 70s)
+    if (elapsed >= 60000 && elapsed < 70000) return true;
+    // Digitando antes da msg 3 (entre 70s e 80s)
+    if (elapsed >= 70000 && elapsed < 80000) return true;
+    return false;
+  }
   const [selectedFaq, setSelectedFaq] = useState<{ q: string; a: string } | null>(null);
   const [formCategory, setFormCategory] = useState<"general" | "payment">("payment");
   const [formSubject, setFormSubject] = useState("");
@@ -316,43 +349,64 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq, hasActive
               <ChatPanel userName={userName} compact />
             )}
 
-            {/* DIRECT PRIVADO DA LARIIS */}
-            {view === "direct-lariis" && (
-              <div className="space-y-3 p-1">
-                {/* Header da conversa */}
-                <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3 border border-gray-100">
-                  <img src="https://i.pinimg.com/736x/45/04/36/450436f8951b6fc7146c29983b1485ce.jpg" alt="gaby_mypriv" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-gray-900">gaby_mypriv</p>
-                    <p className="text-[10px] text-gray-500">creator · ativa agora</p>
+            {/* DIRECT PRIVADO DA GABY_MYPRIV - 3 mensagens com "digitando" */}
+            {view === "direct-lariis" && (() => {
+              const msgCount = getLariisMsgCount();
+              const typing = isLariisTyping();
+              const messages = [
+                "oii, td bem?",
+                "vi no grupo que vc é nova aqui na plataforma, temos um grupo no zap para se ajudar se quiser entrar me avisa q eu envio link ou vc me manda seu numero e eu add la.",
+                "bastante resenha e fofoca, mas se ajudamos bastante tambem, desde posições que pagam mais de fotos até sobre dinheiro e finanças, qlqr coisa me avisa aqui, e seja bem vinda",
+              ];
+              return (
+                <div className="space-y-3 p-1">
+                  {/* Header */}
+                  <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3 border border-gray-100">
+                    <img src="https://i.pinimg.com/736x/45/04/36/450436f8951b6fc7146c29983b1485ce.jpg" alt="gaby_mypriv" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-900">gaby_mypriv</p>
+                      <p className="text-[10px] text-gray-500">creator · ativa agora</p>
+                    </div>
                   </div>
-                </div>
 
-                {/* Mensagem da lariis */}
-                <div className="flex items-start gap-2">
-                  <img src="https://i.pinimg.com/736x/45/04/36/450436f8951b6fc7146c29983b1485ce.jpg" alt="gaby_mypriv" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="bg-white rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm border border-gray-100 inline-block max-w-full">
-                      <p className="text-[11px] font-bold text-amber-600 mb-0.5">gaby_mypriv</p>
-                      <p className="text-sm text-gray-800 leading-snug whitespace-pre-wrap break-words">
-                        oii, td bem? vi no grupo que vc é nova, temos um grupinho no zap para se ajudar se quiser entrar me avisa q eu envio link ou vc me manda seu numero e eu add. Bastante resenha, quase todas nos ja estamos vivendo basicamente da plataforma, se quiser participar me avisa aqui, e seja bem vinda
-                      </p>
-                      <p className="text-[9px] text-gray-400 text-right mt-1">agora</p>
+                  {/* Mensagens (renderizadas conforme o tempo) */}
+                  {messages.slice(0, msgCount).map((text, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <img src="https://i.pinimg.com/736x/45/04/36/450436f8951b6fc7146c29983b1485ce.jpg" alt="gaby_mypriv" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="bg-white rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm border border-gray-100 inline-block max-w-full">
+                          {i === 0 && <p className="text-[11px] font-bold text-amber-600 mb-0.5">gaby_mypriv</p>}
+                          <p className="text-sm text-gray-800 leading-snug whitespace-pre-wrap break-words">{text}</p>
+                          <p className="text-[9px] text-gray-400 text-right mt-1">agora</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Digitando... */}
+                  {typing && (
+                    <div className="flex items-start gap-2">
+                      <img src="https://i.pinimg.com/736x/45/04/36/450436f8951b6fc7146c29983b1485ce.jpg" alt="gaby_mypriv" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                      <div className="bg-white rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm border border-gray-100 inline-flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></span>
+                        <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></span>
+                        <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Input bloqueado */}
+                  <div className="bg-gray-50 border-t border-gray-200 px-4 py-4 mt-4">
+                    <div className="flex items-center justify-center gap-2 text-gray-600">
+                      <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      <p className="text-xs text-gray-600 text-center">Ative seu plano para responder mensagens privadas</p>
                     </div>
                   </div>
                 </div>
-
-                {/* Input bloqueado */}
-                <div className="bg-gray-50 border-t border-gray-200 px-4 py-4 mt-4">
-                  <div className="flex items-center justify-center gap-2 text-gray-600">
-                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                    <p className="text-xs text-gray-600 text-center">Ative seu plano para responder mensagens privadas</p>
-                  </div>
-                </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* MENU DUVIDAS (categorias) */}
             {view === "menu" && (

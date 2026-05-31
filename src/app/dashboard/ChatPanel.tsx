@@ -528,7 +528,11 @@ export function ChatPanel({ userName, compact = false, hasActivePlan = false }: 
       setShowTwelveBadge(true);
     }, lastDelay + 40000);
 
-    // Direct privado da gaby_mypriv: 60s apos a saudacao inicial
+    // Direct privado da gaby_mypriv: marca timestamp + agenda chegada da 1a mensagem
+    const lariisStartTs = Date.now();
+    try {
+      localStorage.setItem("footpriv_lariis_start_ts", String(lariisStartTs));
+    } catch {}
     setTimeout(() => {
       try { localStorage.setItem("footpriv_lariis_received", "1"); } catch {}
       setLariisReceived(true);
