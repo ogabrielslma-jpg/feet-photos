@@ -213,7 +213,7 @@ const MESSAGES: Msg[] = [
   { id: 188, name: "rafapezinhah", text: "nina vc eh um genio", minutesAgo: 28, replyTo: 187 },
   { id: 189, name: "babi_doll", text: "tatic do aumento de preco quando pedem desconto eh OURO", minutesAgo: 26, replyTo: 187 },
   { id: 190, name: "Brunaprivy", text: "gente ja fizeram leilao agora? ta movimentado?", minutesAgo: 28 },
-  { id: 191, name: "onlypes_aananda", text: "extremamente, ta entrando lance a cada 2 min aqui", minutesAgo: 25, replyTo: 190 },
+  { id: 191, name: "onlypes_aananda", text: "extremamente, ta entrando lance a cada 2 seg aqui", minutesAgo: 25, replyTo: 190 },
   { id: 192, name: "vivi.privy", text: "ta no fluxo agora, esse momento eh ouro", minutesAgo: 23, replyTo: 190 },
   { id: 193, name: "Brunaprivy", text: "to publicando AGORA entao 🚀", minutesAgo: 21, replyTo: 190 },
   { id: 194, name: "biancavendinha", text: "rolando promo nova naquela loja de meia fofa q a Cah recomendou", minutesAgo: 18 },
