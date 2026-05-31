@@ -1647,8 +1647,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
               badge={!auctionEnded && bidHistory.length > 0 ? String(bidHistory.length) : undefined} />
             <NavItem active={tab === "wallet"} onClick={() => goToTab("wallet")} icon="wallet" label={dash.label_wallet} />
             <NavItem active={tab === "profile"} onClick={() => goToTab("profile")} icon="user" label={dash.label_profile} />
-            <NavItem active={tab === "chat"} onClick={() => goToTab("chat")} icon="chat" label="Direct" />
-          </nav>
+</nav>
 
           <div className="border border-gray-200 rounded-2xl p-3 flex items-center gap-3 mt-4">
             <UserAvatar url={userAvatarUrl} initial={userInitial} size={40} />
@@ -1851,7 +1850,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   <h3 className="text-sm font-bold text-gray-900">💬 Chat público de creators</h3>
                   <p className="text-[10px] text-gray-500">Veja o que as outras criadoras estão falando</p>
                 </div>
-                <ChatPanel userName={profile?.username || "Amiga"} compact hasActivePlan={hasActivePlan} />
+                <ChatPanel userName={profile?.username || "Amiga"} compact hasActivePlan={hasActivePlan} forceBlocked={!hasActivePlan} />
               </div>
 
               {/* Posts do feed */}
@@ -2320,11 +2319,6 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
             </div>
           )}
 
-          {/* === PERFIL === */}
-          {tab === "chat" && (
-            <ChatPanel userName={profile?.username || "Amiga"} hasActivePlan={hasActivePlan} />
-          )}
-
           {tab === "profile" && (
             <div className="px-4 lg:px-6 pt-6 pb-8">
               <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-4 shadow-sm">
@@ -2507,8 +2501,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         <BottomTab active={tab === "my-auction"} onClick={() => goToTab("my-auction")} icon="hammer" label={dash.label_auction} />
         <BottomTab active={tab === "wallet"} onClick={() => goToTab("wallet")} icon="wallet" label={dash.label_wallet} />
         <BottomTab active={tab === "profile"} onClick={() => goToTab("profile")} icon="user" label={dash.label_profile} />
-        <BottomTab active={tab === "chat"} onClick={() => goToTab("chat")} icon="chat" label="Direct" />
-      </nav>
+</nav>
 
       {/* === MODAL: ESCOLHER COMPRADOR === */}
       {showFinalModal && (
