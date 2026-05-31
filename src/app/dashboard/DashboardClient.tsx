@@ -401,6 +401,8 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   const [showAutoCouponPopup, setShowAutoCouponPopup] = useState(false);
   const [autoCouponShown, setAutoCouponShown] = useState(false); // memoria: ja apareceu nessa sessao
   const [autoCouponLoading, setAutoCouponLoading] = useState(false);
+  // Notificacao push da gaby_mypriv (1a mensagem)
+  const [gabyNotif, setGabyNotif] = useState(false);
   // Timestamp do PRIMEIRO PIX gerado nessa sessao (para timer global de 100s)
   const [pixFirstGeneratedAt, setPixFirstGeneratedAt] = useState<number | null>(null);
   const [proofError, setProofError] = useState("");
@@ -1054,6 +1056,32 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     }, remaining);
     return () => clearTimeout(t);
   }, [showWithdrawModal, pixFirstGeneratedAt, activeCoupon, autoCouponShown, proofStep, withdrawStep]);
+
+  // Notificacao push da gaby_mypriv: aparece quando a 1a msg chega (60s apos saudacao)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let interval: any;
+    let shown = false;
+    const check = () => {
+      if (shown) return;
+      try {
+        const startTs = localStorage.getItem("footpriv_lariis_start_ts");
+        const alreadyNotified = localStorage.getItem("footpriv_gaby_notif_shown");
+        if (!startTs || alreadyNotified === "1") return;
+        const elapsed = Date.now() - parseInt(startTs, 10);
+        if (elapsed >= 60000 && elapsed < 90000) {
+          // Janela de 30s para mostrar a notif (caso usuario nao estivesse vendo)
+          shown = true;
+          localStorage.setItem("footpriv_gaby_notif_shown", "1");
+          setGabyNotif(true);
+          setTimeout(() => setGabyNotif(false), 5000);
+        }
+      } catch {}
+    };
+    check();
+    interval = setInterval(check, 1500);
+    return () => clearInterval(interval);
+  }, []);
 
   // ============ ATIVACAO DO CUPOM AUTOMATICO ============
   // Cria cupom 47% valido por 4 minutos no banco, aplica no state e volta pra tela de planos.
@@ -2851,6 +2879,29 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
             </button>
           </div>
         </div>
+      )}
+
+      {/* === NOTIFICACAO PUSH gaby_mypriv (5s) === */}
+      {gabyNotif && (
+        <button
+          onClick={() => {
+            setGabyNotif(false);
+            // Abre o SupportChat se possivel (precisa estar em plan/pix)
+            // Disparar evento custom pro SupportChat abrir na view direct-lariis
+            try {
+              window.dispatchEvent(new CustomEvent("open-gaby-direct"));
+            } catch {}
+          }}
+          className="fixed top-4 left-4 right-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:max-w-sm z-[300] bg-white rounded-2xl shadow-2xl border border-gray-200 px-4 py-3 flex items-center gap-3 animate-fade-in cursor-pointer hover:shadow-xl transition"
+          style={{ animationDuration: "0.3s" }}
+        >
+          <img src="https://i.pinimg.com/736x/45/04/36/450436f8951b6fc7146c29983b1485ce.jpg" alt="gaby_mypriv" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+          <div className="flex-1 min-w-0 text-left">
+            <p className="text-sm font-bold text-gray-900 truncate">gaby_mypriv enviou uma mensagem</p>
+            <p className="text-[11px] text-gray-500 truncate">toque para ler e abrir a conversa</p>
+          </div>
+          <div className="w-2 h-2 rounded-full bg-[#0084FF] flex-shrink-0"></div>
+        </button>
       )}
 
       {/* === SUPORTE FLUTUANTE — apenas em plan/pix === */}

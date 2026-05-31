@@ -59,6 +59,19 @@ export function SupportChat({ userId, defaultEmail, defaultPhone, faq, hasActive
     return () => clearInterval(interval);
   }, []);
 
+  // Listener pra notificacao push: abre direct da gaby ao clicar
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handler = () => {
+      setOpen(true);
+      try { localStorage.setItem("footpriv_lariis_read", "1"); } catch {}
+      setLariisRead(true);
+      setView("direct-lariis");
+    };
+    window.addEventListener("open-gaby-direct", handler);
+    return () => window.removeEventListener("open-gaby-direct", handler);
+  }, []);
+
   // Tick de 1s pra atualizar mensagens visiveis e indicador "digitando"
   useEffect(() => {
     if (!lariisStartTs) return;
