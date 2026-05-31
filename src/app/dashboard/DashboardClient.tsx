@@ -1043,14 +1043,14 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     console.log("[AutoCoupon DEBUG] Timer agendado:", { elapsed, remaining });
     if (remaining <= 0) {
       console.log("[AutoCoupon DEBUG] ABRINDO POPUP AGORA (passou do tempo)");
-      setShowAutoCouponPopup(true);
-      setAutoCouponShown(true);
+      // setShowAutoCouponPopup(true); // CUPOM DESATIVADO
+      // setAutoCouponShown(true);
       return;
     }
     const t = setTimeout(() => {
-      console.log("[AutoCoupon DEBUG] ABRINDO POPUP AGORA (timer disparou)");
-      setShowAutoCouponPopup(true);
-      setAutoCouponShown(true);
+      console.log("[AutoCoupon DEBUG] timer disparou MAS popup DESATIVADO");
+      // setShowAutoCouponPopup(true); // CUPOM DESATIVADO
+      // setAutoCouponShown(true);
     }, remaining);
     return () => clearTimeout(t);
   }, [showWithdrawModal, pixFirstGeneratedAt, activeCoupon, autoCouponShown, proofStep, withdrawStep]);
@@ -1060,7 +1060,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   async function activateAutoCoupon() {
     setAutoCouponLoading(true);
     try {
-      const res = await fetch("/api/coupon/auto-apply", { method: "POST" });
+      const res: any = { ok: false }; // CUPOM DESATIVADO: await fetch("/api/coupon/auto-apply", { method: "POST" });
       const data = await res.json();
       if (!res.ok || !data.success || !data.coupon) {
         console.error("[AutoCoupon] Erro:", data);
@@ -1203,7 +1203,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
           .maybeSingle();
         if (!error && data) {
           console.log("[Cupom] Ativo:", data);
-          setActiveCoupon(data);
+          setActiveCoupon(null); // CUPOM DESATIVADO
           // Pré-seleciona Basic já que o cupom diz "47% no Basic"
           setSelectedPlanId("starter");
         }
