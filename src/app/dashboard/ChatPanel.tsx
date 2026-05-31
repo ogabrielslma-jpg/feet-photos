@@ -563,23 +563,25 @@ export function ChatPanel({ userName, compact = false, hasActivePlan = false, fo
     );
   }
 
-  // Tela bloqueada quando forceBlocked (ex: chat publico durante leilao)
-  if (forceBlocked) {
-    return (
-      <div className={`relative flex flex-col items-center justify-center ${compact ? "h-[480px] rounded-2xl border border-gray-200" : "h-[calc(100vh-180px)] sm:h-[calc(100vh-200px)]"} bg-gradient-to-br from-gray-50 to-gray-100 p-6`}>
-        <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center mb-4">
-          <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-        </div>
-        <p className="text-sm font-bold text-gray-900 text-center mb-1">Chat público indisponível durante o leilão</p>
-        <p className="text-xs text-gray-500 text-center">Leilão em andamento</p>
-      </div>
-    );
-  }
+  // forceBlocked: renderiza o chat normal mas com overlay de blur + cadeado por cima
+  // (mais abaixo, no return principal)
+
 
   return (
     <div className={`relative flex flex-col ${compact ? "h-[480px] rounded-2xl border border-gray-200 overflow-hidden" : "h-[calc(100vh-180px)] sm:h-[calc(100vh-200px)]"} bg-gray-50`}>
+      {/* Overlay quando forceBlocked: blur no fundo + cadeado por cima */}
+      {forceBlocked && (
+        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-white/50 backdrop-blur-md pointer-events-auto p-6">
+          <div className="w-16 h-16 rounded-full bg-white shadow-lg flex items-center justify-center mb-4 border border-gray-200">
+            <svg className="w-8 h-8 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <p className="text-sm font-bold text-gray-900 text-center mb-1 drop-shadow-sm">Chat público indisponível durante o leilão</p>
+          <p className="text-xs text-gray-700 text-center drop-shadow-sm">Leilão em andamento</p>
+        </div>
+      )}
+
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 flex-shrink-0">
         <img src="https://i.pinimg.com/736x/18/57/b0/1857b072b8d6070ea49173879fc47de7.jpg" alt="Foot Priv" className="w-10 h-10 rounded-full object-cover shadow flex-shrink-0" />
         <div className="flex-1 min-w-0">
