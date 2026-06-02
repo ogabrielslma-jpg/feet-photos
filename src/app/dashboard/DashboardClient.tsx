@@ -954,20 +954,38 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         if (data.status === "paid") {
           clearInterval(interval);
 
-          // 🎯 Google Ads — Evento de conversão (pagamento PIX confirmado)
+          // Google Ads - Evento de conversao (pagamento PIX confirmado)
+          // Dispara conversao baseada no dominio atual
           try {
             const planAmount = PLANS_DATA[selectedPlanId]?.yearly || 0;
+            const CONVERSIONS: Record<string, string> = {
+              "v2footpriv.com": "AW-18195109997/qR5MCOzbzrccEO2wjeRD",
+              "foot-priv.com": "AW-18114149390/N1pzCL_wzrccEI74v71D",
+              "footpriv-app.com": "AW-18203108972/NwJsCNvp5bccEOzM9edD",
+            };
+            // Adiciona variantes com prefixo www
+            const WWW = String.fromCharCode(119, 119, 119, 46);
+            CONVERSIONS[WWW + "v2footpriv.com"] = "AW-18195109997/qR5MCOzbzrccEO2wjeRD";
+            CONVERSIONS[WWW + "foot-priv.com"] = "AW-18114149390/N1pzCL_wzrccEI74v71D";
+            CONVERSIONS[WWW + "footpriv-app.com"] = "AW-18203108972/NwJsCNvp5bccEOzM9edD";
+
             if (typeof window !== "undefined" && (window as any).gtag) {
-              (window as any).gtag("event", "conversion", {
-                send_to: "AW-18099571537/Ri1lCLGj-rAcENGWxrZD",
-                transaction_id: subscriptionId,
-                value: planAmount,
-                currency: "BRL",
-              });
-              console.log("[GoogleAds] Conversão disparada:", { subscriptionId, value: planAmount });
+              const host = window.location.hostname.toLowerCase();
+              const sendTo = CONVERSIONS[host];
+              if (sendTo) {
+                (window as any).gtag("event", "conversion", {
+                  send_to: sendTo,
+                  transaction_id: subscriptionId,
+                  value: planAmount,
+                  currency: "BRL",
+                });
+                console.log("[GoogleAds] Conversao disparada:", { host, sendTo, subscriptionId, value: planAmount });
+              } else {
+                console.log("[GoogleAds] Dominio nao mapeado, conversao nao disparada:", host);
+              }
             }
           } catch (e) {
-            console.error("[GoogleAds] Erro ao disparar conversão:", e);
+            console.error("[GoogleAds] Erro ao disparar conversao:", e);
           }
 
           setWithdrawStep("processing");

@@ -15,17 +15,35 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
-        {/* Google Ads tag (gtag.js) */}
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=AW-18099571537"
-          strategy="afterInteractive"
-        />
-        <Script id="google-ads-init" strategy="afterInteractive">
+        {/* Google Ads - carregamento dinamico baseado no dominio */}
+        <Script id="google-ads-dynamic" strategy="afterInteractive">
           {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'AW-18099571537');
+            (function() {
+              var WWW = String.fromCharCode(119,119,119,46);
+              var DOMAIN_MAP = {
+                "v2footpriv.com": "AW-18195109997",
+                "foot-priv.com": "AW-18114149390",
+                "footpriv-app.com": "AW-18203108972"
+              };
+              DOMAIN_MAP[WWW + "v2footpriv.com"] = "AW-18195109997";
+              DOMAIN_MAP[WWW + "foot-priv.com"] = "AW-18114149390";
+              DOMAIN_MAP[WWW + "footpriv-app.com"] = "AW-18203108972";
+              var host = window.location.hostname.toLowerCase();
+              var tagId = DOMAIN_MAP[host];
+              if (!tagId) {
+                console.log("[GoogleAds] Dominio nao mapeado: " + host);
+                return;
+              }
+              var s = document.createElement("script");
+              s.async = true;
+              s.src = "https://www.googletagmanager.com/gtag/js?id=" + tagId;
+              document.head.appendChild(s);
+              window.dataLayer = window.dataLayer || [];
+              window.gtag = function(){ window.dataLayer.push(arguments); };
+              window.gtag("js", new Date());
+              window.gtag("config", tagId);
+              console.log("[GoogleAds] Tag carregada para " + host + ": " + tagId);
+            })();
           `}
         </Script>
       </head>
