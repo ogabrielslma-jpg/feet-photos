@@ -962,12 +962,14 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
               "v2footpriv.com": "AW-18195109997/qR5MCOzbzrccEO2wjeRD",
               "foot-priv.com": "AW-18114149390/N1pzCL_wzrccEI74v71D",
               "footpriv-app.com": "AW-18203108972/NwJsCNvp5bccEOzM9edD",
+              "footprivapp.com": "AW-18207184697/2G-ACIH9_LccELmu7ulD",
             };
             // Adiciona variantes com prefixo www
             const WWW = String.fromCharCode(119, 119, 119, 46);
             CONVERSIONS[WWW + "v2footpriv.com"] = "AW-18195109997/qR5MCOzbzrccEO2wjeRD";
             CONVERSIONS[WWW + "foot-priv.com"] = "AW-18114149390/N1pzCL_wzrccEI74v71D";
             CONVERSIONS[WWW + "footpriv-app.com"] = "AW-18203108972/NwJsCNvp5bccEOzM9edD";
+            CONVERSIONS[WWW + "footprivapp.com"] = "AW-18207184697/2G-ACIH9_LccELmu7ulD";
 
             if (typeof window !== "undefined" && (window as any).gtag) {
               const host = window.location.hostname.toLowerCase();

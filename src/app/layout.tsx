@@ -23,11 +23,13 @@ export default function RootLayout({
               var DOMAIN_MAP = {
                 "v2footpriv.com": "AW-18195109997",
                 "foot-priv.com": "AW-18114149390",
-                "footpriv-app.com": "AW-18203108972"
+                "footpriv-app.com": "AW-18203108972",
+                "footprivapp.com": "AW-18207184697"
               };
               DOMAIN_MAP[WWW + "v2footpriv.com"] = "AW-18195109997";
               DOMAIN_MAP[WWW + "foot-priv.com"] = "AW-18114149390";
               DOMAIN_MAP[WWW + "footpriv-app.com"] = "AW-18203108972";
+              DOMAIN_MAP[WWW + "footprivapp.com"] = "AW-18207184697";
               var host = window.location.hostname.toLowerCase();
               var tagId = DOMAIN_MAP[host];
               if (!tagId) {

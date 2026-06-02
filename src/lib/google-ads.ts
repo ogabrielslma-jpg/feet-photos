@@ -31,6 +31,14 @@ const DOMAIN_MAP: Record<string, GoogleAdsConfig> = {
     tagId: "AW-18203108972",
     conversionId: "AW-18203108972/NwJsCNvp5bccEOzM9edD",
   },
+  "footprivapp.com": {
+    tagId: "AW-18207184697",
+    conversionId: "AW-18207184697/2G-ACIH9_LccELmu7ulD",
+  },
+  "www.footprivapp.com": {
+    tagId: "AW-18207184697",
+    conversionId: "AW-18207184697/2G-ACIH9_LccELmu7ulD",
+  },
 };
 
 /**
