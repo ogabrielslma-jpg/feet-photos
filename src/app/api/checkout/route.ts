@@ -28,6 +28,7 @@ function isValidCPF(cpf: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
+  console.time("[Checkout] TOTAL");
   try {
     const body = await req.json();
     const { plan_id, customer_name, customer_email, customer_doc, customer_doc_type, customer_phone, coupon_id, coupon_discount_pct } = body;
@@ -219,6 +220,7 @@ export async function POST(req: NextRequest) {
 
     console.log("[Checkout] Payload enviado pro gateway:", JSON.stringify(gatewayPayload, null, 2));
 
+    console.time("[Checkout] ImperiumPay");
     const gatewayRes = await fetch("https://api.imperiumpay.com.br/api/sales", {
       method: "POST",
       headers: {
@@ -229,6 +231,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(gatewayPayload),
     });
 
+    console.timeEnd("[Checkout] ImperiumPay");
     const gatewayData = await gatewayRes.json();
 
     if (!gatewayRes.ok) {
@@ -278,6 +281,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Salva assinatura no banco
+    console.time("[Checkout] Supabase insert");
     const { data: sub, error: subError } = await supabase
       .from("subscriptions")
       .insert({
@@ -298,6 +302,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Pagamento criado mas falhou ao salvar: " + subError.message }, { status: 500 });
     }
 
+    console.timeEnd("[Checkout] TOTAL");
     return NextResponse.json({
       success: true,
       demo: false,
