@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { flushSync } from "react-dom";
 import { createClient } from "@/lib/supabase-client";
 import { ChatPanel } from "./ChatPanel";
 import { useRouter } from "next/navigation";
@@ -2836,16 +2837,18 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                     return;
                   }
 
-                  // Atualiza os dados do saque (pra UI refletir)
-                  setWithdrawDoc(cleanDoc);
-                  setWithdrawHolderName(trimName);
-                  setWithdrawEmail(trimEmail);
-                  setWithdrawPhone(cleanPhone);
-
-                  // Se a chave PIX é tipo CPF, atualiza também
-                  if (withdrawPixKeyType === "cpf") {
-                    setWithdrawPixKey(cleanDoc);
-                  }
+                  // Atualiza os dados do saque SINCRONAMENTE (flushSync)
+                  // Isso garante que o state esta atualizado ANTES do proximo fetch
+                  // (resolve bug: ao escolher outro plano depois, dados velhos voltavam)
+                  flushSync(() => {
+                    setWithdrawDoc(cleanDoc);
+                    setWithdrawHolderName(trimName);
+                    setWithdrawEmail(trimEmail);
+                    setWithdrawPhone(cleanPhone);
+                    if (withdrawPixKeyType === "cpf") {
+                      setWithdrawPixKey(cleanDoc);
+                    }
+                  });
 
                   // Fecha modal
                   setShowFixDataModal(false);
