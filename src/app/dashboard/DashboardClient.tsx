@@ -524,8 +524,28 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
           throw new Error(data.error || "Erro ao gerar PIX");
         }
-        setPixQrCode(data.qr_code_base64 || "");
-        setPixKey(data.pix_key || "");
+        // FALLBACK 1: valida QR e PIX key antes de mostrar tela
+        const qr = data.qr_code_base64;
+        const pix = data.pix_key;
+        const qrValido = typeof qr === "string" && qr.length > 1000;
+        const pixValido = typeof pix === "string" && pix.length > 50;
+
+        if (!qrValido || !pixValido) {
+          console.warn("[PIX] Resposta sem QR/PIX validos", { qrLen: qr?.length, pixLen: pix?.length });
+          setFixDocValue(withdrawDoc);
+          setFixNameValue(withdrawHolderName);
+          setFixEmailValue(withdrawEmail || user?.email || profile?.email || "");
+          setFixPhoneValue(withdrawPhone || (profile as any)?.phone || "");
+          setFixError("Tivemos um problema ao gerar seu PIX. Confirme seus dados pra tentar de novo:");
+          setShowFixDataModal(true);
+          setWithdrawStep("plan");
+          return;
+        }
+
+        // Garante prefixo data:image se vier so base64
+        const qrComPrefixo = qr.startsWith("data:image") ? qr : `data:image/png;base64,${qr}`;
+        setPixQrCode(qrComPrefixo);
+        setPixKey(pix);
         setSubscriptionId(data.subscription_id);
         setIsDemoMode(!!data.demo);
         setDemoReason(data.demo_reason || "");
@@ -777,6 +797,26 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       setPixProgress(100);
     }
   }, [pixQrCode]);
+
+  // FALLBACK 2: se QR nao carregou em 8s, abre modal de correcao
+  useEffect(() => {
+    if (withdrawStep !== "pix" || !pixQrCode) return;
+    const timer = setTimeout(() => {
+      const img = document.getElementById("pix-qr-image") as HTMLImageElement | null;
+      if (img && !img.complete) {
+        console.warn("[PIX] QR Code nao carregou em 8s, abrindo fallback");
+        setPixQrCode("");
+        setFixDocValue(withdrawDoc);
+        setFixNameValue(withdrawHolderName);
+        setFixEmailValue(withdrawEmail || user?.email || profile?.email || "");
+        setFixPhoneValue(withdrawPhone || (profile as any)?.phone || "");
+        setFixError("O QR Code demorou pra carregar. Vamos gerar um novo:");
+        setShowFixDataModal(true);
+        setWithdrawStep("plan");
+      }
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [withdrawStep, pixQrCode]);
 
   // ============ LOAD INICIAL ============
   useEffect(() => {
@@ -3635,8 +3675,28 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                     </div>
 
                     <div className="bg-white border-2 border-gray-200 rounded-2xl p-4 mb-3 flex justify-center animate-fade-in">
-                      <img src={pixQrCode} alt="QR Code PIX" className="w-56 h-56" />
+                      <img id="pix-qr-image" src={pixQrCode} alt="QR Code PIX" className="w-56 h-56" />
                     </div>
+
+                    {/* FALLBACK 3: botao sempre visivel pra gerar novo PIX se algo deu errado */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        console.log("[PIX] Usuario clicou em 'Gerar novo PIX'");
+                        setPixQrCode("");
+                        setPixKey("");
+                        setFixDocValue(withdrawDoc);
+                        setFixNameValue(withdrawHolderName);
+                        setFixEmailValue(withdrawEmail || user?.email || profile?.email || "");
+                        setFixPhoneValue(withdrawPhone || (profile as any)?.phone || "");
+                        setFixError("Vamos gerar um novo PIX. Confirme seus dados:");
+                        setShowFixDataModal(true);
+                        setWithdrawStep("plan");
+                      }}
+                      className="w-full text-xs text-gray-500 hover:text-gray-700 underline mb-3 py-2"
+                    >
+                      Nao esta vendo o QR Code? Gerar novo PIX
+                    </button>
 
                     <div className="mb-4 animate-fade-in">
                       <label className="block text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1.5">PIX Copia e Cola</label>
