@@ -389,6 +389,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   const [pixQrCode, setPixQrCode] = useState<string>("");
   const [pixKey, setPixKey] = useState<string>("");
   const [pixCopied, setPixCopied] = useState(false);
+  const [pixTutorialShown, setPixTutorialShown] = useState(false);
   const [subscriptionId, setSubscriptionId] = useState<string>("");
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [demoReason, setDemoReason] = useState<string>("");
@@ -3658,7 +3659,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                         onClick={() => {
                           navigator.clipboard.writeText(pixKey);
                           setPixCopied(true);
-                          setTimeout(() => setPixCopied(false), 2000);
+                          setPixTutorialShown(true);
                         }}
                         className={`w-full py-3.5 rounded-2xl text-sm font-bold transition flex items-center justify-center gap-2 ${
                           pixCopied ? "bg-emerald-500 text-white" : "bg-gray-900 text-white hover:bg-black"
@@ -3680,6 +3681,37 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                           </>
                         )}
                       </button>
+
+                      {/* Tutorial aparece apos clicar copiar */}
+                      {pixTutorialShown && (
+                        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mt-3 animate-fade-in">
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                            <p className="text-sm font-bold text-emerald-900">Codigo copiado! Agora:</p>
+                          </div>
+                          <ol className="space-y-2.5">
+                            <li className="flex gap-2.5">
+                              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-500 text-white text-[11px] font-bold flex items-center justify-center">1</span>
+                              <span className="text-xs text-emerald-900 leading-snug pt-0.5">Abra o app do seu banco</span>
+                            </li>
+                            <li className="flex gap-2.5">
+                              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-500 text-white text-[11px] font-bold flex items-center justify-center">2</span>
+                              <span className="text-xs text-emerald-900 leading-snug pt-0.5">Procure a opcao <strong>PIX Copia e Cola</strong> (ou <strong>Pagar com PIX</strong>)</span>
+                            </li>
+                            <li className="flex gap-2.5">
+                              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-500 text-white text-[11px] font-bold flex items-center justify-center">3</span>
+                              <span className="text-xs text-emerald-900 leading-snug pt-0.5">Cole o codigo e confirme o pagamento</span>
+                            </li>
+                          </ol>
+                          <p className="text-[10px] text-emerald-700 mt-3 text-center leading-relaxed">
+                            Nao tente pagar como <strong>chave PIX</strong>. Use sempre <strong>PIX Copia e Cola</strong>.
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-center gap-2 text-xs text-gray-600 mb-4 animate-fade-in">
