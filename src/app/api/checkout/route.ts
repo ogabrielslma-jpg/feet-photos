@@ -91,15 +91,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Email invalido. Verifique o formato (ex: seuemail@gmail.com)." }, { status: 400 });
     }
 
-    const cleanDoc = String(customer_doc).replace(/\D/g, "");
-    if (customer_doc_type === "cpf" && cleanDoc.length !== 11) {
+    const cleanDocCheck = String(customer_doc).replace(/\D/g, "");
+    if (customer_doc_type === "cpf" && cleanDocCheck.length !== 11) {
       console.timeEnd("[Checkout] TOTAL");
-      console.log("[Checkout] 400 CPF_INVALIDO:", cleanDoc, "len:", cleanDoc.length);
+      console.log("[Checkout] 400 CPF_INVALIDO:", cleanDocCheck, "len:", cleanDocCheck.length);
       try {
         const supa = createClient();
         await supa.from("checkout_logs").insert({
           status: 400, error_type: "CPF_INVALIDO",
-          error_message: `doc: ${cleanDoc} (${cleanDoc.length} digits)`,
+          error_message: `doc: ${cleanDocCheck} (${cleanDocCheck.length} digits)`,
           has_name: true, has_email: true, has_doc: false,
           plan_id, domain: req.headers.get("host") || null,
         });
@@ -108,8 +108,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Valida nome — minimo 3 chars + pelo menos 1 espaco (nome + sobrenome)
-    const cleanName = String(customer_name).trim();
-    if (cleanName.length < 3 || !cleanName.includes(" ")) {
+    const cleanNameCheck = String(customer_name).trim();
+    if (cleanNameCheck.length < 3 || !cleanNameCheck.includes(" ")) {
       console.timeEnd("[Checkout] TOTAL");
       console.log("[Checkout] 400 NOME_INVALIDO:", cleanName);
       try {
