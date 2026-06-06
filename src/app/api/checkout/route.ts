@@ -35,12 +35,16 @@ export async function POST(req: NextRequest) {
 
     // Valida plano
     if (!plan_id || !(plan_id in PLANS)) {
-      return NextResponse.json({ error: "Plano inválido" }, { status: 400 });
+      console.timeEnd("[Checkout] TOTAL");
+      console.log("[Checkout] 400 PLANO_INVALIDO body:", JSON.stringify({plan_id, has_name: !!customer_name, has_email: !!customer_email, has_doc: !!customer_doc}));
+      return NextResponse.json({ error: "Plano invalido" }, { status: 400 });
     }
     const plan = PLANS[plan_id as PlanId];
 
     // Valida campos
     if (!customer_name || !customer_email || !customer_doc) {
+      console.timeEnd("[Checkout] TOTAL");
+      console.log("[Checkout] 400 DADOS_INCOMPLETOS body:", JSON.stringify({plan_id, has_name: !!customer_name, has_email: !!customer_email, has_doc: !!customer_doc, doc_type: customer_doc_type}));
       return NextResponse.json({ error: "Dados do cliente incompletos" }, { status: 400 });
     }
 
