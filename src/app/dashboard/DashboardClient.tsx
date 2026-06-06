@@ -2094,67 +2094,59 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
               {/* === LEILÃO ATIVO (sub-tab) === */}
               {auctionSubTab === "active" && activeListing && !hasSold && (
                 <>
-                  {/* Aviso de horário de pico (leilão rápido) */}
-                  <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-4 mb-4 flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
-                      <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm text-amber-900 leading-snug mb-0.5">Leilão rápido — horário de pico!</p>
-                      <p className="text-[11px] text-amber-800 leading-snug">
-                        Vários compradores online além do comum. Por isso seu leilão está sendo super rápido.
-                      </p>
-                    </div>
+                  {/* Aviso compacto de pico */}
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 mb-3 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <p className="text-xs text-amber-900 leading-snug min-w-0">
+                      <strong>Leilão expresso</strong> — muitos compradores online agora
+                    </p>
                   </div>
 
-                <div className="bg-white border-2 border-emerald-300 rounded-2xl overflow-hidden">
-                  {/* Header com timer cronômetro */}
-                  <div className="px-5 py-4 bg-gradient-to-r from-emerald-50 to-white border-b border-emerald-100 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                      </span>
-                      <span className="text-xs uppercase tracking-wider text-red-600 font-bold">Ao vivo</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <div className="text-right">
-                        <div className="text-[9px] uppercase tracking-wider text-gray-500">Seu leilão acaba em</div>
-                        <div className={`text-2xl font-display font-light tabular-nums ${timeLeft <= 10 ? "text-red-500" : "text-gray-900"}`}>
+                  {/* Card principal do leilao */}
+                  <div className="bg-white border-2 border-emerald-300 rounded-2xl overflow-hidden mb-3">
+                    {/* Header timer */}
+                    <div className="px-4 py-3 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="relative flex h-2 w-2 flex-shrink-0">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                        </span>
+                        <span className="text-[11px] uppercase tracking-wider text-red-600 font-bold">Ao vivo</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <span className="text-[10px] uppercase tracking-wider text-gray-500">Acaba em</span>
+                        <span className={`text-xl font-display font-light tabular-nums ${timeLeft <= 10 ? "text-red-500" : "text-gray-900"}`}>
                           {timeLeft}s
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Foto compacta (nao 100% da tela) */}
+                    <div className="p-4">
+                      <div className="relative aspect-square bg-gray-100 rounded-xl overflow-hidden max-w-[240px] mx-auto">
+                        <img src={activeListing.image_url} alt="" className="w-full h-full object-cover" />
+                        <div className="absolute top-2 left-2 bg-white/95 backdrop-blur px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider rounded-full text-gray-900 border border-gray-200 max-w-[80%] truncate">
+                          {rarity.label}
                         </div>
+                      </div>
+
+                      {/* Lance atual */}
+                      <div className="mt-4 text-center">
+                        <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">Lance atual</p>
+                        <p className="font-display text-3xl text-gray-900 tabular-nums font-light">
+                          R$ {fmtBRL(currentBidBRL)}
+                        </p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Foto + lance */}
-                  <div className="relative aspect-square bg-gray-100">
-                    <img src={activeListing.image_url} alt="" className="w-full h-full object-cover" />
-                    <div className="absolute top-3 left-3 bg-white/95 backdrop-blur px-3 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-full text-gray-900 border border-gray-200">
-                      ✦ {rarity.label}
-                    </div>
-                    <div className="absolute top-3 right-3 bg-amber-50 border border-amber-200 px-3 py-1 text-[9px] font-semibold uppercase tracking-wider rounded-full text-amber-800">
-                      ⚠ Vende uma vez só
-                    </div>
-                  </div>
-
-                  <div className="p-5 border-b border-gray-100">
-                    <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">Lance atual</p>
-                    <div className="font-display text-4xl text-gray-900 tabular-nums font-light">
-                      R$ {fmtBRL(currentBidBRL)}
-                    </div>
-                  </div>
-
-                  {/* Lances ao vivo (em R$) */}
-                  <div className="p-5">
-                    <h3 className="font-semibold text-base text-gray-900 mb-3 flex items-center justify-between">
-                      <span>Lances ao vivo</span>
-                      <span className="text-[10px] text-gray-500 font-normal uppercase tracking-wider">
+                  {/* Lances ao vivo */}
+                  <div className="bg-white border border-gray-200 rounded-2xl p-4">
+                    <h3 className="font-semibold text-sm text-gray-900 mb-3 flex items-center justify-between gap-2">
+                      <span className="min-w-0 truncate">Lances ao vivo</span>
+                      <span className="text-[10px] text-gray-500 font-normal uppercase tracking-wider flex-shrink-0">
                         {bidHistory.length} ofertas
                       </span>
                     </h3>
@@ -2165,28 +2157,24 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                     ) : (
                       <div className="space-y-2 max-h-[280px] overflow-y-auto">
                         {bidHistory.map((bid, i) => (
-                          <div key={bid.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl ${
+                          <div key={bid.id} className={`flex items-center gap-2 px-2.5 py-2 rounded-xl ${
                             i === 0 ? "bg-emerald-50 border border-emerald-200" : "bg-gray-50"
                           }`}>
-                            <img src={bid.bidder_avatar} alt="" className="w-9 h-9 rounded-full grayscale flex-shrink-0" />
+                            <span className="text-base flex-shrink-0">{bid.flag}</span>
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm text-gray-900 truncate font-medium flex items-center gap-1">
-                                <span className="text-base">{bid.flag}</span>
-                                <span className="truncate">{bid.bidder_name}</span>
+                              <div className="text-xs text-gray-900 truncate font-medium">
+                                {bid.bidder_name}
                               </div>
-                              <div className="text-[10px] uppercase tracking-wider text-gray-500">{bid.emirate}</div>
+                              <div className="text-[9px] uppercase tracking-wider text-gray-500 truncate">{bid.emirate}</div>
                             </div>
-                            <div className="text-right flex-shrink-0">
-                              <div className="text-sm font-semibold text-gray-900 tabular-nums">
-                                R$ {fmtBRL(bid.amount_brl)}
-                              </div>
+                            <div className="text-xs font-semibold text-gray-900 tabular-nums flex-shrink-0">
+                              R$ {fmtBRL(bid.amount_brl)}
                             </div>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
-                </div>
                 </>
               )}
 
