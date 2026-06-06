@@ -1787,8 +1787,15 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
           <nav className="flex-1 space-y-1">
             <NavItem active={tab === "feed"} onClick={() => goToTab("feed")} icon="home" label={dash.label_feed} />
-            <NavItem active={tab === "my-auction"} onClick={() => goToTab("my-auction")} icon="hammer" label={dash.label_auction}
-              badge={!auctionEnded && bidHistory.length > 0 ? String(bidHistory.length) : undefined} />
+            <NavItem
+              active={tab === "my-auction"}
+              onClick={() => goToTab("my-auction")}
+              icon="hammer"
+              label={dash.label_auction}
+              badge={!auctionEnded && bidHistory.length > 0 ? String(bidHistory.length) : undefined}
+              locked={!!activeListing && !auctionEnded && !hasSold}
+              lockedTooltip="Disponivel apos o leilao"
+            />
             <NavItem active={tab === "wallet"} onClick={() => goToTab("wallet")} icon="wallet" label={dash.label_wallet} />
             <NavItem active={tab === "profile"} onClick={() => goToTab("profile")} icon="user" label={dash.label_profile} />
 </nav>
@@ -2528,7 +2535,14 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       {/* === BOTTOM TAB MOBILE === */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 px-2 py-2 grid grid-cols-4 gap-1">
         <BottomTab active={tab === "feed"} onClick={() => goToTab("feed")} icon="home" label={dash.label_feed} />
-        <BottomTab active={tab === "my-auction"} onClick={() => goToTab("my-auction")} icon="hammer" label={dash.label_auction} />
+        <BottomTab
+          active={tab === "my-auction"}
+          onClick={() => goToTab("my-auction")}
+          icon="hammer"
+          label={dash.label_auction}
+          locked={!!activeListing && !auctionEnded && !hasSold}
+          lockedTooltip="Disponivel apos o leilao"
+        />
         <BottomTab active={tab === "wallet"} onClick={() => goToTab("wallet")} icon="wallet" label={dash.label_wallet} />
         <BottomTab active={tab === "profile"} onClick={() => goToTab("profile")} icon="user" label={dash.label_profile} />
 </nav>
@@ -4240,7 +4254,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
 
 // === COMPONENTES ===
 
-function NavItem({ active, onClick, icon, label, badge }: { active: boolean; onClick: () => void; icon: string; label: string; badge?: string }) {
+function NavItem({ active, onClick, icon, label, badge, locked, lockedTooltip }: { active: boolean; onClick: () => void; icon: string; label: string; badge?: string; locked?: boolean; lockedTooltip?: string }) {
   return (
     <button onClick={onClick}
       className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition ${
@@ -4249,19 +4263,44 @@ function NavItem({ active, onClick, icon, label, badge }: { active: boolean; onC
       <Icon name={icon} active={active} />
       <span className="text-base flex-1 text-left">{label}</span>
       {badge && <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{badge}</span>}
+      {locked && <svg className="w-4 h-4 text-gray-400 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>}
     </button>
   );
 }
 
-function BottomTab({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: string; label: string }) {
+function BottomTab({ active, onClick, icon, label, locked, lockedTooltip }: { active: boolean; onClick: () => void; icon: string; label: string; locked?: boolean; lockedTooltip?: string }) {
+  const [showTooltip, setShowTooltip] = useState(false);
   return (
-    <button onClick={onClick}
-      className={`flex flex-col items-center gap-0.5 py-2 rounded-xl transition ${
-        active ? "text-gray-900" : "text-gray-400"
-      }`}>
-      <Icon name={icon} active={active} />
-      <span className="text-[9px] font-medium">{label}</span>
-    </button>
+    <div className="relative">
+      <button onClick={() => {
+        if (locked) {
+          setShowTooltip(true);
+          setTimeout(() => setShowTooltip(false), 2000);
+        } else {
+          onClick();
+        }
+      }}
+        className={`flex flex-col items-center gap-0.5 py-2 rounded-xl transition w-full ${
+          locked ? "text-gray-300 cursor-not-allowed" : (active ? "text-gray-900" : "text-gray-400")
+        }`}>
+        <div className="relative">
+          <Icon name={icon} active={active && !locked} />
+          {locked && (
+            <div className="absolute -top-1 -right-2 bg-white rounded-full p-0.5">
+              <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+          )}
+        </div>
+        <span className="text-[9px] font-medium">{label}</span>
+      </button>
+      {showTooltip && lockedTooltip && (
+        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap z-50 shadow-lg">
+          {lockedTooltip}
+        </div>
+      )}
+    </div>
   );
 }
 
