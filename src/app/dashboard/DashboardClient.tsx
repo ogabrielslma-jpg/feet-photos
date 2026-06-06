@@ -468,6 +468,20 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         setTimeout(() => setWithdrawStep("success"), 2000);
       }
     } else if (withdrawStep === "plan") {
+      // VALIDAÇÃO: se chegou aqui sem dados preenchidos (paywall direto via lockdown/autocoupon/etc),
+      // abre o modal de correção pra coletar nome+CPF+email+phone de uma vez (UX melhor que voltar pra "details")
+      const hasDoc = withdrawDoc && withdrawDoc.length >= 11;
+      const hasName = withdrawHolderName && withdrawHolderName.trim().length >= 3;
+      if (!hasDoc || !hasName) {
+        console.warn("[Checkout] Dados incompletos no step plan, abrindo modal de correcao", { hasDoc, hasName });
+        setFixDocValue(withdrawDoc || "");
+        setFixNameValue(withdrawHolderName || "");
+        setFixEmailValue(withdrawEmail || user?.email || profile?.email || "");
+        setFixPhoneValue(withdrawPhone || (profile as any)?.phone || "");
+        setFixError("");
+        setShowFixDataModal(true);
+        return;
+      }
       // OTIMIZAÇÃO: avança IMEDIATAMENTE pro step "pix" e mostra loading inteligente
       // (sentir que clicou e algo aconteceu, em vez de spinner no botão)
       setPixQrCode(""); // limpa QR antigo se houver
