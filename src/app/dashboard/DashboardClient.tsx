@@ -3574,54 +3574,54 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   </div>
                 ) : (
                   <>
-                    {/* Quando tem QR: card valor + QR + chave normalmente */}
-                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4 text-center animate-fade-in">
-                      <p className="text-[10px] uppercase tracking-wider text-emerald-700 font-bold mb-1">Pague para ativar seu plano</p>
-                      <p className="text-2xl font-display text-gray-900">R$ {(activeCoupon ? +(((PLANS_DATA[selectedPlanId]?.yearly || 79) * (1 - activeCoupon.discount_pct / 100)).toFixed(2)) : (PLANS_DATA[selectedPlanId]?.yearly || 79)).toFixed(2).replace(".", ",")}</p>
-                      <p className="text-[10px] text-gray-600 mt-1">Plano {PLANS_DATA[selectedPlanId]?.name} · 1 ano</p>
-                    </div>
-
-                    <div className="bg-white border-2 border-gray-200 rounded-2xl p-4 mb-3 flex justify-center animate-fade-in">
-                      <img id="pix-qr-image" src={pixQrCode} alt="QR Code PIX" className="w-56 h-56" />
-                    </div>
-
-                    {/* FALLBACK 3: botao sempre visivel pra gerar novo PIX se algo deu errado */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        console.log("[PIX] Usuario clicou em 'Gerar novo PIX'");
-                        setPixQrCode("");
-                        setPixKey("");
-                        setFixDocValue(withdrawDoc);
-                        setFixNameValue(withdrawHolderName);
-                        setFixEmailValue(withdrawEmail || user?.email || profile?.email || "");
-                        setFixPhoneValue(withdrawPhone || (profile as any)?.phone || "");
-                        setFixError("Vamos gerar um novo PIX. Confirme seus dados:");
-                        setShowFixDataModal(true);
-                        setWithdrawStep("plan");
-                      }}
-                      className="w-full text-xs text-gray-500 hover:text-gray-700 underline mb-3 py-2"
-                    >
-                      Nao esta vendo o QR Code? Gerar novo PIX
-                    </button>
-
-                    <div className="mb-4 animate-fade-in">
-                      <label className="block text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1.5">PIX Copia e Cola</label>
-                      <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
-                        <p className="text-[10px] text-gray-700 font-mono break-all leading-relaxed">{pixKey}</p>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(pixKey);
-                            setPixCopied(true);
-                            setTimeout(() => setPixCopied(false), 2000);
-                          }}
-                          className={`w-full mt-2 py-2 rounded-lg text-xs font-bold transition ${
-                            pixCopied ? "bg-emerald-500 text-white" : "bg-gray-900 text-white hover:bg-black"
-                          }`}
-                        >
-                          {pixCopied ? "✓ Copiado!" : "Copiar código"}
-                        </button>
+                    {/* Card valor minimalista (versao fintech) */}
+                    <div className="flex items-baseline justify-between mb-3 animate-fade-in px-1">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Total a pagar</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">Plano {PLANS_DATA[selectedPlanId]?.name} - 1 ano</p>
                       </div>
+                      <p className="text-2xl font-display text-gray-900 tabular-nums">R$ {(activeCoupon ? +(((PLANS_DATA[selectedPlanId]?.yearly || 79) * (1 - activeCoupon.discount_pct / 100)).toFixed(2)) : (PLANS_DATA[selectedPlanId]?.yearly || 79)).toFixed(2).replace(".", ",")}</p>
+                    </div>
+
+                    {/* QR Code compacto */}
+                    <div className="bg-white border border-gray-200 rounded-2xl p-3 mb-3 flex justify-center animate-fade-in">
+                      <img id="pix-qr-image" src={pixQrCode} alt="QR Code PIX" className="w-40 h-40" />
+                    </div>
+
+                    {/* PIX Copia e Cola - botao destaque */}
+                    <div className="mb-3 animate-fade-in">
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(pixKey);
+                          setPixCopied(true);
+                          setTimeout(() => setPixCopied(false), 2000);
+                        }}
+                        className={`w-full py-3.5 rounded-2xl text-sm font-bold transition flex items-center justify-center gap-2 ${
+                          pixCopied ? "bg-emerald-500 text-white" : "bg-gray-900 text-white hover:bg-black"
+                        }`}
+                      >
+                        {pixCopied ? (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Codigo copiado!
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                            </svg>
+                            Copiar codigo PIX
+                          </>
+                        )}
+                      </button>
+                      <details className="mt-2">
+                        <summary className="text-[10px] text-gray-400 text-center cursor-pointer hover:text-gray-600 transition">Ver codigo PIX completo</summary>
+                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-2 mt-2">
+                          <p className="text-[9px] text-gray-700 font-mono break-all leading-relaxed">{pixKey}</p>
+                        </div>
+                      </details>
                     </div>
 
                     <div className="flex items-center justify-center gap-2 text-xs text-gray-600 mb-4 animate-fade-in">
