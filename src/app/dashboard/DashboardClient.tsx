@@ -510,15 +510,14 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
           // Volta pra tela "plan"
           setWithdrawStep("plan");
 
-          // 502 = ImperiumPay rejeitou. 400 = nossa validacao rejeitou (email/cpf/nome invalido)
-          // Ambos abrem modal de correcao com mensagem do servidor pra cliente corrigir
-          if (res.status === 502 || res.status === 400) {
+          // Se foi erro do gateway (502), abre modal de correção em vez de erro genérico
+          // Status 502 = nosso backend conseguiu chamar mas o ImperiumPay rejeitou
+          if (res.status === 502) {
             setFixDocValue(withdrawDoc);
             setFixNameValue(withdrawHolderName);
             setFixEmailValue(withdrawEmail || user?.email || profile?.email || "");
             setFixPhoneValue(withdrawPhone || (profile as any)?.phone || "");
-            // Mostra mensagem real do servidor (ex: "Email invalido", "CPF invalido")
-            setFixError(data.error || "Confirme seus dados pra gerar o PIX.");
+            setFixError("");
             setShowFixDataModal(true);
             return;
           }
