@@ -285,6 +285,8 @@ type PersistedState = {
   savedPixKeyType?: "cpf" | "email" | "phone" | "random";
   // Quando a venda foi marcada (pra contagem de 3min do paywall obrigatório)
   soldAt?: number | null;
+  // Timestamp (ms) de quando o leilao acaba — pra persistir timer real entre reloads
+  auctionEndsAt?: number | null;
 };
 
 async function loadUserState(supabase: any, userId: string): Promise<PersistedState | null> {
@@ -874,14 +876,27 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
           // Se já vendeu OU leilão acabou, timer fica em 0 (não precisa contar)
           if (saved.hasSold || saved.auctionEnded) {
             setTimeLeft(0);
+          } else if (saved.auctionEndsAt) {
+            // Calcula timer REAL baseado no timestamp salvo
+            const remainingMs = saved.auctionEndsAt - Date.now();
+            const remainingSec = Math.max(0, Math.floor(remainingMs / 1000));
+            if (remainingSec === 0) {
+              // Leilao deveria ter acabado offline
+              setAuctionEnded(true);
+              setTimeLeft(0);
+            } else {
+              setTimeLeft(remainingSec);
+            }
           } else {
-            // Restaura timer aleatório (não tem como saber tempo exato)
-            setTimeLeft(30 + Math.floor(Math.random() * 16));
+            // Estado antigo sem auctionEndsAt — gera timer + salva endsAt
+            const newTime = 30 + Math.floor(Math.random() * 16);
+            setTimeLeft(newTime);
           }
         } else {
           // Primeira vez — estado inicial + modal de confirmação da foto
           setCurrentBidBRL(MIN_BID);
-          setTimeLeft(30 + Math.floor(Math.random() * 16));
+          const initialTime = 30 + Math.floor(Math.random() * 16);
+          setTimeLeft(initialTime);
           setShowConfirmPhotoModal(true);
         }
       }
@@ -1284,6 +1299,8 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         savedPixKey: withdrawPixKey || undefined,
         savedPixKeyType: withdrawPixKeyType,
         soldAt,
+        // Persiste quando o leilao acaba (timestamp absoluto) pra reload nao resetar timer
+        auctionEndsAt: !hasSold && !auctionEnded && timeLeft > 0 ? Date.now() + timeLeft * 1000 : null,
       });
     }, 800);
     return () => clearTimeout(t);
