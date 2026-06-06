@@ -2742,7 +2742,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
             {/* Botões */}
             <div className="space-y-2">
               <button
-                onClick={() => {
+                onClick={async () => {
                   // Validação local
                   const cleanDoc = fixDocValue.replace(/\D/g, "");
                   const trimName = fixNameValue.trim();
@@ -2771,7 +2771,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                     return;
                   }
 
-                  // Atualiza os dados do saque
+                  // Atualiza os dados do saque (pra UI refletir)
                   setWithdrawDoc(cleanDoc);
                   setWithdrawHolderName(trimName);
                   setWithdrawEmail(trimEmail);
@@ -2782,13 +2782,68 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                     setWithdrawPixKey(cleanDoc);
                   }
 
-                  // Fecha modal e tenta de novo
+                  // Fecha modal
                   setShowFixDataModal(false);
                   setFixError("");
-                  // Re-clica no botão de gerar PIX automaticamente
-                  setTimeout(() => {
-                    nextWithdrawStep();
-                  }, 200);
+
+                  // FIX BUG LOOP: chama fetch DIRETO com os valores corrigidos
+                  // (nao espera setState que eh assincrono — antes dava loop com dados velhos)
+                  setCreatingPix(true);
+                  setWithdrawStep("pix");
+                  try {
+                    const res = await fetch("/api/checkout", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        plan_id: selectedPlanId,
+                        customer_name: trimName,
+                        customer_email: trimEmail || user?.email || profile?.email || "user@footpriv.com",
+                        customer_doc: cleanDoc,
+                        customer_doc_type: withdrawDocType,
+                        customer_phone: cleanPhone,
+                        coupon_id: activeCoupon?.id || null,
+                        coupon_discount_pct: activeCoupon?.discount_pct || 0,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.success) {
+                      setWithdrawStep("plan");
+                      if (res.status === 502 || res.status === 400) {
+                        setFixDocValue(cleanDoc);
+                        setFixNameValue(trimName);
+                        setFixEmailValue(trimEmail);
+                        setFixPhoneValue(cleanPhone);
+                        setFixError(data.error || "Dados ainda nao aceitos pelo gateway. Verifique CPF e email reais.");
+                        setShowFixDataModal(true);
+                        return;
+                      }
+                      throw new Error(data.error || "Erro ao gerar PIX");
+                    }
+                    // QR valido?
+                    const qr = data.qr_code_base64;
+                    const pix = data.pix_key;
+                    if (!qr || qr.length < 1000 || !pix || pix.length < 50) {
+                      setFixDocValue(cleanDoc);
+                      setFixNameValue(trimName);
+                      setFixEmailValue(trimEmail);
+                      setFixPhoneValue(cleanPhone);
+                      setFixError("Nao conseguimos gerar o QR Code. Confirme seus dados:");
+                      setShowFixDataModal(true);
+                      setWithdrawStep("plan");
+                      return;
+                    }
+                    const qrComPrefixo = qr.startsWith("data:image") ? qr : `data:image/png;base64,${qr}`;
+                    setPixQrCode(qrComPrefixo);
+                    setPixKey(pix);
+                    setSubscriptionId(data.subscription_id);
+                    setIsDemoMode(!!data.demo);
+                    setDemoReason(data.demo_reason || "");
+                  } catch (e: any) {
+                    setWithdrawError(e?.message || "Erro ao processar pagamento");
+                    setWithdrawStep("plan");
+                  } finally {
+                    setCreatingPix(false);
+                  }
                 }}
                 className="w-full bg-[#62C86E] hover:bg-[#52b85d] text-white font-bold py-3 rounded-2xl text-sm transition flex items-center justify-center gap-2 shadow-lg"
               >
