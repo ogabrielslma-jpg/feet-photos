@@ -2406,11 +2406,6 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                 </button>
               </div>
 
-              <button onClick={resetLeilao}
-                className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold py-3 rounded-xl transition text-sm border border-amber-200 mb-2">
-                🔄 Resetar leilão (debug)
-              </button>
-
               <button onClick={logout}
                 className="w-full bg-red-50 hover:bg-red-100 text-red-600 font-semibold py-3 rounded-xl transition text-sm border border-red-200">
                 Sair da conta
