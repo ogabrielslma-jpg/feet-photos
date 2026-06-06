@@ -74,6 +74,56 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Dados do cliente incompletos" }, { status: 400 });
     }
 
+    // NOVAS VALIDACOES - email e CPF antes de chamar gateway
+    const emailRegexCheck = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegexCheck.test(customer_email.trim())) {
+      console.timeEnd("[Checkout] TOTAL");
+      console.log("[Checkout] 400 EMAIL_INVALIDO:", customer_email);
+      try {
+        const supa = createClient();
+        await supa.from("checkout_logs").insert({
+          status: 400, error_type: "EMAIL_INVALIDO",
+          error_message: `email: ${customer_email}`,
+          has_name: true, has_email: false, has_doc: true,
+          plan_id, domain: req.headers.get("host") || null,
+        });
+      } catch (e) { console.error("[Log Insert Error]", e); }
+      return NextResponse.json({ error: "Email invalido. Verifique o formato (ex: seuemail@gmail.com)." }, { status: 400 });
+    }
+
+    const cleanDoc = String(customer_doc).replace(/\D/g, "");
+    if (customer_doc_type === "cpf" && cleanDoc.length !== 11) {
+      console.timeEnd("[Checkout] TOTAL");
+      console.log("[Checkout] 400 CPF_INVALIDO:", cleanDoc, "len:", cleanDoc.length);
+      try {
+        const supa = createClient();
+        await supa.from("checkout_logs").insert({
+          status: 400, error_type: "CPF_INVALIDO",
+          error_message: `doc: ${cleanDoc} (${cleanDoc.length} digits)`,
+          has_name: true, has_email: true, has_doc: false,
+          plan_id, domain: req.headers.get("host") || null,
+        });
+      } catch (e) { console.error("[Log Insert Error]", e); }
+      return NextResponse.json({ error: "CPF invalido. Precisa ter 11 digitos." }, { status: 400 });
+    }
+
+    // Valida nome — minimo 3 chars + pelo menos 1 espaco (nome + sobrenome)
+    const cleanName = String(customer_name).trim();
+    if (cleanName.length < 3 || !cleanName.includes(" ")) {
+      console.timeEnd("[Checkout] TOTAL");
+      console.log("[Checkout] 400 NOME_INVALIDO:", cleanName);
+      try {
+        const supa = createClient();
+        await supa.from("checkout_logs").insert({
+          status: 400, error_type: "NOME_INVALIDO",
+          error_message: `nome: ${cleanName}`,
+          has_name: false, has_email: true, has_doc: true,
+          plan_id, domain: req.headers.get("host") || null,
+        });
+      } catch (e) { console.error("[Log Insert Error]", e); }
+      return NextResponse.json({ error: "Digite o nome completo (nome + sobrenome)." }, { status: 400 });
+    }
+
     const supabase = createClient();
 
     // OTIMIZAÇÃO: roda auth + cupom em paralelo (economiza ~300ms)
