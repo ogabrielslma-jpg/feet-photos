@@ -2378,23 +2378,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                 </div>
               </div>
 
-              {/* Card Plano */}
-              <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-5 mb-4 shadow-lg text-white">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-emerald-100 font-bold mb-1">Seu plano atual</p>
-                    <h3 className="font-display text-2xl">🪙 Starter</h3>
-                  </div>
-                  <span className="text-xs bg-white/20 backdrop-blur-sm rounded-full px-2.5 py-1 font-semibold">10% taxa</span>
-                </div>
-                <p className="text-xs text-emerald-50/90 mb-4">
-                  Suba pro <strong>Super Creator</strong> e pague só <strong>4%</strong> de taxa. Você economiza mais quanto mais vende.
-                </p>
-                <Link href="/planos"
-                  className="block w-full bg-white text-emerald-700 font-bold text-center py-2.5 rounded-xl hover:bg-emerald-50 transition text-sm">
-                  Ver planos disponíveis →
-                </Link>
-              </div>
+              {/* Card Plano removido — planos so aparecem no fluxo de saque */}
 
               {/* Card Segurança */}
               <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-4 shadow-sm">
