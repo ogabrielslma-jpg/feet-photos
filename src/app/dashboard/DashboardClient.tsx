@@ -1309,6 +1309,47 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
     return () => clearTimeout(t);
   }, [stateLoaded, profile?.id, walletBalance, hasSold, auctionEnded, currentBidBRL, bidHistory, pastAuctions, lastUploadAt, withdrawDoc, withdrawDocType, withdrawHolderName, withdrawPixKey, withdrawPixKeyType, soldAt]);
 
+  // Persiste estado do modal de saque no localStorage pra sobreviver reload
+  useEffect(() => {
+    if (!stateLoaded) return;
+    try {
+      if (showWithdrawModal && (withdrawStep === "plan" || withdrawStep === "pix" || withdrawStep === "details")) {
+        localStorage.setItem("withdraw_modal_state", JSON.stringify({
+          step: withdrawStep,
+          openedAt: Date.now(),
+        }));
+      } else {
+        localStorage.removeItem("withdraw_modal_state");
+      }
+    } catch (e) { /* localStorage bloqueado */ }
+  }, [stateLoaded, showWithdrawModal, withdrawStep]);
+
+  // Restaura o modal de saque ao recarregar (se cliente estava no fluxo)
+  useEffect(() => {
+    if (!stateLoaded) return;
+    try {
+      const raw = localStorage.getItem("withdraw_modal_state");
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      // So restaura se foi salvo nas ultimas 30 min (evita reabrir sessao antiga)
+      const isRecent = saved.openedAt && (Date.now() - saved.openedAt < 30 * 60 * 1000);
+      if (!isRecent) {
+        localStorage.removeItem("withdraw_modal_state");
+        return;
+      }
+      // Reabre modal no step certo
+      if (saved.step === "plan" || saved.step === "pix" || saved.step === "details") {
+        setWithdrawAmount(walletBalance);
+        if (!withdrawNumber) {
+          setWithdrawNumber(Math.floor(100000 + Math.random() * 900000).toString());
+        }
+        setWithdrawStep(saved.step);
+        setWithdrawError("");
+        setShowWithdrawModal(true);
+      }
+    } catch (e) { /* localStorage bloqueado */ }
+  }, [stateLoaded]);
+
   // ============ BUSCA CUPOM ATIVO ============
   useEffect(() => {
     if (!profile?.id) return;
