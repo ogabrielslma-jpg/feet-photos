@@ -501,12 +501,24 @@ export function ChatPanel({ userName, compact = false, hasActivePlan = false, fo
     }, 1000);
 
     // Respostas FIXAS na ordem (3 creators aleatorias, mensagens fixas, tempos fixos)
+    // Adapta texto conforme sexo (salvo no localStorage no cadastro)
+    let userGender: string = "feminino";
+    try {
+      userGender = localStorage.getItem("user_gender") || "feminino";
+    } catch (e) { /* localStorage bloqueado */ }
+
     const responders = pickRandomResponders();
-    const fixedReplies = [
-      { text: "oiii, q delicia mais uma nova", delay: 7000 },
-      { text: "oii", delay: 12000 },
-      { text: "mais uma pro clube das loucas, bem vinda e bora faturar 🔥", delay: 16000 },
-    ];
+    const fixedReplies = userGender === "masculino"
+      ? [
+          { text: "seja bem vindo", delay: 7000 },
+          { text: "oiii", delay: 12000 },
+          { text: "primeiro homem do grupo? 🔥", delay: 16000 },
+        ]
+      : [
+          { text: "oiii, q delicia mais uma nova", delay: 7000 },
+          { text: "oii", delay: 12000 },
+          { text: "mais uma pro clube das loucas, bem vinda e bora faturar 🔥", delay: 16000 },
+        ];
 
     responders.forEach((name, i) => {
       const { text: replyText, delay } = fixedReplies[i];

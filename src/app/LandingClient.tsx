@@ -13,6 +13,7 @@ type Step =
   | "submitted"   // "foto enviada"
   | "q1" | "q2" | "q3" | "q4" | "q5"  // 5 perguntas
   | "birthdate"
+  | "gender"      // sexo (M/F) - afeta mensagens do chat
   | "credentials" // senha + username
   | "done";       // redireciona pro login
 
@@ -47,6 +48,7 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
   const [day, setDay] = useState("");
   const [month, setMonth] = useState("");
   const [year, setYear] = useState("");
+  const [gender, setGender] = useState<"feminino" | "masculino" | "">("");
 
   // Credentials
   const [username, setUsername] = useState("");
@@ -158,6 +160,17 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
       return;
     }
     setError("");
+    setStep("gender");
+  }
+
+  function handleGender(selected: "feminino" | "masculino") {
+    setGender(selected);
+    // Salva no localStorage pro ChatPanel ler
+    try {
+      localStorage.setItem("user_gender", selected);
+    } catch (e) {
+      // ignora se localStorage bloqueado
+    }
     setStep("credentials");
   }
 
@@ -519,6 +532,43 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
             Continuar
           </button>
         </form>
+      </Wrapper>
+    );
+  }
+
+  // ============ TELA: GENDER (sexo) ============
+  if (step === "gender") {
+    return (
+      <Wrapper config={config} viewport={viewport}>
+        <Progress current={7} total={8} />
+        <p className="text-center font-mono text-[10px] uppercase tracking-[0.3em] text-moss-500 mb-3">
+          Mais uma coisinha
+        </p>
+        <h2 className="text-center font-display text-3xl text-bone-100 mb-2 leading-tight">
+          Qual seu <span className="italic-accent text-moss-500">sexo</span>?
+        </h2>
+        <p className="text-center text-bone-100/60 text-sm mb-8">
+          Para personalizar sua experiencia.
+        </p>
+
+        <div className="space-y-3">
+          <button
+            type="button"
+            onClick={() => handleGender("feminino")}
+            className="w-full bg-ink-900/80 border border-ink-700 hover:border-moss-500 rounded-2xl px-6 py-5 text-bone-100 transition flex items-center justify-between group"
+          >
+            <span className="font-display text-lg">Feminino</span>
+            <span className="text-2xl">&#9792;</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleGender("masculino")}
+            className="w-full bg-ink-900/80 border border-ink-700 hover:border-moss-500 rounded-2xl px-6 py-5 text-bone-100 transition flex items-center justify-between group"
+          >
+            <span className="font-display text-lg">Masculino</span>
+            <span className="text-2xl">&#9794;</span>
+          </button>
+        </div>
       </Wrapper>
     );
   }
