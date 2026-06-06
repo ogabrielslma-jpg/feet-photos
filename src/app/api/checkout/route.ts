@@ -214,8 +214,13 @@ export async function POST(req: NextRequest) {
     // 1) tenta o customer_email do front, 2) busca em user.email do Supabase Auth, 3) fallback
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const userEmail = (user as any)?.email || "";
+    // FALLBACK: se email do cliente eh invalido, usa user@footpriv.com automaticamente
+    // (evita PIX em loop quando cliente digita errado tipo "miti@gmail.co")
     const emailCandidate = ((customer_email || userEmail || "")).trim().toLowerCase();
     const gatewayEmail = emailRegex.test(emailCandidate) ? emailCandidate : "user@footpriv.com";
+    if (!emailRegex.test(emailCandidate)) {
+      console.warn("[Checkout] Email invalido, usando fallback user@footpriv.com. Original:", emailCandidate);
+    }
 
     // Chama ImperiumPay
     const gatewayPayload = {
