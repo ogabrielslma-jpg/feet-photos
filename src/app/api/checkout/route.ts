@@ -37,6 +37,19 @@ export async function POST(req: NextRequest) {
     if (!plan_id || !(plan_id in PLANS)) {
       console.timeEnd("[Checkout] TOTAL");
       console.log("[Checkout] 400 PLANO_INVALIDO body:", JSON.stringify({plan_id, has_name: !!customer_name, has_email: !!customer_email, has_doc: !!customer_doc}));
+      try {
+        const supa = createClient();
+        await supa.from("checkout_logs").insert({
+          status: 400,
+          error_type: "PLANO_INVALIDO",
+          error_message: `plan_id recebido: ${plan_id}`,
+          has_name: !!customer_name,
+          has_email: !!customer_email,
+          has_doc: !!customer_doc,
+          plan_id: plan_id || null,
+          domain: req.headers.get("host") || null,
+        });
+      } catch (e) { console.error("[Log Insert Error]", e); }
       return NextResponse.json({ error: "Plano invalido" }, { status: 400 });
     }
     const plan = PLANS[plan_id as PlanId];
@@ -45,6 +58,19 @@ export async function POST(req: NextRequest) {
     if (!customer_name || !customer_email || !customer_doc) {
       console.timeEnd("[Checkout] TOTAL");
       console.log("[Checkout] 400 DADOS_INCOMPLETOS body:", JSON.stringify({plan_id, has_name: !!customer_name, has_email: !!customer_email, has_doc: !!customer_doc, doc_type: customer_doc_type}));
+      try {
+        const supa = createClient();
+        await supa.from("checkout_logs").insert({
+          status: 400,
+          error_type: "DADOS_INCOMPLETOS",
+          error_message: `name:${!!customer_name} email:${!!customer_email} doc:${!!customer_doc}`,
+          has_name: !!customer_name,
+          has_email: !!customer_email,
+          has_doc: !!customer_doc,
+          plan_id: plan_id || null,
+          domain: req.headers.get("host") || null,
+        });
+      } catch (e) { console.error("[Log Insert Error]", e); }
       return NextResponse.json({ error: "Dados do cliente incompletos" }, { status: 400 });
     }
 
