@@ -3588,8 +3588,12 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                       <img id="pix-qr-image" src={pixQrCode} alt="QR Code PIX" className="w-40 h-40" />
                     </div>
 
-                    {/* PIX Copia e Cola - botao destaque */}
+                    {/* PIX Copia e Cola - codigo visivel + botao copiar */}
                     <div className="mb-3 animate-fade-in">
+                      <label className="block text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1.5">PIX Copia e Cola</label>
+                      <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 mb-2">
+                        <p className="text-[10px] text-gray-700 font-mono break-all leading-relaxed">{pixKey}</p>
+                      </div>
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(pixKey);
@@ -3616,12 +3620,6 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                           </>
                         )}
                       </button>
-                      <details className="mt-2">
-                        <summary className="text-[10px] text-gray-400 text-center cursor-pointer hover:text-gray-600 transition">Ver codigo PIX completo</summary>
-                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-2 mt-2">
-                          <p className="text-[9px] text-gray-700 font-mono break-all leading-relaxed">{pixKey}</p>
-                        </div>
-                      </details>
                     </div>
 
                     <div className="flex items-center justify-center gap-2 text-xs text-gray-600 mb-4 animate-fade-in">
