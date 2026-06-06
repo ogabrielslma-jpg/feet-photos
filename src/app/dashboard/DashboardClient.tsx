@@ -390,6 +390,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   const [pixKey, setPixKey] = useState<string>("");
   const [pixCopied, setPixCopied] = useState(false);
   const [pixTutorialShown, setPixTutorialShown] = useState(false);
+  const [showPixTutorialModal, setShowPixTutorialModal] = useState(false);
   const [subscriptionId, setSubscriptionId] = useState<string>("");
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [demoReason, setDemoReason] = useState<string>("");
@@ -2639,6 +2640,69 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       )}
 
       {/* === MODAL: CORREÇÃO CPF/NOME (quando gateway rejeita) === */}
+      {/* Modal mini popup explicando como pagar PIX */}
+      {showPixTutorialModal && (
+        <div className="fixed inset-0 z-[210] bg-black/60 flex items-end sm:items-center justify-center p-4 animate-fade-in" onClick={() => setShowPixTutorialModal(false)}>
+          <div className="bg-white rounded-3xl max-w-sm w-full p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-start justify-between gap-2 mb-4">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="font-display text-base text-gray-900">Como pagar com PIX</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPixTutorialModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition flex-shrink-0 p-1"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Passos */}
+            <ol className="space-y-3 mb-4">
+              <li className="flex gap-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center">1</span>
+                <span className="text-sm text-gray-800 leading-snug pt-0.5">Copie o código PIX no botão acima</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center">2</span>
+                <span className="text-sm text-gray-800 leading-snug pt-0.5">Abra o app do seu banco</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center">3</span>
+                <span className="text-sm text-gray-800 leading-snug pt-0.5">Procure a opção <strong>PIX Copia e Cola</strong> (ou <strong>Pagar com PIX</strong>)</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center">4</span>
+                <span className="text-sm text-gray-800 leading-snug pt-0.5">Cole o código e confirme o pagamento</span>
+              </li>
+            </ol>
+
+            {/* Aviso importante */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
+              <p className="text-xs text-amber-900 leading-snug">
+                ⚠️ <strong>Não tente pagar como chave PIX</strong>. Sempre use a opção <strong>PIX Copia e Cola</strong>.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowPixTutorialModal(false)}
+              className="w-full bg-gray-900 hover:bg-black text-white font-bold py-3 rounded-2xl text-sm transition"
+            >
+              Entendi
+            </button>
+          </div>
+        </div>
+      )}
+
       {showFixDataModal && (
         <div className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
@@ -3682,36 +3746,14 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                         )}
                       </button>
 
-                      {/* Tutorial aparece apos clicar copiar */}
-                      {pixTutorialShown && (
-                        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mt-3 animate-fade-in">
-                          <div className="flex items-center gap-2 mb-3">
-                            <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
-                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                              </svg>
-                            </div>
-                            <p className="text-sm font-bold text-emerald-900">Codigo copiado! Agora:</p>
-                          </div>
-                          <ol className="space-y-2.5">
-                            <li className="flex gap-2.5">
-                              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-500 text-white text-[11px] font-bold flex items-center justify-center">1</span>
-                              <span className="text-xs text-emerald-900 leading-snug pt-0.5">Abra o app do seu banco</span>
-                            </li>
-                            <li className="flex gap-2.5">
-                              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-500 text-white text-[11px] font-bold flex items-center justify-center">2</span>
-                              <span className="text-xs text-emerald-900 leading-snug pt-0.5">Procure a opcao <strong>PIX Copia e Cola</strong> (ou <strong>Pagar com PIX</strong>)</span>
-                            </li>
-                            <li className="flex gap-2.5">
-                              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-500 text-white text-[11px] font-bold flex items-center justify-center">3</span>
-                              <span className="text-xs text-emerald-900 leading-snug pt-0.5">Cole o codigo e confirme o pagamento</span>
-                            </li>
-                          </ol>
-                          <p className="text-[10px] text-emerald-700 mt-3 text-center leading-relaxed">
-                            Nao tente pagar como <strong>chave PIX</strong>. Use sempre <strong>PIX Copia e Cola</strong>.
-                          </p>
-                        </div>
-                      )}
+                      {/* Link discreto "Como pagar?" — abre modal */}
+                      <button
+                        type="button"
+                        onClick={() => setShowPixTutorialModal(true)}
+                        className="w-full text-center text-xs text-emerald-700 hover:text-emerald-900 underline mt-2 py-1 transition"
+                      >
+                        Como pagar com PIX?
+                      </button>
                     </div>
 
                     <div className="flex items-center justify-center gap-2 text-xs text-gray-600 mb-4 animate-fade-in">
