@@ -352,6 +352,27 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   const config = initialConfig;
   const dash = config.dashboard;
   const [tab, setTab] = useState<Tab>("feed");
+
+  // Validacao de CPF com digito verificador (algoritmo oficial Receita Federal)
+  function isValidCPF(cpf: string): boolean {
+    const c = cpf.replace(/\D/g, "");
+    if (c.length !== 11) return false;
+    // Rejeita CPFs com todos digitos iguais (000.000.000-00, 111.111.111-11, etc)
+    if (/^(\d)\1{10}$/.test(c)) return false;
+    // Calcula primeiro digito verificador
+    let sum = 0;
+    for (let i = 0; i < 9; i++) sum += parseInt(c[i]) * (10 - i);
+    let d1 = 11 - (sum % 11);
+    if (d1 >= 10) d1 = 0;
+    if (d1 !== parseInt(c[9])) return false;
+    // Calcula segundo digito verificador
+    sum = 0;
+    for (let i = 0; i < 10; i++) sum += parseInt(c[i]) * (11 - i);
+    let d2 = 11 - (sum % 11);
+    if (d2 >= 10) d2 = 0;
+    if (d2 !== parseInt(c[10])) return false;
+    return true;
+  }
   const [auctionSubTab, setAuctionSubTab] = useState<"active" | "closed">("active");
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -443,6 +464,10 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       }
       if (!withdrawHolderName || withdrawHolderName.trim().length < 3) {
         setWithdrawError("Informe o nome completo do beneficiário.");
+        return;
+      }
+      if (withdrawDocType === "cpf" && !isValidCPF(withdrawDoc)) {
+        setWithdrawError("CPF inválido. Verifique se digitou corretamente seu CPF (11 dígitos).");
         return;
       }
       if (withdrawMethod === "pix") {
@@ -2867,6 +2892,10 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   }
                   if (cleanDoc.length !== 11) {
                     setFixError("CPF precisa ter 11 dígitos.");
+                    return;
+                  }
+                  if (!isValidCPF(cleanDoc)) {
+                    setFixError("CPF inválido. Verifique se digitou corretamente os 11 números do seu CPF.");
                     return;
                   }
                   if (!emailOk) {
