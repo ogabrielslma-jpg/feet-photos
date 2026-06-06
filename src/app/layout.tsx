@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
+import { PostHogProvider } from "@/lib/posthog-provider";
 
 export const metadata: Metadata = {
   title: "FootPriv — Discreto. Anônimo. Lucrativo.",
@@ -50,7 +51,9 @@ export default function RootLayout({
         </Script>
       </head>
       <body className="bg-ink-950 text-bone-100">
-        <main className="relative">{children}</main>
+        <PostHogProvider>
+          <main className="relative">{children}</main>
+        </PostHogProvider>
       </body>
     </html>
   );
