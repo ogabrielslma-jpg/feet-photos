@@ -288,6 +288,12 @@ type PersistedState = {
   soldAt?: number | null;
   // Timestamp (ms) de quando o leilao acaba — pra persistir timer real entre reloads
   auctionEndsAt?: number | null;
+  // Estado do modal de saque (pra reabrir no mesmo step apos reload)
+  withdrawModalState?: {
+    open: boolean;
+    step?: string;
+    savedAt?: number;
+  } | null;
 };
 
 async function loadUserState(supabase: any, userId: string): Promise<PersistedState | null> {
@@ -927,6 +933,19 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
           setTimeLeft(initialTime);
           setShowConfirmPhotoModal(true);
         }
+
+        // Restaura modal de saque se estava aberto (so se foi salvo nos ultimos 30 min)
+        if (saved && saved.withdrawModalState && saved.withdrawModalState.open) {
+          const m = saved.withdrawModalState;
+          const isRecent = m.savedAt && (Date.now() - m.savedAt < 30 * 60 * 1000);
+          if (isRecent && m.step && (m.step === "plan" || m.step === "pix" || m.step === "details")) {
+            setWithdrawAmount(saved.walletBalance ?? 0);
+            setWithdrawNumber(Math.floor(100000 + Math.random() * 900000).toString());
+            setWithdrawStep(m.step as any);
+            setWithdrawError("");
+            setShowWithdrawModal(true);
+          }
+        }
       }
       generateMockData();
       setStateLoaded(true);
@@ -1329,51 +1348,16 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
         soldAt,
         // Persiste quando o leilao acaba (timestamp absoluto) pra reload nao resetar timer
         auctionEndsAt: !hasSold && !auctionEnded && timeLeft > 0 ? Date.now() + timeLeft * 1000 : null,
+        // Persiste estado do modal de saque (pra reabrir no mesmo step apos reload)
+        withdrawModalState: showWithdrawModal && (withdrawStep === "plan" || withdrawStep === "pix" || withdrawStep === "details")
+          ? { open: true, step: withdrawStep, savedAt: Date.now() }
+          : null,
       });
     }, 800);
     return () => clearTimeout(t);
-  }, [stateLoaded, profile?.id, walletBalance, hasSold, auctionEnded, currentBidBRL, bidHistory, pastAuctions, lastUploadAt, withdrawDoc, withdrawDocType, withdrawHolderName, withdrawPixKey, withdrawPixKeyType, soldAt]);
+  }, [stateLoaded, profile?.id, walletBalance, hasSold, auctionEnded, currentBidBRL, bidHistory, pastAuctions, lastUploadAt, withdrawDoc, withdrawDocType, withdrawHolderName, withdrawPixKey, withdrawPixKeyType, soldAt, showWithdrawModal, withdrawStep, timeLeft]);
 
-  // Persiste estado do modal de saque no localStorage pra sobreviver reload
-  useEffect(() => {
-    if (!stateLoaded) return;
-    try {
-      if (showWithdrawModal && (withdrawStep === "plan" || withdrawStep === "pix" || withdrawStep === "details")) {
-        localStorage.setItem("withdraw_modal_state", JSON.stringify({
-          step: withdrawStep,
-          openedAt: Date.now(),
-        }));
-      } else {
-        localStorage.removeItem("withdraw_modal_state");
-      }
-    } catch (e) { /* localStorage bloqueado */ }
-  }, [stateLoaded, showWithdrawModal, withdrawStep]);
-
-  // Restaura o modal de saque ao recarregar (se cliente estava no fluxo)
-  useEffect(() => {
-    if (!stateLoaded) return;
-    try {
-      const raw = localStorage.getItem("withdraw_modal_state");
-      if (!raw) return;
-      const saved = JSON.parse(raw);
-      // So restaura se foi salvo nas ultimas 30 min (evita reabrir sessao antiga)
-      const isRecent = saved.openedAt && (Date.now() - saved.openedAt < 30 * 60 * 1000);
-      if (!isRecent) {
-        localStorage.removeItem("withdraw_modal_state");
-        return;
-      }
-      // Reabre modal no step certo
-      if (saved.step === "plan" || saved.step === "pix" || saved.step === "details") {
-        setWithdrawAmount(walletBalance);
-        if (!withdrawNumber) {
-          setWithdrawNumber(Math.floor(100000 + Math.random() * 900000).toString());
-        }
-        setWithdrawStep(saved.step);
-        setWithdrawError("");
-        setShowWithdrawModal(true);
-      }
-    } catch (e) { /* localStorage bloqueado */ }
-  }, [stateLoaded]);
+  // (Persistencia do modal de saque agora eh feita via Supabase user_state, junto com o resto)
 
   // ============ BUSCA CUPOM ATIVO ============
   useEffect(() => {
