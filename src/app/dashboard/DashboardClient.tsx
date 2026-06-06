@@ -1988,15 +1988,6 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                 </div>
               </div>
 
-              {/* === Chat publico de creators (versao compacta) === */}
-              <div className="mb-4 lg:mb-6">
-                <div className="px-4 lg:px-0 mb-2">
-                  <h3 className="text-sm font-bold text-gray-900">💬 Chat público de creators</h3>
-                  <p className="text-[10px] text-gray-500">Veja o que as outras criadoras estão falando</p>
-                </div>
-                <ChatPanel userName={profile?.username || "Amiga"} compact hasActivePlan={hasActivePlan} forceBlocked={!hasActivePlan} />
-              </div>
-
               {/* Posts do feed */}
               <div className="space-y-4 lg:space-y-6">
                 {feedSales.map((sale, i) => {
