@@ -144,12 +144,6 @@ const MESSAGES: Msg[] = [
   { id: 232, name: "babi_doll", text: "que coisa linda gata, parabens 👏👏👏", minutesAgo: 230, replyTo: 229 },
   { id: 233, name: "lariis.priv", text: "amg quanto tempo de plataforma?", minutesAgo: 228, replyTo: 229 },
   { id: 234, name: "Ch_pesbr", text: "1 mes amg, ainda nao acredito 😍", minutesAgo: 225, replyTo: 233 },
-  { id: 235, name: "biastoneprivv", text: "PRIMEIRO SAQUE!! nem acredito que caiu 😭😭😭", minutesAgo: 180, imageUrl: "https://rwillgppaoaiyyympwnp.supabase.co/storage/v1/object/public/landing-assets/nubankprimeiravenda.png" },
-  { id: 238, name: "gabivendeoficial", text: "PARABENS GATA!! 🤩 esse é só o começo", minutesAgo: 178, replyTo: 235 },
-  { id: 239, name: "isafoot_22", text: "que coisa MAIS linda 🥺👏 felicidade contagia", minutesAgo: 177, replyTo: 235 },
-  { id: 240, name: "lariis.priv", text: "AAAAA chorei junto agora kkkk parabens", minutesAgo: 176, replyTo: 235 },
-  { id: 241, name: "vivi.privy", text: "vamooo bb!! 🚀 que venham muitos saques", minutesAgo: 176, replyTo: 235 },
-  { id: 242, name: "mahbianchi", text: "explode coracao isso, parabens demais 💖", minutesAgo: 175, replyTo: 235 },
   { id: 236, name: "pesfof1nhos", text: "notificacoes que eu mais amo receber 💸", minutesAgo: 175, imageUrl: "https://rwillgppaoaiyyympwnp.supabase.co/storage/v1/object/public/landing-assets/notificacoesamo.png" },
   { id: 237, name: "dieniferbrum_", text: "SOMOS DUAS 😍😍", minutesAgo: 170, replyTo: 236, imageUrl: "https://rwillgppaoaiyyympwnp.supabase.co/storage/v1/object/public/landing-assets/nubankontem.png" },
   { id: 130, name: "carolperola", text: "o cheiro tbm eh divino", minutesAgo: 255, replyTo: 129 },
@@ -242,6 +236,12 @@ const MESSAGES: Msg[] = [
   { id: 199, name: "leticia_priv", text: "vamo sim, te chamo amanha", minutesAgo: 11, replyTo: 197 },
   { id: 200, name: "dudazinhah", text: "colica passou, milagres existem ✨", minutesAgo: 10 },
   { id: 201, name: "isafoot_22", text: "🙏🙏🙏", minutesAgo: 9, replyTo: 200 },
+  { id: 235, name: "biastoneprivv", text: "PRIMEIRO SAQUE!! nem acredito que caiu 😭😭😭", minutesAgo: 35, imageUrl: "https://rwillgppaoaiyyympwnp.supabase.co/storage/v1/object/public/landing-assets/nubankprimeiravenda.png" },
+  { id: 238, name: "gabivendeoficial", text: "PARABENS GATA!! 🤩 esse é só o começo", minutesAgo: 33, replyTo: 235 },
+  { id: 239, name: "isafoot_22", text: "que coisa MAIS linda 🥺👏 felicidade contagia", minutesAgo: 32, replyTo: 235 },
+  { id: 240, name: "lariis.priv", text: "AAAAA chorei junto agora kkkk parabens", minutesAgo: 31, replyTo: 235 },
+  { id: 241, name: "vivi.privy", text: "vamooo bb!! 🚀 que venham muitos saques", minutesAgo: 30, replyTo: 235 },
+  { id: 242, name: "mahbianchi", text: "explode coracao isso, parabens demais 💖", minutesAgo: 29, replyTo: 235 },
 ];
 
 const AVATAR_URLS: Record<string, string> = {
