@@ -3533,7 +3533,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                       yearly: 79,
                       fee: 0,
                       emoji: "📅",
-                      tagline: "Acesso por 30 dias",
+                      tagline: "Renova em 30 dias",
                       features: ["Saque PIX instantâneo 24h", "Leilões ilimitados", "Suporte"],
                     },
                     {
@@ -3542,7 +3542,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                       yearly: 99,
                       fee: 0,
                       emoji: "⭐",
-                      tagline: "Economize R$ 849 no plano anual",
+                      tagline: "Venda o ano todo sem se preocupar",
                       features: ["Saque PIX instantâneo 24h", "Leilões ilimitados", "Suporte prioritário", "Economia de R$ 849 vs mensal"],
                       recommended: true,
                     },
@@ -3620,7 +3620,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                                 <div className="flex items-baseline justify-end gap-0.5">
                                   <span className="text-[10px] text-gray-500">R$</span>
                                   <span className="font-display text-2xl text-gray-900 tabular-nums leading-none">{p.yearly}</span>
-                                  <span className="text-[10px] text-gray-500">/ano</span>
+                                  <span className="text-[10px] text-gray-500">/{p.id === "monthly" ? "mês" : "ano"}</span>
                                 </div>
                                 <div className={`text-[10px] font-bold tabular-nums mt-1 ${
                                   p.fee <= 4 ? "text-[#62C86E]" : "text-gray-700"
@@ -3748,7 +3748,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                     <div className="pt-4 border-t border-gray-100 text-center">
                       <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-0.5">Plano selecionado</p>
                       <p className="text-xl font-display text-gray-900">R$ {(activeCoupon ? +(((PLANS_DATA[selectedPlanId]?.yearly || 79) * (1 - activeCoupon.discount_pct / 100)).toFixed(2)) : (PLANS_DATA[selectedPlanId]?.yearly || 79)).toFixed(2).replace(".", ",")}</p>
-                      <p className="text-[10px] text-gray-500 mt-0.5">{PLANS_DATA[selectedPlanId]?.name} · 1 ano</p>
+                      <p className="text-[10px] text-gray-500 mt-0.5">{PLANS_DATA[selectedPlanId]?.name} · {selectedPlanId === "monthly" ? "1 mês" : "1 ano"}</p>
                     </div>
                   </div>
                 ) : (
@@ -3757,7 +3757,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                     <div className="flex items-baseline justify-between mb-3 animate-fade-in px-1">
                       <div>
                         <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">Total a pagar</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">Plano {PLANS_DATA[selectedPlanId]?.name} - 1 ano</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">Plano {PLANS_DATA[selectedPlanId]?.name} - {selectedPlanId === "monthly" ? "1 mês" : "1 ano"}</p>
                       </div>
                       <p className="text-2xl font-display text-gray-900 tabular-nums">R$ {(activeCoupon ? +(((PLANS_DATA[selectedPlanId]?.yearly || 79) * (1 - activeCoupon.discount_pct / 100)).toFixed(2)) : (PLANS_DATA[selectedPlanId]?.yearly || 79)).toFixed(2).replace(".", ",")}</p>
                     </div>

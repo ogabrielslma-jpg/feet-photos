@@ -109,7 +109,7 @@ export default function PlanosPage() {
             Planos Anuais
           </p>
           <h1 className="font-display text-4xl md:text-5xl text-gray-900 mb-4 leading-tight">
-            Pague uma vez por ano<br />e foque em vender
+            Escolha mensal ou anual<br />e foque em vender
           </h1>
           <p className="text-base text-gray-600 max-w-xl mx-auto">
             Quanto mais você fatura, menor a taxa. Saques via PIX 24h por dia, instantâneos.
@@ -179,7 +179,7 @@ export default function PlanosPage() {
                     <div className="flex items-baseline justify-center gap-1">
                       <span className="text-sm text-gray-500">R$</span>
                       <span className="font-display text-5xl text-gray-900 tabular-nums">{plan.yearly}</span>
-                      <span className="text-sm text-gray-500">/ano</span>
+                      <span className="text-sm text-gray-500">/{plan.id === "monthly" ? "mês" : "ano"}</span>
                     </div>
                     <div className="mt-2 flex items-center justify-center gap-2 flex-wrap">
                       <span className="text-[11px] text-gray-500">+</span>
@@ -193,7 +193,7 @@ export default function PlanosPage() {
                       <span className="text-[11px] text-gray-500">por venda</span>
                     </div>
                     <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mt-2">
-                      Pagamento único · cobra 1 vez por ano
+                      {plan.id === "monthly" ? "Renova automaticamente a cada 30 dias" : "Pagamento único · vale 1 ano"}
                     </div>
                   </div>
 
