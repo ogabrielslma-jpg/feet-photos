@@ -282,11 +282,21 @@ export default function Home({ initialConfig }: { initialConfig: LandingConfig }
         rarity: rarity.label.toLowerCase(),
       });
 
-      // Salva senha pra auto-fill no login
-      try { localStorage.setItem(`ff_pwd_${email}`, password); } catch {}
-
+      // LOGIN AUTOMATICO apos cadastro - vai direto pra dashboard
       setStep("done");
-      setTimeout(() => router.push("/login"), 2000);
+      try {
+        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        if (signInError) {
+          // Se falhar, salva senha pra auto-fill no login como fallback
+          try { localStorage.setItem(`ff_pwd_${email}`, password); } catch {}
+          setTimeout(() => router.push("/login"), 2000);
+        } else {
+          setTimeout(() => router.push("/dashboard"), 1500);
+        }
+      } catch {
+        try { localStorage.setItem(`ff_pwd_${email}`, password); } catch {}
+        setTimeout(() => router.push("/login"), 2000);
+      }
     } catch (err: any) {
       setError(err.message || "Algo deu errado");
       setLoading(false);
