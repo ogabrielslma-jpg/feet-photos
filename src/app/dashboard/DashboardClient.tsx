@@ -3127,6 +3127,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                     onClick={() => {
                       if (withdrawStep === "plan") {
                         setBackWarn(true);
+                        setTimeout(() => setBackWarn(false), 4000);
                         return;
                       }
                       backWithdrawStep();
@@ -3148,11 +3149,11 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   {withdrawStep === "success" && "Saque solicitado!"}
                 </h2>
                 {backWarn && withdrawStep === "plan" && (
-                  <div className="mt-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 flex items-center gap-2">
-                    <svg className="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                  <div className="mt-1.5 bg-red-50 border border-red-200 rounded-md px-2 py-1 flex items-center gap-1.5 max-w-full">
+                    <svg className="w-3 h-3 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M5 19h14a2 2 0 001.84-2.75L13.74 4a2 2 0 00-3.5 0l-7.1 12.25A2 2 0 005 19z" />
                     </svg>
-                    <span className="text-xs text-red-700 font-medium">Ative um plano para continuar usando a plataforma</span>
+                    <span className="text-[10px] text-red-700 font-medium leading-tight">Ative um plano para continuar usando a plataforma</span>
                   </div>
                 )}
               </div>
