@@ -3090,6 +3090,16 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
       )}
 
       {/* === MODAL DE SAQUE === */}
+      {/* Toast aviso ao clicar na setinha voltar no paywall */}
+      {backPaywallToast && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[300] bg-red-600 text-white text-sm font-semibold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 max-w-[90vw] animate-slide-down">
+          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M5 19h14a2 2 0 001.84-2.75L13.74 4a2 2 0 00-3.5 0l-7.1 12.25A2 2 0 005 19z" />
+          </svg>
+          <span>Ative um plano para utilizar a plataforma</span>
+        </div>
+      )}
+
       {showWithdrawModal && (
         <div
           className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto"
