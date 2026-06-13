@@ -3685,7 +3685,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   )}
                 </button>
                 <p className="text-[10px] text-center text-gray-500 mt-2.5">
-                  Pagamento anual via PIX · Renova a cada 12 meses
+                  Pagamento via PIX · {selectedPlanId === "monthly" ? "Renova a cada 30 dias" : "Renova a cada 12 meses"}
                 </p>
               </>
             )}
