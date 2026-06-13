@@ -138,6 +138,7 @@ const MESSAGES: Msg[] = [
   { id: 127, name: "vivi.privy", text: "td calmo, conversamos sobre tradutor pra arabe kkkk", minutesAgo: 295, replyTo: 126 },
   { id: 128, name: "mirellapasso", text: "kkkk dica boa", minutesAgo: 293, replyTo: 126 },
   { id: 129, name: "mahirambo", text: "comprei aquele OLEO de coco da granado, juro q meu pe ta HIDRATADISSIMO", minutesAgo: 260 },
+  { id: 229, name: "Ch_pesbr", text: "de ontem de noite depois do ultimo saque, estou mais feliz que pinto no lixo 🤑", minutesAgo: 240, imageUrl: "https://i.pinimg.com/736x/21/39/15/213915123eb5f67b332500640ef046f8.jpg" },
   { id: 130, name: "carolperola", text: "o cheiro tbm eh divino", minutesAgo: 255, replyTo: 129 },
   { id: 131, name: "biancavendinha", text: "amo amo amo esse oleo", minutesAgo: 253, replyTo: 129 },
   { id: 132, name: "manuelaaa.b", text: "to anotando td q vcs falam, vou comprar a feira inteira amanha", minutesAgo: 251, replyTo: 129 },
@@ -228,7 +229,6 @@ const MESSAGES: Msg[] = [
   { id: 199, name: "leticia_priv", text: "vamo sim, te chamo amanha", minutesAgo: 11, replyTo: 197 },
   { id: 200, name: "dudazinhah", text: "colica passou, milagres existem ✨", minutesAgo: 10 },
   { id: 201, name: "isafoot_22", text: "🙏🙏🙏", minutesAgo: 9, replyTo: 200 },
-  { id: 229, name: "Ch_pesbr", text: "de ontem de noite depois do ultimo saque, estou mais feliz que pinto no lixo 🤑", minutesAgo: 240, imageUrl: "https://i.pinimg.com/736x/21/39/15/213915123eb5f67b332500640ef046f8.jpg" },
 ];
 
 const AVATAR_URLS: Record<string, string> = {
