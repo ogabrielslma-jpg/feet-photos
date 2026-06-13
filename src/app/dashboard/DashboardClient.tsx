@@ -1949,57 +1949,13 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                 </p>
               </div>
 
-              {/* Top vendedoras da semana */}
-              <div className="bg-white border-b lg:border lg:rounded-2xl border-gray-200 px-4 py-5 mb-4 lg:mb-6">
-                <div className="flex items-center justify-between mb-4 px-1">
-                  <div>
-                    <h3 className="text-sm font-bold text-gray-900">{dash.label_top_creators}</h3>
-                    <p className="text-[10px] text-gray-500 mt-0.5">Atualizado a cada 24h</p>
-                  </div>
-                  <span className="text-xl">🏆</span>
-                </div>
-                <div className="space-y-3">
-                  {ranking.map((u) => (
-                    <div key={u.username} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
-                        u.rank === 1 ? "bg-gradient-to-br from-yellow-300 to-yellow-500 text-yellow-900 shadow-sm" :
-                        u.rank === 2 ? "bg-gradient-to-br from-gray-200 to-gray-400 text-gray-800 shadow-sm" :
-                        u.rank === 3 ? "bg-gradient-to-br from-orange-300 to-orange-500 text-orange-900 shadow-sm" :
-                        "bg-gray-100 text-gray-500"
-                      }`}>
-                        {u.rank}
-                      </div>
-                      <img src={u.avatar} alt="" className="w-11 h-11 rounded-full object-cover ring-2 ring-white" />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-bold text-gray-900 truncate">@{u.username}</div>
-                        <div className="flex items-center gap-3 mt-0.5">
-                          <span className="text-[10px] text-gray-500 flex items-center gap-1">
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/></svg>
-                            {u.total_sales}
-                          </span>
-                          <span className="text-[10px] text-gray-500 flex items-center gap-1">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                            {u.total_bids}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-bold text-emerald-600 tabular-nums">
-                          R$ {fmtBRL(u.total_earned_brl)}
-                        </div>
-                        <div className="text-[9px] text-gray-400 uppercase tracking-wider">arrecadado</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
               {/* Posts do feed */}
               <div className="space-y-4 lg:space-y-6">
                 {feedSales.map((sale, i) => {
                   const r = RARITIES.find((x) => x.label.toLowerCase() === sale.rarity) || RARITIES[0];
                   // Banner aparece após o 1º post (i===0) e depois a cada 4 (i===4, 8, 12...)
                   const showBannerAfter = i === 0 || (i > 0 && (i + 1) % 4 === 0);
+                  const showTopCreatorsAfter = i === 2;
                   return (
                     <div key={sale.id} className="space-y-4 lg:space-y-6">
                     <article className="bg-white border-y lg:border lg:rounded-2xl border-gray-200 overflow-hidden">
@@ -2071,6 +2027,54 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                       </div>
                     </article>
                     {showBannerAfter && <AppBanner />}
+                    {showTopCreatorsAfter && (
+                      <>
+              {/* Top vendedoras da semana */}
+              <div className="bg-white border-b lg:border lg:rounded-2xl border-gray-200 px-4 py-5 mb-4 lg:mb-6">
+                <div className="flex items-center justify-between mb-4 px-1">
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-900">{dash.label_top_creators}</h3>
+                    <p className="text-[10px] text-gray-500 mt-0.5">Atualizado a cada 24h</p>
+                  </div>
+                  <span className="text-xl">🏆</span>
+                </div>
+                <div className="space-y-3">
+                  {ranking.map((u) => (
+                    <div key={u.username} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                        u.rank === 1 ? "bg-gradient-to-br from-yellow-300 to-yellow-500 text-yellow-900 shadow-sm" :
+                        u.rank === 2 ? "bg-gradient-to-br from-gray-200 to-gray-400 text-gray-800 shadow-sm" :
+                        u.rank === 3 ? "bg-gradient-to-br from-orange-300 to-orange-500 text-orange-900 shadow-sm" :
+                        "bg-gray-100 text-gray-500"
+                      }`}>
+                        {u.rank}
+                      </div>
+                      <img src={u.avatar} alt="" className="w-11 h-11 rounded-full object-cover ring-2 ring-white" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold text-gray-900 truncate">@{u.username}</div>
+                        <div className="flex items-center gap-3 mt-0.5">
+                          <span className="text-[10px] text-gray-500 flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/></svg>
+                            {u.total_sales}
+                          </span>
+                          <span className="text-[10px] text-gray-500 flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            {u.total_bids}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-bold text-emerald-600 tabular-nums">
+                          R$ {fmtBRL(u.total_earned_brl)}
+                        </div>
+                        <div className="text-[9px] text-gray-400 uppercase tracking-wider">arrecadado</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+                      </>
+                    )}
                     </div>
                   );
                 })}
