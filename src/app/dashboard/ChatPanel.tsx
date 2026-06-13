@@ -8,6 +8,7 @@ type Msg = {
   text: string;
   minutesAgo: number;
   replyTo?: number;
+  imageUrl?: string;
 };
 
 const MESSAGES: Msg[] = [
@@ -227,6 +228,7 @@ const MESSAGES: Msg[] = [
   { id: 199, name: "leticia_priv", text: "vamo sim, te chamo amanha", minutesAgo: 11, replyTo: 197 },
   { id: 200, name: "dudazinhah", text: "colica passou, milagres existem ✨", minutesAgo: 10 },
   { id: 201, name: "isafoot_22", text: "🙏🙏🙏", minutesAgo: 9, replyTo: 200 },
+  { id: 229, name: "Ch_pesbr", text: "de ontem de noite depois do ultimo saque, estou mais feliz que pinto no lixo 🤑", minutesAgo: 240, imageUrl: "https://i.pinimg.com/736x/21/39/15/213915123eb5f67b332500640ef046f8.jpg" },
 ];
 
 const AVATAR_URLS: Record<string, string> = {
@@ -261,6 +263,7 @@ const AVATAR_URLS: Record<string, string> = {
   "ninaa_real": "https://i.pinimg.com/736x/68/51/25/685125834336b85f9d108349fd9a77b3.jpg",
   "miareal": "https://i.pinimg.com/736x/16/3d/40/163d40c2ecb2e13b155a110f492db84d.jpg",
   "dani_creator": "https://i.pinimg.com/736x/a2/e4/c9/a2e4c95c9be35a4c4a9ac7cc935f93bb.jpg",
+  "Ch_pesbr": "https://i.pinimg.com/736x/4d/47/97/4d4797b0cdb5e5fbef3f0d1d7c1e1524.jpg",
 };
 
 function avatarUrl(name: string) {
@@ -568,6 +571,9 @@ export function ChatPanel({ userName, compact = false, hasActivePlan = false, fo
           <div className="bg-white rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm border border-gray-100 inline-block max-w-full">
             <p className={`text-[11px] font-bold ${nameColor(m.name)} mb-0.5`}>{m.name}</p>
             <p className="text-sm text-gray-800 leading-snug whitespace-pre-wrap break-words">{m.text}</p>
+                {m.imageUrl && (
+                  <img src={m.imageUrl} alt="" className="mt-2 max-w-full max-h-64 rounded-lg object-cover border border-gray-200" />
+                )}
             <p className="text-[9px] text-gray-400 text-right mt-1">{formatRelative(m.minutesAgo)}</p>
           </div>
         </div>
@@ -653,6 +659,9 @@ export function ChatPanel({ userName, compact = false, hasActivePlan = false, fo
               <div className="bg-gradient-to-br from-pink-100 to-purple-100 rounded-2xl rounded-tr-sm px-3 py-2 shadow-sm border border-pink-200 inline-block max-w-[85%]">
                 <p className="text-[11px] font-bold text-pink-700 mb-0.5">Você</p>
                 <p className="text-sm text-gray-800 leading-snug whitespace-pre-wrap break-words">{m.text}</p>
+                {m.imageUrl && (
+                  <img src={m.imageUrl} alt="" className="mt-2 max-w-full max-h-64 rounded-lg object-cover border border-gray-200" />
+                )}
                 <p className={`text-[9px] text-right mt-1 ${m.status === "failed" ? "text-red-600 font-semibold" : "text-gray-500"}`}>
                   {m.status === "sending" ? (
                     <span className="flex items-center gap-1 justify-end">
@@ -683,6 +692,9 @@ export function ChatPanel({ userName, compact = false, hasActivePlan = false, fo
               <div className="bg-white rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm border border-gray-100 inline-block max-w-full">
                 <p className={`text-[11px] font-bold ${nameColor(m.name)} mb-0.5`}>{m.name}</p>
                 <p className="text-sm text-gray-800 leading-snug whitespace-pre-wrap break-words">{m.text}</p>
+                {m.imageUrl && (
+                  <img src={m.imageUrl} alt="" className="mt-2 max-w-full max-h-64 rounded-lg object-cover border border-gray-200" />
+                )}
                 <p className="text-[9px] text-gray-400 text-right mt-1">agora</p>
               </div>
             </div>
