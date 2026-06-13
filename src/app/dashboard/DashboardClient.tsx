@@ -87,10 +87,9 @@ const TOTAL_BIDS_MAX = 17;
 
 const MIN_BID = FIRST_BID_MIN; // mantém retrocompatibilidade
 
-const PLANS_DATA: Record<"starter" | "creator" | "super", { name: string; yearly: number; fee: number }> = {
-  starter: { name: "Creator", yearly: 79, fee: 10 },
-  creator: { name: "Creator Advanced", yearly: 99, fee: 8 },
-  super: { name: "Top Creator", yearly: 109, fee: 4 },
+const PLANS_DATA: Record<"monthly" | "yearly", { name: string; yearly: number; fee: number }> = {
+  monthly: { name: "Mensal", yearly: 79, fee: 0 },
+  yearly: { name: "Anual", yearly: 99, fee: 0 },
 };
 
 // Hash determinístico do listing.id pra valores estáveis
@@ -408,7 +407,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
   const [withdrawAgency, setWithdrawAgency] = useState("");
   const [withdrawAccount, setWithdrawAccount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState(0);
-  const [selectedPlanId, setSelectedPlanId] = useState<"starter" | "creator" | "super">("creator");
+  const [selectedPlanId, setSelectedPlanId] = useState<"monthly" | "yearly">("yearly");
   const [activeCoupon, setActiveCoupon] = useState<{ id: string; discount_pct: number; expires_at: string } | null>(null);
   const [hasActivePlan, setHasActivePlan] = useState(false);
   const [withdrawError, setWithdrawError] = useState("");
@@ -1377,7 +1376,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
           console.log("[Cupom] Ativo:", data);
           setActiveCoupon(null); // CUPOM DESATIVADO
           // Pré-seleciona Basic já que o cupom diz "47% no Basic"
-          setSelectedPlanId("starter");
+          setSelectedPlanId("yearly");
         }
       } catch (e) {
         console.error("[Cupom] Erro ao buscar:", e);
@@ -3529,32 +3528,23 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                 <div className="space-y-3 mb-5">
                   {[
                     {
-                      id: "starter" as const,
-                      name: "Creator",
+                      id: "monthly" as const,
+                      name: "Mensal",
                       yearly: 79,
-                      fee: 10,
-                      emoji: "🪙",
-                      tagline: "Receba até R$ 12.000 / mês",
-                      features: ["Saque PIX instantâneo 24h", "Leilões ilimitados"],
+                      fee: 0,
+                      emoji: "📅",
+                      tagline: "Acesso por 30 dias",
+                      features: ["Saque PIX instantâneo 24h", "Leilões ilimitados", "Suporte"],
                     },
                     {
-                      id: "creator" as const,
-                      name: "Creator Advanced",
+                      id: "yearly" as const,
+                      name: "Anual",
                       yearly: 99,
-                      fee: 8,
+                      fee: 0,
                       emoji: "⭐",
-                      tagline: "Receba até R$ 48.000 / mês",
-                      features: ["Saque PIX instantâneo 24h", "Leilões ilimitados", "Suporte prioritário"],
+                      tagline: "Economize R$ 849 no plano anual",
+                      features: ["Saque PIX instantâneo 24h", "Leilões ilimitados", "Suporte prioritário", "Economia de R$ 849 vs mensal"],
                       recommended: true,
-                    },
-                    {
-                      id: "super" as const,
-                      name: "Top Creator",
-                      yearly: 109,
-                      fee: 4,
-                      emoji: "👑",
-                      tagline: "Saques acima de R$ 48.000 / mês",
-                      features: ["Saque PIX instantâneo 24h", "Limite de saque ilimitado", "Selo verificado", "Posicionamento prioritário"],
                     },
                   ].map((p) => {
                     const selected = selectedPlanId === p.id;

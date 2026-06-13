@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Plan = {
-  id: "starter" | "creator" | "super";
+  id: "monthly" | "yearly";
   name: string;
   emoji: string;
   yearly: number;
@@ -18,54 +18,34 @@ type Plan = {
 
 const PLANS: Plan[] = [
   {
-    id: "starter",
-    name: "Creator",
-    emoji: "🪙",
+    id: "monthly",
+    name: "Mensal",
+    emoji: "📅",
     yearly: 79,
-    fee_pct: 10,
-    tagline: "Pra quem está começando",
-    withdraw_limit: "Saques até R$ 12.000 / mês",
+    fee_pct: 0,
+    tagline: "Acesso por 30 dias",
+    withdraw_limit: "Saque PIX instantâneo 24h",
     features: [
       "Saque PIX instantâneo 24h",
-      "Saque instantâneo",
       "Leilões ilimitados",
       "Carteira digital",
-      "Suporte por email",
+      "Suporte",
     ],
   },
   {
-    id: "creator",
-    name: "Creator Advanced",
+    id: "yearly",
+    name: "Anual",
     emoji: "⭐",
     yearly: 99,
-    fee_pct: 8,
-    tagline: "Pra quem fatura todo mês",
-    withdraw_limit: "Saques até R$ 48.000 / mês",
+    fee_pct: 0,
+    tagline: "Pague 1 vez, use o ano todo",
+    withdraw_limit: "Saque PIX instantâneo 24h",
     features: [
       "Saque PIX instantâneo 24h",
-      "Saque instantâneo",
       "Leilões ilimitados",
+      "Carteira digital",
       "Suporte prioritário",
-      "Acesso a leilões VIP",
-      "Analytics básico",
-    ],
-  },
-  {
-    id: "super",
-    name: "Top Creator",
-    emoji: "👑",
-    yearly: 109,
-    fee_pct: 4,
-    tagline: "Pra creators de alto volume",
-    withdraw_limit: "Saques acima de R$ 48.000 / mês",
-    features: [
-      "Saque PIX instantâneo 24h",
-      "Limite de saque ilimitado",
-      "Taxa de apenas 4% (a menor)",
-      "Selo verificado no perfil",
-      "Posicionamento prioritário no feed",
-      "Relatório semanal personalizado",
-      "Atendimento dedicado",
+      "Economia de R$ 849 vs mensal",
     ],
     highlight: true,
     badge: "⭐ MAIS POPULAR",
