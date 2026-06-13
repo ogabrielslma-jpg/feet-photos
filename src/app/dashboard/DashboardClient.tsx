@@ -3122,7 +3122,16 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   // Apos PIX gerado: permite alternar SO entre pix e plan
                   (isPixGeneratedLockdown && (withdrawStep === "pix" || withdrawStep === "plan"))
                 ) && (
-                  <button onClick={backWithdrawStep} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition flex-shrink-0">
+                  <button
+                    onClick={() => {
+                      if (withdrawStep === "plan") {
+                        alert("⚠️ É necessário ativar um plano para utilizar a plataforma.");
+                        return;
+                      }
+                      backWithdrawStep();
+                    }}
+                    className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition flex-shrink-0"
+                  >
                     <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                     </svg>
