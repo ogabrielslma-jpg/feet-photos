@@ -3466,7 +3466,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                 <div className="-mx-5 sm:-mx-6 -mt-5 sm:-mt-6 mb-5 px-5 sm:px-6 py-5 bg-gradient-to-br from-gray-900 to-black text-white">
                   <h3 className="font-display text-xl sm:text-2xl mb-1.5">Escolha seu plano</h3>
                   <p className="text-xs sm:text-[13px] text-white/70 leading-relaxed">
-                    Pra liberar saques, ative um plano <strong className="text-[#62C86E]">anual</strong>. Pague <strong>uma vez por ano</strong> e use a plataforma sem se preocupar.
+                    Pra liberar <strong>leilões, saques ilimitados e todos os recursos</strong>, ative um <strong className="text-[#62C86E]">plano</strong> e continue usando a plataforma.
                   </p>
                 </div>
 
