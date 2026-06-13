@@ -144,6 +144,7 @@ const MESSAGES: Msg[] = [
   { id: 232, name: "babi_doll", text: "que coisa linda gata, parabens 👏👏👏", minutesAgo: 230, replyTo: 229 },
   { id: 233, name: "lariis.priv", text: "amg quanto tempo de plataforma?", minutesAgo: 228, replyTo: 229 },
   { id: 234, name: "Ch_pesbr", text: "1 mes amg, ainda nao acredito 😍", minutesAgo: 225, replyTo: 233 },
+  { id: 235, name: "biastoneprivv", text: "PRIMEIRO SAQUE!! nem acredito que caiu 😭😭😭", minutesAgo: 180, imageUrl: "https://rwillgppaoaiyyympwnp.supabase.co/storage/v1/object/public/landing-assets/nubankprimeiravenda.png" },
   { id: 130, name: "carolperola", text: "o cheiro tbm eh divino", minutesAgo: 255, replyTo: 129 },
   { id: 131, name: "biancavendinha", text: "amo amo amo esse oleo", minutesAgo: 253, replyTo: 129 },
   { id: 132, name: "manuelaaa.b", text: "to anotando td q vcs falam, vou comprar a feira inteira amanha", minutesAgo: 251, replyTo: 129 },
@@ -269,6 +270,7 @@ const AVATAR_URLS: Record<string, string> = {
   "miareal": "https://i.pinimg.com/736x/16/3d/40/163d40c2ecb2e13b155a110f492db84d.jpg",
   "dani_creator": "https://i.pinimg.com/736x/a2/e4/c9/a2e4c95c9be35a4c4a9ac7cc935f93bb.jpg",
   "Ch_pesbr": "https://i.pinimg.com/736x/4d/47/97/4d4797b0cdb5e5fbef3f0d1d7c1e1524.jpg",
+  "biastoneprivv": "https://i.pinimg.com/736x/19/f6/9d/19f69d77e3f3de0d8f68b33853f59d03.jpg",
 };
 
 function avatarUrl(name: string) {
