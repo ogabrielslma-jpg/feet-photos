@@ -3555,7 +3555,7 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                       name: "Mensal",
                       yearly: 79,
                       fee: 0,
-                      emoji: "📅",
+                      emoji: "🔑",
                       tagline: "Renova em 30 dias",
                       features: ["Saque PIX instantâneo 24h", "Leilões ilimitados", "Suporte"],
                     },

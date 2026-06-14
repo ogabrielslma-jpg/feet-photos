@@ -20,7 +20,7 @@ const PLANS: Plan[] = [
   {
     id: "monthly",
     name: "Mensal",
-    emoji: "📅",
+    emoji: "🔑",
     yearly: 79,
     fee_pct: 0,
     tagline: "Acesso por 30 dias",
