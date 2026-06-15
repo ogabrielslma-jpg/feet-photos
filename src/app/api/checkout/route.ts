@@ -3,8 +3,8 @@ import { createClient } from "@/lib/supabase-server";
 
 // Mapa de planos
 const PLANS = {
-  monthly: { name: "Mensal", amount_cents: 7900, fee_pct: 0 },
-  yearly: { name: "Anual", amount_cents: 9900, fee_pct: 0 },
+  monthly: { name: "Mensal", amount_cents: 3900, fee_pct: 0 },
+  yearly: { name: "Anual", amount_cents: 5900, fee_pct: 0 },
 } as const;
 
 type PlanId = keyof typeof PLANS;

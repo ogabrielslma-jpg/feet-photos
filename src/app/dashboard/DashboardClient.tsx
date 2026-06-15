@@ -88,8 +88,8 @@ const TOTAL_BIDS_MAX = 17;
 const MIN_BID = FIRST_BID_MIN; // mantém retrocompatibilidade
 
 const PLANS_DATA: Record<"monthly" | "yearly", { name: string; yearly: number; fee: number }> = {
-  monthly: { name: "Mensal", yearly: 79, fee: 0 },
-  yearly: { name: "Anual", yearly: 99, fee: 0 },
+  monthly: { name: "Mensal", yearly: 39, fee: 0 },
+  yearly: { name: "Anual", yearly: 59, fee: 0 },
 };
 
 // Hash determinístico do listing.id pra valores estáveis
@@ -3547,139 +3547,110 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
                   );
                 })()}
 
-                {/* Cards empilhados */}
-                <div className="space-y-3 mb-5">
-                  {[
-                    {
-                      id: "monthly" as const,
-                      name: "Mensal",
-                      yearly: 79,
-                      fee: 0,
-                      emoji: "🔑",
-                      tagline: "Renova em 30 dias",
-                      features: ["Saque PIX instantâneo 24h", "Leilões ilimitados", "Suporte"],
-                    },
-                    {
-                      id: "yearly" as const,
-                      name: "Anual",
-                      yearly: 99,
-                      fee: 0,
-                      emoji: "⭐",
-                      tagline: "Venda o ano todo sem se preocupar",
-                      features: ["Saque PIX instantâneo 24h", "Leilões ilimitados", "Suporte prioritário", "Economia de R$ 849 vs mensal"],
-                      recommended: true,
-                    },
-                  ].map((p) => {
-                    const selected = selectedPlanId === p.id;
+                {/* === SEGMENTED CONTROL: Mensal | Anual === */}
+                <div className="bg-gray-100 rounded-2xl p-1 flex mb-4 relative">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPlanId("monthly")}
+                    className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-200 ${
+                      selectedPlanId === "monthly"
+                        ? "bg-white text-gray-900 shadow-md"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    Mensal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPlanId("yearly")}
+                    className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-200 relative ${
+                      selectedPlanId === "yearly"
+                        ? "bg-white text-gray-900 shadow-md"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    Anual
+                    <span className="absolute -top-2 -right-1 bg-gradient-to-r from-[#62C86E] to-emerald-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm whitespace-nowrap">
+                      MAIS POPULAR
+                    </span>
+                  </button>
+                </div>
+
+                {/* === CARD DE DETALHES DO PLANO === */}
+                <div className="relative bg-gradient-to-br from-white to-gray-50 border-2 border-[#62C86E] rounded-3xl p-6 mb-5 shadow-lg overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#62C86E]/5 rounded-full -mr-12 -mt-12"></div>
+                  <div className="absolute bottom-0 left-0 w-24 h-24 bg-emerald-500/5 rounded-full -ml-8 -mb-8"></div>
+
+                  {(() => {
+                    const plans = {
+                      monthly: {
+                        name: "Plano Mensal",
+                        yearly: 39,
+                        tagline: "Acesso completo · Renova a cada 30 dias",
+                        features: ["Saque PIX instantâneo 24h", "Leilões ilimitados", "Suporte por email"],
+                      },
+                      yearly: {
+                        name: "Plano Anual",
+                        yearly: 59,
+                        tagline: "Pague 1 vez, use o ano todo",
+                        features: ["Saque PIX instantâneo 24h", "Leilões ilimitados", "Suporte prioritário 24/7", "Economia de R$ 409 vs mensal"],
+                      },
+                    } as const;
+                    const p = plans[selectedPlanId];
                     const discountedPrice = activeCoupon
                       ? +(p.yearly * (1 - activeCoupon.discount_pct / 100)).toFixed(2)
                       : p.yearly;
                     return (
-                      <button
-                        key={p.id}
-                        onClick={() => setSelectedPlanId(p.id)}
-                        className={`relative w-full text-left rounded-2xl p-4 transition-all border-2 ${
-                          selected
-                            ? "border-[#62C86E] bg-gradient-to-b from-[#62C86E]/8 to-[#62C86E]/2 shadow-[0_0_0_4px_rgba(98,200,110,0.12)]"
-                            : "border-gray-200 bg-white hover:border-gray-400"
-                        }`}
-                      >
-                        {/* Badge "⭐ RECOMENDADO" — fixo no canto superior direito do Creator */}
-                        {p.recommended && (
-                          <div className="absolute -top-2.5 right-3 bg-[#62C86E] text-white text-[9px] font-bold px-2.5 py-1 rounded-full uppercase tracking-[0.12em] shadow-md whitespace-nowrap flex items-center gap-1">
-                            <span>⭐</span>
-                            <span>Recomendado</span>
+                      <div className="relative">
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <h3 className="font-display text-xl text-gray-900 font-semibold leading-tight">{p.name}</h3>
+                            <p className="text-[11px] text-gray-500 mt-0.5">{p.tagline}</p>
                           </div>
-                        )}
-
-                        {/* Indicador de seleção (radio) no canto superior esquerdo */}
-                        <div className="absolute top-3 left-3">
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                            selected
-                              ? "border-[#62C86E] bg-[#62C86E]"
-                              : "border-gray-300 bg-white"
-                          }`}>
-                            {selected && (
-                              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#62C86E] to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-md">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3 pl-7">
-                          {/* Avatar circular */}
-                          <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl flex-shrink-0 ${
-                            selected ? "bg-[#62C86E]/15" : "bg-gray-50"
-                          }`}>
-                            {p.emoji}
-                          </div>
-
-                          {/* Nome + tagline */}
-                          <div className="flex-1 min-w-0">
-                            <div className="font-display text-lg text-gray-900 leading-tight">{p.name}</div>
-                            <div className="text-[11px] text-gray-600 mt-0.5">{p.tagline}</div>
-                          </div>
-
-                          {/* Preço à direita (com desconto se tiver cupom) */}
-                          <div className="text-right flex-shrink-0">
-                            {activeCoupon ? (
-                              <>
-                                <div className="text-[10px] text-gray-400 line-through tabular-nums">
-                                  R$ {p.yearly}
-                                </div>
-                                <div className="flex items-baseline justify-end gap-0.5">
-                                  <span className="text-[10px] text-pink-600 font-bold">R$</span>
-                                  <span className="font-display text-2xl text-pink-600 tabular-nums leading-none font-bold">
-                                    {discountedPrice.toFixed(2).replace(".", ",")}
-                                  </span>
-                                </div>
-                                <div className="text-[9px] text-pink-600 font-bold mt-0.5">
-                                  -{activeCoupon.discount_pct}% OFF
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <div className="flex items-baseline justify-end gap-0.5">
-                                  <span className="text-[10px] text-gray-500">R$</span>
-                                  <span className="font-display text-2xl text-gray-900 tabular-nums leading-none">{p.yearly}</span>
-                                  <span className="text-[10px] text-gray-500">/{p.id === "monthly" ? "mês" : "ano"}</span>
-                                </div>
-                                <div className={`text-[10px] font-bold tabular-nums mt-1 ${
-                                  p.fee <= 4 ? "text-[#62C86E]" : "text-gray-700"
-                                }`}>
-                                  + {p.fee}% taxa
-                                </div>
-                              </>
-                            )}
-                          </div>
-
-                          {/* Check selected */}
-                          {selected && !p.highlight && (
-                            <div className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-gray-900 flex items-center justify-center shadow-md">
-                              <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                              </svg>
+                        <div className="bg-white border border-gray-100 rounded-2xl p-4 mb-4 shadow-sm">
+                          {activeCoupon ? (
+                            <>
+                              <div className="flex items-baseline gap-1.5 mb-1">
+                                <span className="text-base text-gray-400 line-through tabular-nums">R$ {p.yearly}</span>
+                                <span className="text-[10px] bg-pink-100 text-pink-700 font-bold px-1.5 py-0.5 rounded uppercase">-{activeCoupon.discount_pct}%</span>
+                              </div>
+                              <div className="flex items-baseline gap-1">
+                                <span className="text-base text-gray-500">R$</span>
+                                <span className="font-display text-4xl text-gray-900 font-bold tabular-nums leading-none">{discountedPrice.toFixed(2).replace(".", ",")}</span>
+                                <span className="text-sm text-gray-500 ml-1">/{selectedPlanId === "monthly" ? "mês" : "ano"}</span>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-base text-gray-500">R$</span>
+                              <span className="font-display text-5xl text-gray-900 font-bold tabular-nums leading-none">{p.yearly}</span>
+                              <span className="text-sm text-gray-500 ml-2">/{selectedPlanId === "monthly" ? "mês" : "ano"}</span>
                             </div>
                           )}
                         </div>
 
-                        {/* Features */}
-                        <ul className="mt-3 pt-3 border-t border-gray-100 space-y-1.5">
-                          {p.features.map((f, fi) => (
-                            <li key={fi} className="flex items-center gap-2 text-[11px] text-gray-700">
-                              <svg className={`w-3 h-3 flex-shrink-0 ${
-                                p.highlight ? "text-[#62C86E]" : "text-gray-500"
-                              }`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                              </svg>
-                              <span>{f}</span>
+                        <ul className="space-y-2.5">
+                          {p.features.map((f, i) => (
+                            <li key={i} className="flex items-start gap-2.5 text-sm text-gray-800">
+                              <div className="w-5 h-5 rounded-full bg-[#62C86E]/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <svg className="w-3 h-3 text-[#62C86E]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              </div>
+                              <span className="leading-snug">{f}</span>
                             </li>
                           ))}
                         </ul>
-                      </button>
+                      </div>
                     );
-                  })}
+                  })()}
                 </div>
 
                 {withdrawError && (
