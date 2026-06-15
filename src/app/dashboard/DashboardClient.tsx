@@ -1106,6 +1106,25 @@ export default function DashboardPage({ initialConfig }: { initialConfig: Landin
             console.error("[GoogleAds] Erro ao disparar conversao:", e);
           }
 
+          // PostHog - Evento de purchase pra rastrear conversoes por UTM
+          try {
+            const planAmount = PLANS_DATA[selectedPlanId]?.yearly || 0;
+            if (typeof window !== "undefined") {
+              const ph = (window as any).posthog;
+              if (ph && typeof ph.capture === "function") {
+                ph.capture("purchase", {
+                  plan_id: selectedPlanId,
+                  amount: planAmount,
+                  currency: "BRL",
+                  subscription_id: subscriptionId,
+                });
+                console.log("[PostHog] Evento purchase disparado", { plan_id: selectedPlanId, amount: planAmount });
+              }
+            }
+          } catch (e) {
+            console.error("[PostHog] Erro ao disparar purchase:", e);
+          }
+
           setWithdrawStep("processing");
           setTimeout(() => {
             setWalletBalance(0);
