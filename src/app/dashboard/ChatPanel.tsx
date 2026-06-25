@@ -232,7 +232,7 @@ const MESSAGES: Msg[] = [
   { id: 192, name: "vivi.privy", text: "ta no fluxo agora, esse momento eh ouro", minutesAgo: 23, replyTo: 190 },
   { id: 193, name: "Brunaprivy", text: "to publicando AGORA entao 🚀", minutesAgo: 21, replyTo: 190 },
   { id: 194, name: "biancavendinha", text: "rolando promo nova naquela loja de meia fofa q a Cah recomendou", minutesAgo: 18 },
-  { id: 226, name: "dudabitten_", text: "alguem me add no grupo do zap novamente 61 98643-0042 troquei de celular e nao esta aparecendo mais os grupos", minutesAgo: 15 },
+  { id: 226, name: "jubea_01", text: "alguem me add no grupo do zap novamente 14 98214-9267 troquei de celular e nao esta aparecendo mais os grupos", minutesAgo: 15 },
   { id: 227, name: "a_karenlps", text: "aqui diz que vc esta no grupo nao consigo add", minutesAgo: 14, replyTo: 226 },
   { id: 228, name: "dudabitten_", text: "esquece, ja achei aqui, obrigada flor", minutesAgo: 13, replyTo: 226 },
   { id: 195, name: "yasmim__real", text: "link plsssss", minutesAgo: 16, replyTo: 194 },
